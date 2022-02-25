@@ -113,26 +113,124 @@ class Geometry():
     # Reference methods
 
     # reference to points or nodes
-    def points(self):
-        return self.mesh.points
+    def points(self, mask: np.ndarray = None) -> np.ndarray:
+        """Returns a pointer to the list of points in the mesh.
 
-    def nodes(self):
-        return self.mesh.points
+        Args:
+            mask (np.ndarray, optional): An index or boolean mask. Defaults to None.
+
+        Returns:
+            np.ndarray: pointer to array of points [[x,y,z]...] (nx3).
+        """
+        if mask is not None:
+            return self.mesh.points[mask]
+        else:
+            return self.mesh.points
+
+    def nodes(self, mask: np.ndarray = None) -> np.ndarray:
+        """Alias of self.points method: returns a pointer to the list of points in the mesh.
+
+        Args:
+            mask (np.ndarray, optional): An index or boolean mask. Defaults to None.
+
+        Returns:
+            np.ndarray: pointer to array of points [[x,y,z]...] (nx3).
+        """
+        return self.points(mask=mask)
 
     # reference to cells or elements
-    def cells(self):
-        return self.mesh.cells_dict
+    def cells(self, key: VTK_ELEMENTS = None, mask: np.ndarray = None) -> dict or np.ndarray:
+        """
+        Returns a pointer to the dictionary of cells in the mesh. 
+        If key is provided, it returns the array of cells of given key. 
+        If key and mask are provided, it returns the specified range of cells of given key and mask.
 
-    def elements(self):
-        return self.mesh.cells_dict
+        Args:
+            key (VTK_ELEMENTS, optional): int corresponding to VTK_ELEMENTS number (ex: 12-> HEXAHEDRON). Defaults to None.
+            mask (np.ndarray, optional): An index or boolean mask. Defaults to None.
 
-    def timesteps(self):
+        Returns:
+            dict or np.ndarray: A dictionary containing {VTK_ELEMENTS: np.ndarray([]), ...} pairs or a specified range of cells (ndarray (nxm)).
+        """
+        if key is not None:
+            data = self.mesh.cells_dict[key]
+            if mask is not None:
+                return data[mask]
+            else:
+                return data
+        else:
+            return self.mesh.cells_dict
+
+    def elements(self, key: VTK_ELEMENTS = None, mask: np.ndarray = None) -> dict or np.ndarray:
+        """
+        Alias of self.cells method.
+        Returns a pointer to the dictionary of cells in the mesh. 
+        If key is provided, it returns the array of cells of given key. 
+        If key and mask are provided, it returns the specified range of cells of given key and mask.
+
+        Args:
+            key (VTK_ELEMENTS, optional): int corresponding to VTK_ELEMENTS number (ex: 12-> HEXAHEDRON). Defaults to None.
+            mask (np.ndarray, optional): An index or boolean mask. Defaults to None.
+
+        Returns:
+            dict or np.ndarray: A dictionary containing {VTK_ELEMENTS: cells...} pairs or a specified range of cells (ndarray (nxm)).
+        """
+        return self.cells(key=key, mask=mask)
+
+    def timesteps(self) -> list:
+        """Returns a pointer to the timesteps array contained in self.States.
+
+        Returns:
+            list: list of timesteps [0.0, t1, t2 ... t]
+        """
         return self.States.timesteps
+
+    def states(self) -> dict:
+        """
+        Returns a pointer to the the states dictionary in self.States. 
+        Only use this method if you want to directly modify states information. 
+        Otherwise use 'self.get'.
+
+        Returns:
+            dict: {DATA_FIELDS: np.ndarray[], ...} pairs
+        """
+        return self.States.data
 
     # ----------------------------------------------------------------
     # Get methods -> returns point, cell or state(s) data
 
-    def get(self, what=GEO_DATA.STATES, key=None, mask=None, i=None, t=None):
+    def get(self, what: str = GEO_DATA.STATES,
+            key: str or None = None,
+            mask: np.ndarray or None = None,
+            i: int or None = None,
+            t: float or None = None) -> np.ndarray:
+        """
+        This method is convinient way to retrieve specified data from the Geometry object. 
+        The argument 'what' must be specified, it determines the location in which the
+        method will look for the data. The 'mask' argument can be used to retrieve only
+        specified range; it can be boolean or index array. If data is to be retrieved from
+        States, a key must be specified. The arguments 'i' and 't' can be used to specify
+        a given state timestep; 'i' determines the timestep index, while 't' determines
+        the timestep value (if t is not in timesteps, it will look for the closest valid timestep). 
+
+        Note: if 'i' and 't' are specified, 'i' will be used and 't' will be 
+        ignored. 
+
+        Args:
+            what (GEO_DATA, optional): A string inferreing to GEO_DATA (where to look for the data). Defaults to GEO_DATA.STATES.
+            key (str, optional): Identifies the state data to be retrieved. Defaults to None.
+            mask (np.ndarray or None, optional): A boolean or index array. Defaults to None.
+            i (int or None, optional): Timestep index. Defaults to None.
+            t (float or None, optional): Timestep value. Defaults to None.
+
+        Raises:
+            ValueError: If 'what' is not int or GEO_DATA.
+            ValueError: If States is requested but 'key' is not specified (is None).
+            ValueError: If GEO_DATA is invalid.
+
+        Returns:
+            np.ndarray: Array of requested data.
+        """
         if not (isinstance(what, int) or isinstance(what, GEO_DATA)):
             raise ValueError(
                 "Should specify what to get by using a GEO_DATA value or its respective integer.")

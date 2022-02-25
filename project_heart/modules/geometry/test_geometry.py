@@ -116,15 +116,16 @@ class test_Geometry(unittest.TestCase):
             DATA_FIELDS.STRESS).shape, (11, 8, 6))
 
         # check for expected elapsed time
-        self.assertLessEqual(exe_time, 20.0)
+        self.assertLessEqual(exe_time, 30.0)
 
     def test_get(self):
-        # start timer
-        start_time = datetime.now()
-        # ---
         # build geometry
         geo = Geometry()
         geo.from_xplt(TEST_FILES_DIR/"sample.xplt")
+
+        # ---
+        # start timer
+        start_time = datetime.now()
         # extract nodes, cells and state data
         nodes = geo.get(GEO_DATA.NODES)
         cells = geo.get(GEO_DATA.CELLS)
@@ -167,6 +168,8 @@ class test_Geometry(unittest.TestCase):
             geo.get(GEO_DATA.STATES, key=DATA_FIELDS.DISPLACEMENT, i="NOT_NUMBER")
         with self.assertRaises(TypeError):
             geo.get(GEO_DATA.STATES, key=DATA_FIELDS.DISPLACEMENT, i=[])
+        with self.assertRaises(ValueError):
+            geo.get(GEO_DATA.STATES, key=DATA_FIELDS.DISPLACEMENT, i=1000)
         with self.assertRaises(TypeError):
             geo.get(GEO_DATA.STATES, key=DATA_FIELDS.DISPLACEMENT, t="NOT_NUMBER")
         with self.assertRaises(TypeError):
@@ -175,4 +178,4 @@ class test_Geometry(unittest.TestCase):
             geo.get(GEO_DATA.STATES, key=DATA_FIELDS.DISPLACEMENT, t=-1)
 
         # check for expected elapsed time
-        self.assertLessEqual(exe_time, 20.0)
+        self.assertLessEqual(exe_time, 5.0)

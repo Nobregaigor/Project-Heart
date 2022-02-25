@@ -41,6 +41,10 @@ class States():
         # if a specific index is requested:
         specified_step = False
         if i is not None:
+            if i > len(self.timesteps):
+                raise ValueError(
+                    "i must be less of equal to the length of timesteps. \
+                        It refers to the state index.")
             if not isinstance(i, Number):
                 raise TypeError(
                     "i must be an integer. It refers to the state index.")
@@ -70,8 +74,8 @@ class States():
         else:
             return data
 
-    def set_timesteps(self, timesteps: np.ndarray):
-        self.timesteps = timesteps
+    def set_timesteps(self, timesteps: list):
+        self.timesteps = list(timesteps)
 
     def get_timestep_index(self, t: float) -> int:
         """Matches a given timestep to index of state in the timestep array.
