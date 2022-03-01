@@ -1,5 +1,6 @@
 from os import path
 import pathlib
+from turtle import st
 
 import pyvista as pv
 
@@ -13,8 +14,14 @@ from collections import deque
 class Geometry():
     def __init__(self, *args, **kwargs):
         self.mesh = pv.UnstructuredGrid()
+        self._surface_mesh = pv.UnstructuredGrid()
         self.states = States()
-        self._masks = {}
+        self._nodesets = {}  # {"nodeset_name": [ids...], ...}
+        self._elemsets = {}  # {"elemset_name": [ids...], ...}
+
+        self._X = np.array([1., 0., 0.])
+        self._Y = np.array([0., 1., 0.])
+        self._Z = np.array([0., 0., 1.])
 
     def __print__(self):
         return self.mesh
@@ -25,8 +32,10 @@ class Geometry():
     def from_pyvista_dataset(self, dataset):
         self.mesh = dataset
 
-    def from_pyvista_read(self, filename, **kwargs):
+    def from_pyvista_read(self, filename, identifier=None, threshold=None, **kwargs):
         self.mesh = pv.read(filename, **kwargs)
+        if identifier is not None:
+            self.filter_mesh_by_scalar(identifier, threshold)
 
     def from_pyvista_wrap(self, arr, **kwargs):
         self.mesh = pv.wrap(arr, **kwargs)
@@ -246,3 +255,62 @@ class Geometry():
         else:
             raise ValueError(
                 "Not sure where to get data from: 'what', %s, should be one of the GEO_DATA values." % what)
+
+    # ----------------------------------------------------------------
+    # add methods
+
+    def add_nodeset(self, name: str, ids: np.ndarray, overwrite: bool = False, dtype: np.dtype = np.int64) -> None:
+        """Adds a list of indexes as a nodeset. 
+
+        Args:
+            name (str): nodeset name. 
+            ids (np.ndarray): list of indexes referencing the nodes of given nodeset.
+            overwrite (bool, optional): _description_. Defaults to False.
+            dtype (np.dtype, optional): _description_. Defaults to np.int64.
+
+        Raises:
+            ValueError: if ids is not an ndarray
+            ValueError: if ids is not only composed of integers
+            ValueError: if max id is greater than number of nodes/points
+            KeyError: _description_
+        """
+        # check if ids is numpy array
+        if not isinstance(ids, np.ndarray):
+            raise ValueError("ids must be np.ndarray of integers")
+        # check if ids is a list of integers only
+        if np.dtype(ids) != np.integer:
+            raise ValueError("ids must be integers.")
+        # check if maximum id within n_nodes
+        if np.max(ids) > self.mesh.n_points:
+            raise ValueError(
+                "maximum reference id is greater than number of nodes. \
+                    Surfaces are list of integers referencing the indexes of nodes array.")
+        # check if key is already used (if overwrite is False)
+        if overwrite == False and name in self._nodesets:
+            raise KeyError(
+                "Nodeset '%s' already exists. Please, set overwrite flag to True if you want to replace it." % name)
+        # add nodeset to the dictionary
+        self._nodesets[name] = np.copy(ids, dtype=dtype)
+
+    def get_nodeset(self, name: str):
+        if name not in self._nodesets:
+            raise KeyError("Nodeset '%s' does not exist." % name)
+        else:
+            return self._nodesets[name]
+
+    # -------------------------------
+    # Mesh wrapped functions
+
+    def filter_mesh_by_scalar(self, identifier: str, threshold: list, **kwargs) -> None:
+        self.mesh.set_active_scalars(identifier)
+        self.mesh = self.mesh.threshold(threshold, **kwargs)
+
+    def extract_surface_mesh(self, **kwars):
+        self._surface_mesh = self.mesh.extract_surface(**kwars)
+        return self._surface_mesh
+
+    def get_surface_mesh(self, **kwargs):
+        if self._surface_mesh.n_points == 0:
+            return self.extract_surface_mesh(**kwargs)
+        else:
+            return self._surface_mesh
