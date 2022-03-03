@@ -55,7 +55,7 @@ class LV_Geometry(Geometry):
         data["rot_chain"] = rot_chain
         return data
 
-    def identify_base_and_apex_regions(self, **kwargs):
+    def identify_base_and_apex_regions(self, ab_n=10, ab_ql=0.03, ab_qh=0.75, **kwargs):
         """
         """
         # extract surface mesh (use extract)
@@ -76,8 +76,8 @@ class LV_Geometry(Geometry):
         rot_chain.append(rot)
         initial_rot = rot.apply(pts)
         aligment_data = self.est_pts_aligment_with_lv_normal(initial_rot,
-                                                             rot_chain=rot_chain,
-                                                             n=10, ql=0.03, qh=0.75)
+                                                                rot_chain=rot_chain,
+                                                                n=ab_n, ql=ab_ql, qh=ab_qh)
 
         # set surface region ids (for surface mesh)
         surf_regions = np.zeros(len(pts))
@@ -89,9 +89,9 @@ class LV_Geometry(Geometry):
         surf_to_global = lvsurf.point_data["vtkOriginalPointIds"]
         global_regions = np.zeros(self.mesh.n_points)
         global_regions[surf_to_global[aligment_data["apex_region"]]
-                       ] = LV_SURFS.APEX_REGION
+                        ] = LV_SURFS.APEX_REGION
         global_regions[surf_to_global[aligment_data["base_region"]]
-                       ] = LV_SURFS.BASE_REGION
+                        ] = LV_SURFS.BASE_REGION
         self.mesh.point_data[LV_MESH_DATA.APEX_BASE_REGION.value] = global_regions
         return (surf_regions, global_regions)
 
@@ -102,6 +102,7 @@ class LV_Geometry(Geometry):
                           beta_mtr=0.9,
                           gamma_atr=89,
                           gamma_mtr=89,
+                          **kwargs,
                           ):
 
         assert(alpha_atr > 0.0), "alpha_atr must be positive and greater than 0.0"
@@ -114,7 +115,7 @@ class LV_Geometry(Geometry):
         # check if base and apex regions were already identified
         # this is a requirement as we will combine these regions later
         if not LV_MESH_DATA.APEX_BASE_REGION.value in self.mesh.point_data:
-            (ab_surf_regions, ab_mesh_regions) = self.identify_base_and_apex_regions()
+            (ab_surf_regions, ab_mesh_regions) = self.identify_base_and_apex_regions(**kwargs)
             ab_surf_regions = ab_surf_regions
             ab_mesh_regions = ab_mesh_regions
         else:
@@ -123,6 +124,11 @@ class LV_Geometry(Geometry):
         # ensure that we are copying elements and not using original ones
         ab_surf_regions = np.copy(ab_surf_regions)
         ab_mesh_regions = np.copy(ab_mesh_regions)
+        ab_surf_apex_ids = np.where(ab_surf_regions == LV_SURFS.APEX_REGION)[0]
+        ab_surf_base_ids = np.where(ab_surf_regions == LV_SURFS.BASE_REGION)[0]
+        ab_mesh_apex_ids = np.where(ab_mesh_regions == LV_SURFS.APEX_REGION)[0]
+        ab_mesh_base_ids = np.where(ab_mesh_regions == LV_SURFS.BASE_REGION)[0]
+        
 
         # extract surface mesh (use extract)
         lvsurf = self.get_surface_mesh()
@@ -140,12 +146,14 @@ class LV_Geometry(Geometry):
         pts_to_center = center - pts
         # compute angle difference between surface normals and pts to center
         angles = angle_between(pts_to_center, surf_normals,
-                               check_orientation=False)  # returns [0 to pi]
+                                check_orientation=False)  # returns [0 to pi]
         # set initial endo-epi surface guess
         endo_epi_guess = np.zeros(len(pts))
         initial_thresh = np.radians(90)
-        endo_epi_guess[angles <= initial_thresh] = LV_SURFS.ENDO
-        endo_epi_guess[angles > initial_thresh] = LV_SURFS.EPI
+        endo_ids = np.where(angles < initial_thresh)[0]
+        epi_ids = np.where(angles >= initial_thresh)[0]
+        endo_epi_guess[endo_ids] = LV_SURFS.ENDO
+        endo_epi_guess[epi_ids] = LV_SURFS.EPI
         lvsurf.point_data["endo_epi_guess"] = endo_epi_guess
         lvsurf.set_active_scalars("endo_epi_guess")
 
@@ -173,11 +181,11 @@ class LV_Geometry(Geometry):
         kdist = np.linalg.norm(center - kcenters, axis=1)
         label = np.zeros(len(klabels))
         if kdist[0] < kdist[1]:
-            label[klabels == 0] = LV_SURFS.AORTIC
-            label[klabels == 1] = LV_SURFS.MITRAL
-        else:
-            label[klabels == 1] = LV_SURFS.AORTIC
             label[klabels == 0] = LV_SURFS.MITRAL
+            label[klabels == 1] = LV_SURFS.AORTIC
+        else:
+            label[klabels == 1] = LV_SURFS.MITRAL
+            label[klabels == 0] = LV_SURFS.AORTIC
         # define clusters
         clustered = np.zeros(len(pts))
         clustered[ioi] = label
@@ -259,12 +267,35 @@ class LV_Geometry(Geometry):
         atr = new_atr_mask[np.where(atr_angles <= np.radians(gamma_atr))[0]]
         mtr = new_mtr_mask[np.where(mtr_angles <= np.radians(gamma_mtr))[0]]
 
-        est_surfaces = np.copy(endo_epi_guess)
+        est_surfaces = np.copy(initial_guess)
         # est_surfaces[ep1] = 6
+        # print("epi_ids", epi_ids)
+        est_surfaces[epi_ids] = LV_SURFS.EPI
+        est_surfaces[endo_ids] = LV_SURFS.ENDO
         est_surfaces[atr] = LV_SURFS.AORTIC
         est_surfaces[mtr] = LV_SURFS.MITRAL
         est_surfaces[its] = LV_SURFS.AM_INTERCECTION
-
+        
+        
+        # adjust atrial region
+        d_atr = np.linalg.norm(pts - c_atr, axis=1) 
+        near_atr = np.where(d_atr <= r_atr * alpha_adj_atr)[0]
+        # print("near_atr", near_atr)
+        atr_pts = pts[near_atr]
+        atr_vecs = c_atr - atr_pts
+        atr_angles = np.zeros(len(atr_vecs))
+        for i, (pt_normal, pt_vec) in enumerate(zip(surf_normals[near_atr], atr_vecs)):
+            atr_angles[i] = angle_between(pt_vec, pt_normal, check_orientation=False)
+        curr_vals = est_surfaces[near_atr]
+        # print("curr_vals", curr_vals)
+        corr_epi = near_atr[np.where(
+            (atr_angles > np.radians(gamma_atr)) & ((curr_vals==LV_SURFS.AORTIC) | (curr_vals == LV_SURFS.ENDO)))[0]]
+        # print("corr_epi", corr_epi)
+        
+        # epi_ids = np.union1d(epi_ids, corr_epi)
+        # atr = np.setdiff1d(epi_ids, corr_epi)
+        est_surfaces[corr_epi] = LV_SURFS.EPI
+        
         # ................
         # 4 - Save data
         # save data on surface mesh
@@ -272,20 +303,39 @@ class LV_Geometry(Geometry):
         # set
         surf_to_global = lvsurf.point_data["vtkOriginalPointIds"]
         mesh_est_surfs = np.zeros(self.mesh.n_points)
+        mesh_est_surfs[surf_to_global[epi_ids]] = LV_SURFS.EPI
+        mesh_est_surfs[surf_to_global[endo_ids]] = LV_SURFS.ENDO
         mesh_est_surfs[surf_to_global[atr]] = LV_SURFS.AORTIC
         mesh_est_surfs[surf_to_global[mtr]] = LV_SURFS.MITRAL
         mesh_est_surfs[surf_to_global[its]] = LV_SURFS.AM_INTERCECTION
+        mesh_est_surfs[surf_to_global[corr_epi]] = LV_SURFS.EPI
+        
+        
         self.mesh.point_data[LV_MESH_DATA.SURFS_EXPT_AB.value] = mesh_est_surfs
 
         # 4.1 - Merge with base and apex regions
-        ab_surf_regions[atr] = LV_SURFS.AORTIC
-        ab_surf_regions[mtr] = LV_SURFS.MITRAL
-        ab_surf_regions[its] = LV_SURFS.AM_INTERCECTION
-        self._surface_mesh.point_data[LV_MESH_DATA.SURFS.value] = ab_surf_regions
+        new_ab_surf_regions = np.zeros(len(pts))
+        new_ab_surf_regions[epi_ids] = LV_SURFS.EPI
+        new_ab_surf_regions[endo_ids] = LV_SURFS.ENDO
+        new_ab_surf_regions[atr] = LV_SURFS.AORTIC
+        new_ab_surf_regions[mtr] = LV_SURFS.MITRAL
+        new_ab_surf_regions[its] = LV_SURFS.AM_INTERCECTION
+        new_ab_surf_regions[corr_epi] = LV_SURFS.EPI
+        
+        val_ids = np.where((ab_surf_regions != 0) & (new_ab_surf_regions!=LV_SURFS.AORTIC) & (new_ab_surf_regions!=LV_SURFS.MITRAL) & (new_ab_surf_regions!=LV_SURFS.AM_INTERCECTION))[0]
+        new_ab_surf_regions[val_ids] = ab_surf_regions[val_ids]       
+        self._surface_mesh.point_data[LV_MESH_DATA.SURFS.value] = new_ab_surf_regions
 
-        ab_mesh_regions[surf_to_global[atr]] = LV_SURFS.AORTIC
-        ab_mesh_regions[surf_to_global[mtr]] = LV_SURFS.MITRAL
-        ab_mesh_regions[surf_to_global[its]] = LV_SURFS.AM_INTERCECTION
+        new_ab_mesh_regions = np.zeros(self.mesh.n_points)
+        new_ab_mesh_regions[surf_to_global[epi_ids]] = LV_SURFS.EPI
+        new_ab_mesh_regions[surf_to_global[endo_ids]] = LV_SURFS.ENDO
+        new_ab_mesh_regions[surf_to_global[atr]] = LV_SURFS.AORTIC
+        new_ab_mesh_regions[surf_to_global[mtr]] = LV_SURFS.MITRAL
+        new_ab_mesh_regions[surf_to_global[its]] = LV_SURFS.AM_INTERCECTION
+        new_ab_mesh_regions[surf_to_global[corr_epi]] = LV_SURFS.EPI
+        
+        val_ids = np.where((ab_mesh_regions != 0) & (new_ab_mesh_regions!=LV_SURFS.AORTIC) & (new_ab_mesh_regions!=LV_SURFS.MITRAL) & (new_ab_mesh_regions!=LV_SURFS.AM_INTERCECTION))[0]
+        new_ab_mesh_regions[val_ids] = ab_mesh_regions[val_ids] 
         self.mesh.point_data[LV_MESH_DATA.SURFS.value] = ab_mesh_regions
 
         return (ab_surf_regions, ab_mesh_regions)
