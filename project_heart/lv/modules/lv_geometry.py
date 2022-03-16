@@ -348,7 +348,7 @@ class LV_Geometry(Geometry):
         
         
         # !!! hardcoded -> surface of intereste will be endocardio
-        self._surfaces_oi[LV_SURFS.ENDO.name] = np.array(self.points(surf_to_global[endo_ids]), dtype=np.float64)
+        self._surfaces_oi[LV_SURFS.ENDO.name] = self.cells(mask=surf_to_global[endo_ids], as_json_ready=True)
         
         
         # save virtual nodes (that not in mesh but are used in other computations)
