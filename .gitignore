@@ -62,5 +62,7 @@ target/
 /venv
 ./venv
 
+/cenv
+./cenv
 
 /pyvenv.cfg
