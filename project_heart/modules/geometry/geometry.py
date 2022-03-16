@@ -9,7 +9,14 @@ from project_heart.enums import *
 from project_heart import utils
 import numpy as np
 from collections import deque
+import json
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+    
 
 class Geometry():
     def __init__(self, *args, **kwargs):
@@ -18,6 +25,9 @@ class Geometry():
         self.states = States()
         self._nodesets = {}  # {"nodeset_name": [ids...], ...}
         self._elemsets = {}  # {"elemset_name": [ids...], ...}
+        self._surfaces_oi = {}
+        
+        self._virtual_nodes = {} # represent virtual nodes that are not in mesh bu are used in other calculations
 
         self._X = np.array([1., 0., 0.])
         self._Y = np.array([0., 1., 0.])
@@ -118,6 +128,37 @@ class Geometry():
         """ Write states to csv file """
         raise NotImplementedError()
 
+    def to_dict(self, **kwargs) -> dict:
+        
+        _d = dict()
+        _d[GEO_DICT.NODES.value] = np.array(self.points(), dtype=np.float64) #xyz 
+        _d[GEO_DICT.ELEMENTS.value] = self.elements(as_json_ready=True)
+        _d[GEO_DICT.NODESETS.value] = self._nodesets
+        _d[GEO_DICT.ELEMTSETS.value] = self._elemsets
+        _d[GEO_DICT.SURFACES.value] = self._surfaces_oi
+        
+        _d[GEO_DICT.VIRTUAL_NODES.value] = self._virtual_nodes
+        
+        
+        return _d
+
+    
+    def to_json(self, filename, **kwargs) -> None:
+        non_serialized_d = self.to_dict(**kwargs)
+        # serialized_d = dict()
+        # for key, value in non_serialized_d.items():
+        #     if isinstance(value, dict):
+        #         serialized_d[key] = dict()
+        #         for subkey, subvalue in value.items():
+        #             serialized_d[key][subkey] = subvalue.tolist()
+        #     else:
+        #         serialized_d[key] = value.tolist()
+        
+        with open(filename, "w") as outfile:
+            # json.dump(serialized_d, outfile, indent=indent, sort_keys=sort_keys, **kwargs)
+            json.dump(non_serialized_d, outfile, sort_keys=False, cls=NumpyEncoder, **kwargs)
+            
+
     # ----------------------------------------------------------------
     # Reference methods
 
@@ -148,7 +189,7 @@ class Geometry():
         return self.points(mask=mask)
 
     # reference to cells or elements
-    def cells(self, key: VTK_ELEMENTS = None, mask: np.ndarray = None) -> dict or np.ndarray:
+    def cells(self, key: VTK_ELEMENTS = None, mask: np.ndarray = None, as_json_ready=False, **kwargs) -> dict or np.ndarray:
         """
         Returns a pointer to the dictionary of cells in the mesh. 
         If key is provided, it returns the array of cells of given key. 
@@ -168,9 +209,15 @@ class Geometry():
             else:
                 return data
         else:
-            return self.mesh.cells_dict
+            if as_json_ready:
+                new_cell_dict = dict()
+                for key, value in self.mesh.cells_dict.items():
+                    new_cell_dict[VTK_ELEMENTS(key).name] = value
+                return new_cell_dict
+            else:
+                return self.mesh.cells_dict
 
-    def elements(self, key: VTK_ELEMENTS = None, mask: np.ndarray = None) -> dict or np.ndarray:
+    def elements(self, key: VTK_ELEMENTS = None, mask: np.ndarray = None, **kwargs) -> dict or np.ndarray:
         """
         Alias of self.cells method.
         Returns a pointer to the dictionary of cells in the mesh. 
@@ -184,7 +231,7 @@ class Geometry():
         Returns:
             dict or np.ndarray: A dictionary containing {VTK_ELEMENTS: cells...} pairs or a specified range of cells (ndarray (nxm)).
         """
-        return self.cells(key=key, mask=mask)
+        return self.cells(key=key, mask=mask, **kwargs)
 
     def timesteps(self) -> list:
         """Returns a pointer to the timesteps array contained in self.States.
@@ -314,3 +361,6 @@ class Geometry():
             return self.extract_surface_mesh(**kwargs)
         else:
             return self._surface_mesh
+
+
+    

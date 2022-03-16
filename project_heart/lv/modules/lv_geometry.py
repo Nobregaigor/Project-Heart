@@ -337,5 +337,23 @@ class LV_Geometry(Geometry):
         val_ids = np.where((ab_mesh_regions != 0) & (new_ab_mesh_regions!=LV_SURFS.AORTIC) & (new_ab_mesh_regions!=LV_SURFS.MITRAL) & (new_ab_mesh_regions!=LV_SURFS.AM_INTERCECTION))[0]
         new_ab_mesh_regions[val_ids] = ab_mesh_regions[val_ids] 
         self.mesh.point_data[LV_MESH_DATA.SURFS.value] = ab_mesh_regions
+        
+        # save nodesets info to geometry obj -> only save refereces from large surface
+        # self._nodesets[LV_SURFS.EPI] = surf_to_global[epi_ids]
+        self._nodesets[LV_SURFS.ENDO.name] = np.array(surf_to_global[endo_ids], dtype=np.int64)
+        self._nodesets[LV_SURFS.AORTIC.name] = np.array(surf_to_global[atr], dtype=np.int64)
+        self._nodesets[LV_SURFS.MITRAL.name] = np.array(surf_to_global[mtr], dtype=np.int64)
+        self._nodesets[LV_SURFS.AM_INTERCECTION.name] = np.array(surf_to_global[its], dtype=np.int64)
+        self._nodesets[LV_SURFS.EPI.name] = np.array(np.union1d(surf_to_global[epi_ids], surf_to_global[corr_epi]), dtype=np.int64) # adjust for corrected epi ids
+        
+        
+        # !!! hardcoded -> surface of intereste will be endocardio
+        self._surfaces_oi[LV_SURFS.ENDO.name] = np.array(self.points(surf_to_global[endo_ids]), dtype=np.float64)
+        
+        
+        # save virtual nodes (that not in mesh but are used in other computations)
+        self._virtual_nodes[LV_SURFS.AORTIC.name] = np.array(c_atr, dtype=np.float64) # represent AORTIC central node (x,y,z)
+        self._virtual_nodes[LV_SURFS.MITRAL.name] = np.array(c_mtr, dtype=np.float64)
+                
 
         return (ab_surf_regions, ab_mesh_regions)
