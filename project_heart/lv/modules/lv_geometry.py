@@ -17,6 +17,8 @@ class LV_Geometry(Geometry):
         self.aortic_info = {}
         self.mitral_info = {}
 
+        self._aligment_data = {}
+
     @staticmethod
     def est_apex_ref(points, ql=0.03, **kwargs):
         zvalues = points[:, 2]
@@ -59,6 +61,8 @@ class LV_Geometry(Geometry):
         info["normal"] = lv_normal
         info["long_line"] = long_line
         info["rot_chain"] = rot_chain
+        self._aligment_data = info
+        self.set_normal(lv_normal)
         return info
 
     def identify_base_and_apex_regions(self, ab_n=10, ab_ql=0.03, ab_qh=0.75, **kwargs):
@@ -321,6 +325,9 @@ class LV_Geometry(Geometry):
         mtr2 = new_mtr_mask[np.where(
             (mtr_angles <= np.radians(gamma2_mtr)))[0]]
         mtr = np.union1d(np.setdiff1d(mtr1, endo_ids), mtr2)
+        
+        mtr = np.setdiff1d(mtr, its)
+        atr = np.setdiff1d(atr, its)       
 
         # compute final centers
         new_atr_mask = np.union1d(atr, its)

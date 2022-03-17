@@ -304,6 +304,10 @@ class Geometry():
             raise ValueError(
                 "Not sure where to get data from: 'what', %s, should be one of the GEO_DATA values." % what)
 
+    def set_normal(self, normal: np.ndarray, dtype: np.dtype = np.float64) -> np.ndarray:
+        self._normal = np.asarray(normal, dtype=dtype)
+        return self._normal
+
     def get_normal(self) -> np.ndarray:
         if self._normal is None:
             raise RuntimeError("Normal was not initialized. Either set it manually or use a class method to do so.")
