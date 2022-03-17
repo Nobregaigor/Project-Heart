@@ -14,6 +14,9 @@ class LV_Geometry(Geometry):
         self._rot_chain = deque()
         self._normal = None
 
+        self.aortic_info = {}
+        self.mitral_info = {}
+
     @staticmethod
     def est_apex_ref(points, ql=0.03, **kwargs):
         zvalues = points[:, 2]
@@ -319,6 +322,29 @@ class LV_Geometry(Geometry):
             (mtr_angles <= np.radians(gamma2_mtr)))[0]]
         mtr = np.union1d(np.setdiff1d(mtr1, endo_ids), mtr2)
 
+        # compute final centers
+        new_atr_mask = np.union1d(atr, its)
+        new_mtr_mask = np.union1d(mtr, its)
+        atr_pts = pts[new_atr_mask]
+        mtr_pts = pts[new_mtr_mask]
+        w_atr = np.zeros(len(pts))
+        w_atr[atr] = 1.0
+        w_atr[its] = 0.333
+        w_atr = w_atr[w_atr > 0.0]
+        w_atr /= w_atr.sum()
+
+        # mtr_vecs_1 = c_mtr - mtr_pts
+        # mtr_angles_1 = angle_between(
+        # surf_normals[new_mtr_mask], mtr_vecs_1, check_orientation=False)**2
+        w_mtr = np.zeros(len(pts))
+        w_mtr[mtr] = 1.0
+        w_mtr[its] = 0.2
+        w_mtr = w_mtr[w_mtr > 0.0]
+        # w_mtr += 0.5*(1 - mtr_angles_1/mtr_angles_1.sum())
+        w_mtr /= w_mtr.sum()
+        c_atr = np.average(atr_pts, axis=0, weights=w_atr)
+        c_mtr = np.average(mtr_pts, axis=0, weights=w_mtr)
+
         est_surfaces = np.copy(initial_guess)
         est_surfaces[epi_ids] = LV_SURFS.EPI
         est_surfaces[endo_ids] = LV_SURFS.ENDO
@@ -417,5 +443,14 @@ class LV_Geometry(Geometry):
             c_atr, dtype=np.float64)  # represent AORTIC central node (x,y,z)
         self._virtual_nodes[LV_SURFS.MITRAL.name] = np.array(
             c_mtr, dtype=np.float64)
+
+        self.aortic_info = {
+            "R": np.mean(np.linalg.norm(pts[atr] - c_atr, axis=1)),
+            "C": np.array(c_atr, dtype=np.float64),
+        }
+        self.mitral_info = {
+            "R": np.mean(np.linalg.norm(pts[mtr] - c_mtr, axis=1)),
+            "C": np.array(c_mtr, dtype=np.float64),
+        }
 
         return (ab_surf_regions, ab_mesh_regions)
