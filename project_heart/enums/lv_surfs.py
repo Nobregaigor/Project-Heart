@@ -25,3 +25,11 @@ class LV_MESH_DATA(Enum):
 
     # This is for all srufaces (including apex and base regions)
     SURFS = "LV_SURFS"
+
+
+class LV_VIRTUAL_NODES(Enum):
+    APEX = "APEX"
+    BASE = "BASE"
+
+    AORTIC = "AORTIC"
+    MITRAL = "MITRAL"

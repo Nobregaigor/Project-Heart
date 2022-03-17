@@ -26,6 +26,7 @@ class Geometry():
         self._nodesets = {}  # {"nodeset_name": [ids...], ...}
         self._elemsets = {}  # {"elemset_name": [ids...], ...}
         self._surfaces_oi = {}
+        self._normal = None
         
         self._virtual_nodes = {} # represent virtual nodes that are not in mesh bu are used in other calculations
 
@@ -303,6 +304,11 @@ class Geometry():
             raise ValueError(
                 "Not sure where to get data from: 'what', %s, should be one of the GEO_DATA values." % what)
 
+    def get_normal(self) -> np.ndarray:
+        if self._normal is None:
+            raise RuntimeError("Normal was not initialized. Either set it manually or use a class method to do so.")
+        return self._normal
+
     # ----------------------------------------------------------------
     # add methods
 
@@ -345,6 +351,16 @@ class Geometry():
         else:
             return self._nodesets[name]
 
+    
+    def add_virtual_node(self, name, node, replace=False) -> dict:
+        if replace == False and name in self._virtual_nodes:
+            raise KeyError("Virtual node '%s' already exists. If you want to replace it, set replace flag to true." % name)
+        self._virtual_nodes[name] = node
+        
+    def get_virtual_node(self,name: str) -> np.ndarray:
+        if name not in self._virtual_nodes:
+            raise KeyError("Virtual node '%s' does not exist. Did you create it?" % name)
+        return self._virtual_nodes[name]
     # -------------------------------
     # Mesh wrapped functions
 
