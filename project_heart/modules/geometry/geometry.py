@@ -28,12 +28,17 @@ class Geometry():
         self._surfaces_oi = {}
         self._normal = None
         
-        self._virtual_nodes = {} # represent virtual nodes that are not in mesh bu are used in other calculations
-
+        self._virtual_nodes = {} # represent virtual nodes that are not in mesh but are used in other calculations
+        self._virtual_elems = {} # represent virtual elems that are not in mesh but are used in other calculations
+        
+        self._discrete_sets = {}  # represent 'sets' of nodal relationships -> should defined as {"key": [[node_a, node_b]...]}
+        
+        self._bcs = {}
+        
         self._X = np.array([1., 0., 0.])
         self._Y = np.array([0., 1., 0.])
         self._Z = np.array([0., 0., 1.])
-
+        
     def __print__(self):
         return self.mesh
 
@@ -139,7 +144,9 @@ class Geometry():
         _d[GEO_DICT.SURFACES.value] = self._surfaces_oi
         
         _d[GEO_DICT.VIRTUAL_NODES.value] = self._virtual_nodes
+        _d[GEO_DICT.DISCRETE_SETS.value] = self._discrete_sets
         
+        _d[GEO_DICT.BC.value] = self._bcs
         
         return _d
 
@@ -356,7 +363,7 @@ class Geometry():
             return self._nodesets[name]
 
     
-    def add_virtual_node(self, name, node, replace=False) -> dict:
+    def add_virtual_node(self, name, node, replace=False) -> None:
         if replace == False and name in self._virtual_nodes:
             raise KeyError("Virtual node '%s' already exists. If you want to replace it, set replace flag to true." % name)
         self._virtual_nodes[name] = node
@@ -365,6 +372,54 @@ class Geometry():
         if name not in self._virtual_nodes:
             raise KeyError("Virtual node '%s' does not exist. Did you create it?" % name)
         return self._virtual_nodes[name]
+    
+    def add_virtual_elem(self, name, elems, replace=False) -> None:
+        if replace == False and name in self._virtual_elems:
+            raise KeyError("Virtual elem '%s' already exists. If you want to replace it, set replace flag to true." % name)
+        self._virtual_elems[name] = elems
+        
+    def get_virtual_elem(self, name: str) -> np.ndarray:
+        if name not in self._virtual_elems:
+            raise KeyError("Virtual elem '%s' does not exist. Did you create it?" % name)
+        return self._virtual_elems[name]
+    
+    
+    def add_discrete_set(self, name, discrete_set: np.ndarray, replace: bool=False, dtype: np.dtype =np.int64) -> None:
+        """Adds a discrete set to the current object. Discreset sets, in this case, are defined as relationships\
+            between nodes. It should be a np.ndarray of shape [nx2], in which n refers to the number of relations\
+            in the set, and the columns represent node ids of two different set of nodes (relations will be defined\
+            rowise).
+
+        Args:
+            name (dict key acceptable): Key reference to discrete set. 
+            discrete_set (np.ndarray): Array of set relationships defined in rowise fashion \
+                (each row of col 0 will be related to each row in col 1). Must be of shape [nx2].
+            replace (bool, optional): Flag that prevents overwrites. Defaults to False.
+            dtype (np.dtype, optional): If discrete_set is not a np.ndarray, it will be converted\
+                to one and dtype will be used to determine it's type. Defaults to np.int64.
+
+        Raises:
+            KeyError: If replace is invalid and name is already present in self._discrete_sets'
+            ValueError: If discrete_set is not a np.ndarray and it could not be converted to one;\
+                or if shape of array is not [nx2].
+        """
+        if replace == False and name in self._discrete_sets:
+            raise KeyError("Discrete set '%s' already exists. If you want to replace it, set replace flag to true." % name)
+        # check for discreset set shape
+        if not isinstance(discrete_set, np.ndarray):
+            try:
+                discrete_set = np.array(discrete_set, dtype)
+            except:
+                ValueError("Could not transform discrete_set into a np.ndarray.")
+        if len(discrete_set) > 2 or discrete_set.shape[1] != 2:
+            raise ValueError("discrete_set must have shape of [nx2], where n refers to number of node relations")
+        self._discrete_sets[name] = discrete_set
+    
+    def add_bc(self, name, bc, replace=False):
+        if replace == False and name in self._bcs:
+            raise KeyError("Boundary condition '%s' already exists. If you want to replace it, set replace flag to true." % name)
+        self._bcs[name] = bc
+    
     # -------------------------------
     # Mesh wrapped functions
 

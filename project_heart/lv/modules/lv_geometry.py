@@ -1,9 +1,11 @@
 from project_heart.modules.geometry import Geometry
 from project_heart.utils.vector_utils import *
 from project_heart.utils.spatial_utils import *
+from project_heart.utils.spatial_points import *
+from project_heart.utils.cloud_ops import *
 from collections import deque
 
-from project_heart.enums import LV_SURFS, LV_MESH_DATA, LV_VIRTUAL_NODES
+from project_heart.enums import LV_SURFS, LV_MESH_DATA, LV_VIRTUAL_NODES, LV_RIM
 from sklearn.cluster import KMeans
 
 
@@ -325,9 +327,9 @@ class LV_Geometry(Geometry):
         mtr2 = new_mtr_mask[np.where(
             (mtr_angles <= np.radians(gamma2_mtr)))[0]]
         mtr = np.union1d(np.setdiff1d(mtr1, endo_ids), mtr2)
-        
+
         mtr = np.setdiff1d(mtr, its)
-        atr = np.setdiff1d(atr, its)       
+        atr = np.setdiff1d(atr, its)
 
         # compute final centers
         new_atr_mask = np.union1d(atr, its)
@@ -461,3 +463,88 @@ class LV_Geometry(Geometry):
         }
 
         return (ab_surf_regions, ab_mesh_regions)
+
+    # =============================================================================
+    # Boundary conditions
+
+    @staticmethod
+    def get_springs_pts_for_plot(
+            geo_pts: np.ndarray,
+            rim_pts: np.ndarray,
+            relations: np.ndarray,
+            n_skip: int = 1):
+        pts_a = geo_pts[relations[:, 0]][::n_skip]
+        pts_b = rim_pts[relations[:, 1]][::n_skip]
+        lines = None
+        for a, b in zip(pts_a, pts_b):
+            if lines is None:
+                lines = lines_from_points(np.array([a, b]))
+            else:
+                lines = lines.merge(lines_from_points(np.array([a, b])))
+        return lines
+
+    def create_spring_rim_bc(self,
+                      surface: str,
+                      dist_from_c: float = 10.0,
+                      height: float = 2,
+                      r_alpha: float = 0.8
+                      ) -> dict:
+        """Adds information for boundary condition at defined surface. \
+            The current setup creates a 'rim' geometry at a distance from \
+            the surface's center and relates the 'rim' nodes with the surface \
+            nodes based on closest distances. This setup is used to create \
+            springs during FEA simulations as BCs.
+
+        Args:
+            dist_from_c (float, optional): Perpendicular distance determining \
+                the offset from surface's center. Defaults to 10.0.
+            height (float, optional): Height of the rim. Defaults to 2.
+            r_alpha (float, optional): Percentage of found surface's radius. \
+                Will adjust the radius of the rim based on surface_r*r_alpha.\
+                Defaults to 0.8.
+
+        Returns:
+            dict: Rim data. Keys are defined based on LV_RIM Enum.
+        """
+        # set surface
+        if surface == LV_SURFS.MITRAL.name:
+            if len(self.mitral_info) == 0:
+                raise RuntimeError("Mitral info not found. Did you identify LV surfaces?")
+            c = self.mitral_info["C"]
+            r = self.mitral_info["R"]
+        elif surface == LV_SURFS.AORTIC.name:
+            if len(self.aortic_info) == 0:
+                raise RuntimeError("Aortic info not found. Did you identify LV surfaces?")
+            c = self.aortic_info["C"]
+            r = self.aortic_info["R"]
+        else:
+            raise ValueError("Surface name not valid for this boundary condition.")
+        
+        # select pts at surface
+        pts = self.points(mask=self.get_nodeset(surface))
+        # get lv normal
+        lvnormal = self.get_normal()
+        # fit a plat on pts and get plane normal (will be the rim's normal)
+        n, _ = fit_plane(pts)
+        n = -n if n[2] < 0 else n
+        # get a second reference vector
+        x = np.cross(n, lvnormal)
+        # get center of the rim and adjust its position based on user-defined distance
+        c = c + n*dist_from_c
+        # set radius of the rim as a percentage 'alpha' of the rim
+        r = r * r_alpha
+        # create rim nodes and set relations with surface nodes
+        rim, rim_center, rim_el = create_rim_circunference(c, r, height, -n, x)
+        nodes_rim_relations, nodes_rim_dists = relate_closest(pts, rim)
+        
+        rim_data = {
+                LV_RIM.NODES.value: rim,
+                LV_RIM.CENTER.value: rim_center,
+                LV_RIM.ELEMENTS.value: rim_el,
+                LV_RIM.RELATIONS.value: nodes_rim_relations,
+                LV_RIM.DISTS.value: nodes_rim_dists
+            }
+                
+        return rim_data
+
+    

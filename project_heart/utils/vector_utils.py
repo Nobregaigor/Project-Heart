@@ -58,3 +58,47 @@ def angle_between(a, b, assume_unit_vector=False, check_orientation=True, zaxis=
         return angle
     else:
         return angle[0]
+
+
+def fit_plane(points: np.ndarray) -> tuple:
+    """Creates a plane from a list of points.
+
+    Args:
+        points (np.ndarray): A numpy array of points of [[x,y,z]...] coordinates.
+
+    Returns:
+        tuple: [normal, plane d constant]
+    """
+    if not isinstance(points, np.ndarray):
+        try:
+            points = np.asarray(points, dtype=np.float64)
+        except:
+            raise(ValueError("Points must be able to be converted to a np.array"))
+    P_mean = points.mean(axis=0)
+    P_centered = points - P_mean
+    U, s, V = np.linalg.svd(P_centered)
+    normal = V[2, :]
+    d = -np.dot(P_mean, normal)
+    return (normal, d)
+
+
+def generate_circle_by_vectors(t: np.ndarray, C: np.ndarray, r: float, n: np.ndarray, u: np.ndarray, dtype: np.dtype = np.float64) -> np.ndarray:
+    """Creates a set of points based on 't' angle list (one point for each angle in t) at center \
+        'C' with radius 'r' and normal 'n' and direction 'u' (othogonal to 'n')
+
+    Args:
+        t (np.ndarray): List of angles in which points should be generated (in radians).
+        C (np.ndarray): Center of circle. Array should be [x,y,z]
+        r (float): Radius of circle.
+        n (np.ndarray): Vector normal of circle [x,y,z].
+        u (np.ndarray): Vector cross-normal of circle. Orthogonal vector to 'n' [x,y,z].
+        dtype (np.dtype): Numpy dtype of the returned array.
+
+    Returns:
+        np.ndarray: List of points as [[x,y,z]...] np.darray
+    """
+    n = n/np.linalg.norm(n)
+    u = u/np.linalg.norm(u)
+    P_circle = r*np.cos(t)[:, np.newaxis]*u + r * \
+        np.sin(t)[:, np.newaxis]*np.cross(n, u) + C
+    return P_circle.astype(dtype)
