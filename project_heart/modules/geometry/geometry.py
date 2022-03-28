@@ -353,6 +353,8 @@ class Geometry():
             ValueError: if max id is greater than number of nodes/points
             KeyError: _description_
         """
+        if isinstance(name, Enum):
+            name = name.value
         # check if ids is numpy array
         if not isinstance(ids, np.ndarray):
             raise ValueError("ids must be np.ndarray of integers")
@@ -372,30 +374,40 @@ class Geometry():
         self._nodesets[name] = ids.astype(dtype)
 
     def get_nodeset(self, name: str):
+        if isinstance(name, Enum):
+            name = name.value
         if name not in self._nodesets:
             raise KeyError("Nodeset '%s' does not exist." % name)
         else:
             return self._nodesets[name]
 
     def add_virtual_node(self, name, node, replace=False) -> None:
+        if isinstance(name, Enum):
+            name = name.value
         if replace == False and name in self._virtual_nodes:
             raise KeyError(
                 "Virtual node '%s' already exists. If you want to replace it, set replace flag to true." % name)
         self._virtual_nodes[name] = node
 
     def get_virtual_node(self, name: str) -> np.ndarray:
+        if isinstance(name, Enum):
+            name = name.value
         if name not in self._virtual_nodes:
             raise KeyError(
                 "Virtual node '%s' does not exist. Did you create it?" % name)
         return self._virtual_nodes[name]
 
     def add_virtual_elem(self, name, elems, replace=False) -> None:
+        if isinstance(name, Enum):
+            name = name.value
         if replace == False and name in self._virtual_elems:
             raise KeyError(
                 "Virtual elem '%s' already exists. If you want to replace it, set replace flag to true." % name)
         self._virtual_elems[name] = elems
 
     def get_virtual_elem(self, name: str) -> np.ndarray:
+        if isinstance(name, Enum):
+            name = name.value
         if name not in self._virtual_elems:
             raise KeyError(
                 "Virtual elem '%s' does not exist. Did you create it?" % name)
@@ -470,7 +482,13 @@ class Geometry():
     # -------------------------------
     # plot
 
-    def plot(self, mode="mesh", re=False, **kwargs):
+    def plot(self,
+             mode="mesh",
+             re=False,
+             vnodes=[],
+             vcolor="red",
+             **kwargs):
+
         plot_args = dict(cmap="Set2",
                          opacity=1.0,
                          show_edges=False,
@@ -490,6 +508,21 @@ class Geometry():
             plotter.add_mesh(self.mesh, **plot_args)
         elif mode == "surface":
             plotter.add_mesh(self._surface_mesh, **plot_args)
+
+        if len(vnodes) > 0:
+            for i, vn in enumerate(vnodes):
+                if isinstance(vn, str) or isinstance(vn, Enum):
+                    vname = vn
+                    cvcolor = vcolor
+                elif isinstance(vn, tuple) or isinstance(vn, list):
+                    vname = vn[0]
+                    cvcolor = vn[1]
+                else:
+                    raise ValueError("Invalid virtual node type information to plot. \
+                        Must be '(either str or Enum)' or '(tuple or list)'.")
+                node = self.get_virtual_node(vname)
+                plotter.add_points(node, color=cvcolor,
+                                   point_size=350, render_points_as_spheres=True)
 
         if re:
             return plotter

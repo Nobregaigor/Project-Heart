@@ -5,9 +5,10 @@ from project_heart.utils.spatial_points import *
 from project_heart.utils.cloud_ops import *
 from collections import deque
 
-from project_heart.enums import LV_SURFS, LV_MESH_DATA, LV_VIRTUAL_NODES, LV_RIM
+from project_heart.enums import *
 from sklearn.cluster import KMeans
 
+from functools import reduce
 
 class LV_Geometry(Geometry):
     def __init__(self, *args, **kwargs):
@@ -77,10 +78,9 @@ class LV_Geometry(Geometry):
         info["long_line"] = long_line
         info["rot_chain"] = rot_chain
         self._aligment_data = info
-        # self.set_normal(lv_normal)
         return info
 
-    def identify_base_and_apex_regions(self, ab_n=10, ab_ql=0.03, ab_qh=0.75, **kwargs):
+    def identify_base_and_apex_surfaces(self, ab_n=10, ab_ql=0.03, ab_qh=0.75, **kwargs):
         """
         """
         # extract surface mesh (use extract)
@@ -123,13 +123,13 @@ class LV_Geometry(Geometry):
         apex_pt = np.mean(pts[aligment_data["apex_region"]], axis=0)
         base_pt = np.mean(pts[aligment_data["base_region"]], axis=0)
         
-        self.add_virtual_node(LV_VIRTUAL_NODES.APEX.value, apex_pt, True)
-        self.add_virtual_node(LV_VIRTUAL_NODES.BASE.value, base_pt, True)
+        self.add_virtual_node(LV_VIRTUAL_NODES.APEX, apex_pt, True)
+        self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base_pt, True)
         self.set_normal(unit_vector(base_pt - apex_pt))
 
         return surf_regions, global_regions
 
-    def guess_epi_endo_based_on_surf_normals(self, threshold: float=90.0, ref_point: np.ndarray= None) -> tuple:
+    def identify_epi_endo_surfaces(self, threshold: float=90.0, ref_point: np.ndarray= None) -> tuple:
         """
             Estimates Epicardium and Endocardium surfaces based on the angle between \
                 vectors from the reference point to each node and their respective\
@@ -188,7 +188,7 @@ class LV_Geometry(Geometry):
        
         return endo_epi_guess, mesh_endo_epi_guess      
 
-    def identify_mitral_and_aortic_regions(self, 
+    def identify_mitral_and_aortic_surfaces(self, 
             a1=0.4,
             a2=0.5,
             a3=0.4,
@@ -198,6 +198,7 @@ class LV_Geometry(Geometry):
             m1=0.15,
             m2=0.05,
             m3=0.0666,
+            m4=0.333
             ):
         
         # -------------------------------
@@ -226,11 +227,11 @@ class LV_Geometry(Geometry):
         if kdist[0] > kdist[1]:
             label[klabels == 1] = LV_SURFS.MITRAL
             label[klabels == 0] = LV_SURFS.AORTIC
-            wc = [0.35,0.65]
+            wc = [m4,1.0-m4]
         else:
             label[klabels == 0] = LV_SURFS.MITRAL
             label[klabels == 1] = LV_SURFS.AORTIC
-            wc = [0.65,0.35]
+            wc = [1.0-m4,m4]
         # define clusters
         clustered = np.zeros(len(pts))
         clustered[ioi] = label
@@ -241,7 +242,7 @@ class LV_Geometry(Geometry):
         atr_mask = np.where(clustered == LV_SURFS.AORTIC)[0]
         atr_pts = pts[atr_mask]
         # compute centers and radius
-        c_atr = np.mean(atr_pts, axis=0)
+        c_atr = centroid(atr_pts) #np.mean(atr_pts, axis=0)
         r_atr = np.mean(np.linalg.norm(atr_pts - c_atr, axis=1))
         # compute distance from pts to aortic centers
         d_atr = np.linalg.norm(pts - c_atr, axis=1)
@@ -272,6 +273,9 @@ class LV_Geometry(Geometry):
         # define mitral border
         # filter by radius
         mtr_border = np.where(d_mtr <= r_mtr * (m2+1.0))[0]
+        mtr_border_pts = pts[mtr_border]
+        c_mtr_border = np.copy(c_mtr)
+        r_mtr_border = np.mean(np.linalg.norm(mtr_border_pts - c_mtr_border, axis=1))
         
         # -------------------------------
         # compute intersection between mitral and aortic values
@@ -282,7 +286,7 @@ class LV_Geometry(Geometry):
         # select aortic pts, including those of intersection
         atr_its = np.union1d(atr, its)       
         atr_pts = pts[atr_its]
-        c_atr = np.mean(atr_pts, axis=0)        
+        c_atr = np.mean(atr_pts, axis=0) #centroid(atr_pts)         
         # compute distance from pts to aortic and mitral centers
         d_atr = np.linalg.norm(pts - c_atr, axis=1)
         # filter by radius
@@ -347,7 +351,9 @@ class LV_Geometry(Geometry):
         # refine aortic at endocardio
         # select current pts at aortic border anc compute its center
         atr_border_pts = pts[atr_border]
-        c_atr_border = np.mean(atr_border_pts, axis=0)
+        c_atr_border = centroid(atr_border_pts)
+        r_atr_border = np.mean(np.linalg.norm(atr_border_pts - c_atr_border, axis=1))
+        # c_atr_border = np.mean(atr_border_pts, axis=0)
         # select current pts at aortic border
         endo_aortic_pts = pts[endo_aortic]
         # compute distances between center of aortic border and endo aortic pts
@@ -365,34 +371,121 @@ class LV_Geometry(Geometry):
         clustered[mtr_border] = LV_SURFS.BORDER_MITRAL
         clustered[its] = LV_SURFS.AM_INTERCECTION
         
+        
+        surf_to_global = np.array(lvsurf.point_data["vtkOriginalPointIds"], dtype=np.int64)
+        
         # -------------------------------
         # transform ids from local surf values to global mesh ids
         mesh_clustered = np.zeros(self.mesh.n_points)
-        mesh_clustered[lvsurf.point_data["vtkOriginalPointIds"]] = clustered
+        mesh_clustered[surf_to_global] = clustered
+        
+        # -------------------------------
+        # set atr and mitral as a mesh data
+        atr = reduce(np.union1d, (endo_aortic, epi_aortic, atr_border))
+        am_highlighted = np.zeros(len(pts))
+        am_highlighted[atr] = LV_SURFS.AORTIC
+        am_highlighted[mtr] = LV_SURFS.MITRAL
+        am_highlighted[its] = LV_SURFS.AM_INTERCECTION
+        mesh_am_highlighted = np.zeros(self.mesh.n_points)
+        mesh_am_highlighted[surf_to_global] = am_highlighted
+        
 
-        self._surface_mesh.point_data[LV_MESH_DATA.AM_CLUSTERS.value] = clustered
-        self.mesh.point_data[LV_MESH_DATA.AM_CLUSTERS.value] = mesh_clustered
+        # -------------------------------
+        # save mesh data
+        self._surface_mesh.point_data[LV_MESH_DATA.AM_DETAILED.value] = clustered
+        self.mesh.point_data[LV_MESH_DATA.AM_DETAILED.value] = mesh_clustered
+        
+        self._surface_mesh.point_data[LV_MESH_DATA.AM_SURFS.value] = am_highlighted
+        self.mesh.point_data[LV_MESH_DATA.AM_SURFS.value] = mesh_am_highlighted
+        
+        
+        # -------------------------------
+        # save virtual reference nodes
+        self.add_virtual_node(LV_VIRTUAL_NODES.MITRAL, c_mtr, True)
+        self.add_virtual_node(LV_VIRTUAL_NODES.AORTIC, c_atr, True)
+        self.add_virtual_node(LV_VIRTUAL_NODES.AORTIC_BORDER, c_atr_border, True)       
+        
+        # -------------------------------
+        # save aortic and mitral info
+        
+        
+        self.aortic_info = {
+            LV_AM_INFO.RADIUS.value: r_atr,
+            LV_AM_INFO.CENTER.value: c_atr,
+            LV_AM_INFO.SURF_IDS.value: atr, # ids at surface
+            LV_AM_INFO.MESH_IDS.value: surf_to_global[atr], # ids at mesh
+            
+            LV_AM_INFO.BORDER_RADIUS.value: r_atr_border,
+            LV_AM_INFO.BORDER_CENTER.value: c_atr_border,
+            LV_AM_INFO.BORDER_SURF_IDS.value: atr_border,
+            LV_AM_INFO.BORDER_MESH_IDS.value: surf_to_global[atr_border]
+        }
+        self.mitral_info = {
+            LV_AM_INFO.RADIUS.value: np.mean(np.linalg.norm(pts[mtr] - c_mtr, axis=1)),
+            LV_AM_INFO.CENTER.value: np.array(c_mtr, dtype=np.float64),
+            LV_AM_INFO.SURF_IDS.value: mtr,
+            LV_AM_INFO.MESH_IDS.value: surf_to_global[mtr],
+            
+            LV_AM_INFO.BORDER_RADIUS.value: r_mtr_border,
+            LV_AM_INFO.BORDER_CENTER.value: c_mtr_border,
+            LV_AM_INFO.BORDER_SURF_IDS.value: mtr_border, # ids at surface
+            LV_AM_INFO.BORDER_MESH_IDS.value: surf_to_global[mtr_border] # ids at mesh     
+        }
         
         return clustered, mesh_clustered
     
-    def identify_surfaces(self, endo_epi_args={}, apex_base_args={}, aortic_mitral_args={}):
+    def identify_surfaces(self, 
+                          endo_epi_args={}, 
+                          apex_base_args={}, 
+                          aortic_mitral_args={},
+                          create_nodesets=True,                          
+                          ):
         
-        endo_epi, mesh_endo_epi = self.guess_epi_endo_based_on_surf_normals(**endo_epi_args)
-        apex_base, mesh_apex_base = self.identify_base_and_apex_regions(**apex_base_args)
-        aortic_mitral, mesh_aortic_mitral = self.identify_mitral_and_aortic_regions(**aortic_mitral_args)
+        endo_epi, mesh_endo_epi = self.identify_epi_endo_surfaces(**endo_epi_args)
+        apex_base, mesh_apex_base = self.identify_base_and_apex_surfaces(**apex_base_args)
+        aortic_mitral, mesh_aortic_mitral = self.identify_mitral_and_aortic_surfaces(**aortic_mitral_args)
         
+        # To 'merge' result, we will overlay each info layer on top of each other
+        # endo_epi will serve as backgroun  (will be lowest layer)
+        # apex_base is the second merge   (will overwrite endo_epi)
+        # aortic_mitral is the last merge (will be top-most layer and overwrite apex_base)
         
-        idxs_1 = np.where(apex_base!=0)[0]
-        endo_epi[idxs_1] = apex_base[idxs_1]
+        # match indexes of interest at surface level
+        ioi = np.where(apex_base!=LV_SURFS.OTHER.value)[0]
+        endo_epi[ioi] = apex_base[ioi]
+        ioi = np.where(aortic_mitral!=LV_SURFS.OTHER.value)[0]
+        endo_epi[ioi] = aortic_mitral[ioi]
         
-        idxs_2 = np.where(aortic_mitral!=0)[0]
-        endo_epi[idxs_2] = aortic_mitral[idxs_2]
-             
-        self._surface_mesh.point_data["TESTE"] = endo_epi
+        # match indexes of interest at mesh (global) level
+        ioi = np.where(mesh_apex_base!=LV_SURFS.OTHER.value)[0]
+        mesh_endo_epi[ioi] = mesh_apex_base[ioi]
+        ioi = np.where(mesh_aortic_mitral!=LV_SURFS.OTHER.value)[0]
+        mesh_endo_epi[ioi] = mesh_aortic_mitral[ioi]
+        
+        # save results at surface and mesh levels
+        self._surface_mesh.point_data[LV_MESH_DATA.SURFS.value] = endo_epi.astype(np.int64)
+        self.mesh.point_data[LV_MESH_DATA.SURFS.value] = mesh_endo_epi.astype(np.int64)
+        
+        # create nodesets
+        if create_nodesets:
+            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=True)
+            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.SURFS.value, overwrite=True)
+        
+    def create_nodesets_from_surfaces(self, 
+                                      mesh_data=LV_MESH_DATA.SURFS.value,
+                                      skip={},
+                                      overwrite=False
+                                      ):
+        
+        ids = self.mesh.point_data[mesh_data]
+        for surf_enum in LV_SURFS:
+            if surf_enum.name != "OTHER" and surf_enum.name not in skip:
+                found_ids = np.where(ids==surf_enum.value)[0]
+                if len(found_ids) > 0:
+                    self.add_nodeset(surf_enum, found_ids, overwrite)
+        
         
 
-        
-        
 
     def identify_surfaces2(self,
                           alpha_atr=0.5,  # coeff for radial distance computation
@@ -766,34 +859,60 @@ class LV_Geometry(Geometry):
             dict: Rim data. Keys are defined based on LV_RIM Enum.
         """
         # set surface
-        if surface == LV_SURFS.MITRAL.name:
+        if isinstance(surface, Enum):
+            surface = surface.value
+        
+        #  -- possible mitral BCs --
+        if surface == LV_SURFS.MITRAL.value:
             if len(self.mitral_info) == 0:
                 raise RuntimeError("Mitral info not found. Did you identify LV surfaces?")
-            c = self.mitral_info["C"]
-            r = self.mitral_info["R"]
-        elif surface == LV_SURFS.AORTIC.name:
+            c = self.mitral_info[LV_AM_INFO.CENTER.value]
+            r = self.mitral_info[LV_AM_INFO.RADIUS.value]
+        elif surface == LV_SURFS.BORDER_MITRAL.value:
+            if len(self.mitral_info) == 0:
+                raise RuntimeError("Mitral info not found. Did you identify LV surfaces?")
+            c = self.mitral_info[LV_AM_INFO.BORDER_CENTER.value]
+            r = self.mitral_info[LV_AM_INFO.BORDER_RADIUS.value]
+        # -- possible aortic BCs --
+        elif surface == LV_SURFS.AORTIC.value:
             if len(self.aortic_info) == 0:
                 raise RuntimeError("Aortic info not found. Did you identify LV surfaces?")
-            c = self.aortic_info["C"]
-            r = self.aortic_info["R"]
+            c = self.aortic_info[LV_AM_INFO.CENTER.value]
+            r = self.aortic_info[LV_AM_INFO.RADIUS.value]
+        elif surface == LV_SURFS.ENDO_AORTIC.value:
+            if len(self.aortic_info) == 0:
+                raise RuntimeError("Aortic info not found. Did you identify LV surfaces?")
+            c = self.aortic_info[LV_AM_INFO.CENTER.value]
+            r = self.aortic_info[LV_AM_INFO.RADIUS.value]
+        elif surface == LV_SURFS.EPI_AORTIC.value:
+            if len(self.aortic_info) == 0:
+                raise RuntimeError("Aortic info not found. Did you identify LV surfaces?")
+            c = self.aortic_info[LV_AM_INFO.CENTER.value]
+            r = self.aortic_info[LV_AM_INFO.RADIUS.value]
+        elif surface == LV_SURFS.BORDER_AORTIC.value:
+            if len(self.aortic_info) == 0:
+                raise RuntimeError("Aortic info not found. Did you identify LV surfaces?")
+            c = self.aortic_info[LV_AM_INFO.BORDER_CENTER.value]
+            r = self.aortic_info[LV_AM_INFO.BORDER_RADIUS.value]
         else:
-            raise ValueError("Surface name not valid for this boundary condition.")
+            raise ValueError("Surface '{}' not valid or not yet implemented \
+                for this boundary condition.".format(LV_SURFS(surface).name))
         
         # select pts at surface
         pts = self.points(mask=self.get_nodeset(surface))
         # get lv normal
-        lvnormal = self.get_normal()
+        # lvnormal = self.get_normal()
         # fit a plat on pts and get plane normal (will be the rim's normal)
         n, _ = fit_plane(pts)
         n = -n if n[2] < 0 else n
         # get a second reference vector
-        x = np.cross(n, lvnormal)
+        x = np.cross(n, self._Z)
         # get center of the rim and adjust its position based on user-defined distance
         c = c + n*dist_from_c
         # set radius of the rim as a percentage 'alpha' of the rim
         r = r * r_alpha
         # create rim nodes and set relations with surface nodes
-        rim, rim_center, rim_el = create_rim_circunference(c, r, height, -n, x)
+        rim, rim_center, rim_el = create_rim_circunference(c, r, height, -n, x)        
         nodes_rim_relations, nodes_rim_dists = relate_closest(pts, rim)
         
         rim_data = {
@@ -801,7 +920,8 @@ class LV_Geometry(Geometry):
                 LV_RIM.CENTER.value: rim_center,
                 LV_RIM.ELEMENTS.value: rim_el,
                 LV_RIM.RELATIONS.value: nodes_rim_relations,
-                LV_RIM.DISTS.value: nodes_rim_dists
+                LV_RIM.DISTS.value: nodes_rim_dists,
+                LV_RIM.REF_NODESET.value: surface
             }
                 
         return rim_data
