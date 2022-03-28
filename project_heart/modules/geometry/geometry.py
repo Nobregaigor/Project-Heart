@@ -11,47 +11,60 @@ import numpy as np
 from collections import deque
 import json
 
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
-    
+
 
 class Geometry():
-    def __init__(self, *args, **kwargs):
-        self.mesh = pv.UnstructuredGrid()
+    def __init__(self,
+                 mesh=None,
+                 *args, **kwargs):
+        if mesh is None:
+            self.mesh = pv.UnstructuredGrid()
+        else:
+            self.mesh = mesh
+
         self._surface_mesh = pv.UnstructuredGrid()
         self.states = States()
         self._nodesets = {}  # {"nodeset_name": [ids...], ...}
         self._elemsets = {}  # {"elemset_name": [ids...], ...}
         self._surfaces_oi = {}
         self._normal = None
-        
-        self._virtual_nodes = {} # represent virtual nodes that are not in mesh but are used in other calculations
-        self._virtual_elems = {} # represent virtual elems that are not in mesh but are used in other calculations
-        
-        self._discrete_sets = {}  # represent 'sets' of nodal relationships -> should defined as {"key": [[node_a, node_b]...]}
-        
+
+        # represent virtual nodes that are not in mesh but are used in other calculations
+        self._virtual_nodes = {}
+        # represent virtual elems that are not in mesh but are used in other calculations
+        self._virtual_elems = {}
+
+        # represent 'sets' of nodal relationships -> should defined as {"key": [[node_a, node_b]...]}
+        self._discrete_sets = {}
+
         self._bcs = {}
-        
+
         self._X = np.array([1., 0., 0.])
         self._Y = np.array([0., 1., 0.])
         self._Z = np.array([0., 0., 1.])
-        
+
     def __print__(self):
         return self.mesh
 
     # ----------------------------------------------------------------
     # Build methods
 
-    def from_pyvista_dataset(self, dataset):
-        self.mesh = dataset
+    @classmethod
+    def from_pyvista_dataset(cls, dataset):
+        return cls(mesh=dataset)
 
-    def from_pyvista_read(self, filename, identifier=None, threshold=None, **kwargs):
-        self.mesh = pv.read(filename, **kwargs)
+    @classmethod
+    def from_pyvista_read(cls, filename, identifier=None, threshold=None, **kwargs):
+        geo = cls(mesh=pv.read(filename, **kwargs))
         if identifier is not None:
-            self.filter_mesh_by_scalar(identifier, threshold)
+            geo.filter_mesh_by_scalar(identifier, threshold)
+        return geo
 
     def from_pyvista_wrap(self, arr, **kwargs):
         self.mesh = pv.wrap(arr, **kwargs)
@@ -135,22 +148,22 @@ class Geometry():
         raise NotImplementedError()
 
     def to_dict(self, **kwargs) -> dict:
-        
+
         _d = dict()
-        _d[GEO_DICT.NODES.value] = np.array(self.points(), dtype=np.float64) #xyz 
+        _d[GEO_DICT.NODES.value] = np.array(
+            self.points(), dtype=np.float64)  # xyz
         _d[GEO_DICT.ELEMENTS.value] = self.elements(as_json_ready=True)
         _d[GEO_DICT.NODESETS.value] = self._nodesets
         _d[GEO_DICT.ELEMTSETS.value] = self._elemsets
         _d[GEO_DICT.SURFACES.value] = self._surfaces_oi
-        
+
         _d[GEO_DICT.VIRTUAL_NODES.value] = self._virtual_nodes
         _d[GEO_DICT.DISCRETE_SETS.value] = self._discrete_sets
-        
+
         _d[GEO_DICT.BC.value] = self._bcs
-        
+
         return _d
 
-    
     def to_json(self, filename, **kwargs) -> None:
         non_serialized_d = self.to_dict(**kwargs)
         # serialized_d = dict()
@@ -161,16 +174,17 @@ class Geometry():
         #             serialized_d[key][subkey] = subvalue.tolist()
         #     else:
         #         serialized_d[key] = value.tolist()
-        
+
         with open(filename, "w") as outfile:
             # json.dump(serialized_d, outfile, indent=indent, sort_keys=sort_keys, **kwargs)
-            json.dump(non_serialized_d, outfile, sort_keys=False, cls=NumpyEncoder, **kwargs)
-            
+            json.dump(non_serialized_d, outfile, sort_keys=False,
+                      cls=NumpyEncoder, **kwargs)
 
     # ----------------------------------------------------------------
     # Reference methods
 
     # reference to points or nodes
+
     def points(self, mask: np.ndarray = None) -> np.ndarray:
         """Returns a pointer to the list of points in the mesh.
 
@@ -317,7 +331,8 @@ class Geometry():
 
     def get_normal(self) -> np.ndarray:
         if self._normal is None:
-            raise RuntimeError("Normal was not initialized. Either set it manually or use a class method to do so.")
+            raise RuntimeError(
+                "Normal was not initialized. Either set it manually or use a class method to do so.")
         return self._normal
 
     # ----------------------------------------------------------------
@@ -342,7 +357,7 @@ class Geometry():
         if not isinstance(ids, np.ndarray):
             raise ValueError("ids must be np.ndarray of integers")
         # check if ids is a list of integers only
-        if np.dtype(ids) != np.integer:
+        if not np.issubdtype(ids.dtype, np.integer):
             raise ValueError("ids must be integers.")
         # check if maximum id within n_nodes
         if np.max(ids) > self.mesh.n_points:
@@ -354,7 +369,7 @@ class Geometry():
             raise KeyError(
                 "Nodeset '%s' already exists. Please, set overwrite flag to True if you want to replace it." % name)
         # add nodeset to the dictionary
-        self._nodesets[name] = np.copy(ids, dtype=dtype)
+        self._nodesets[name] = ids.astype(dtype)
 
     def get_nodeset(self, name: str):
         if name not in self._nodesets:
@@ -362,29 +377,31 @@ class Geometry():
         else:
             return self._nodesets[name]
 
-    
     def add_virtual_node(self, name, node, replace=False) -> None:
         if replace == False and name in self._virtual_nodes:
-            raise KeyError("Virtual node '%s' already exists. If you want to replace it, set replace flag to true." % name)
+            raise KeyError(
+                "Virtual node '%s' already exists. If you want to replace it, set replace flag to true." % name)
         self._virtual_nodes[name] = node
-        
-    def get_virtual_node(self,name: str) -> np.ndarray:
+
+    def get_virtual_node(self, name: str) -> np.ndarray:
         if name not in self._virtual_nodes:
-            raise KeyError("Virtual node '%s' does not exist. Did you create it?" % name)
+            raise KeyError(
+                "Virtual node '%s' does not exist. Did you create it?" % name)
         return self._virtual_nodes[name]
-    
+
     def add_virtual_elem(self, name, elems, replace=False) -> None:
         if replace == False and name in self._virtual_elems:
-            raise KeyError("Virtual elem '%s' already exists. If you want to replace it, set replace flag to true." % name)
+            raise KeyError(
+                "Virtual elem '%s' already exists. If you want to replace it, set replace flag to true." % name)
         self._virtual_elems[name] = elems
-        
+
     def get_virtual_elem(self, name: str) -> np.ndarray:
         if name not in self._virtual_elems:
-            raise KeyError("Virtual elem '%s' does not exist. Did you create it?" % name)
+            raise KeyError(
+                "Virtual elem '%s' does not exist. Did you create it?" % name)
         return self._virtual_elems[name]
-    
-    
-    def add_discrete_set(self, name, discrete_set: np.ndarray, replace: bool=False, dtype: np.dtype =np.int64) -> None:
+
+    def add_discrete_set(self, name, discrete_set: np.ndarray, replace: bool = False, dtype: np.dtype = np.int64) -> None:
         """Adds a discrete set to the current object. Discreset sets, in this case, are defined as relationships\
             between nodes. It should be a np.ndarray of shape [nx2], in which n refers to the number of relations\
             in the set, and the columns represent node ids of two different set of nodes (relations will be defined\
@@ -404,28 +421,33 @@ class Geometry():
                 or if shape of array is not [nx2].
         """
         if replace == False and name in self._discrete_sets:
-            raise KeyError("Discrete set '%s' already exists. If you want to replace it, set replace flag to true." % name)
+            raise KeyError(
+                "Discrete set '%s' already exists. If you want to replace it, set replace flag to true." % name)
         # check for discreset set shape
         if not isinstance(discrete_set, np.ndarray):
             try:
                 discrete_set = np.array(discrete_set, dtype)
             except:
-                ValueError("Could not transform discrete_set into a np.ndarray.")
+                ValueError(
+                    "Could not transform discrete_set into a np.ndarray.")
         if len(discrete_set) > 2 or discrete_set.shape[1] != 2:
-            raise ValueError("discrete_set must have shape of [nx2], where n refers to number of node relations")
+            raise ValueError(
+                "discrete_set must have shape of [nx2], where n refers to number of node relations")
         self._discrete_sets[name] = discrete_set
-    
+
     def add_bc(self, name, bc, replace=False):
         if replace == False and name in self._bcs:
-            raise KeyError("Boundary condition '%s' already exists. If you want to replace it, set replace flag to true." % name)
+            raise KeyError(
+                "Boundary condition '%s' already exists. If you want to replace it, set replace flag to true." % name)
         self._bcs[name] = bc
-    
+
     # -------------------------------
     # Mesh wrapped functions
 
     def filter_mesh_by_scalar(self, identifier: str, threshold: list, **kwargs) -> None:
         self.mesh.set_active_scalars(identifier)
         self.mesh = self.mesh.threshold(threshold, **kwargs)
+        self._surface_mesh = self.mesh.extract_surface()
 
     def extract_surface_mesh(self, **kwars):
         self._surface_mesh = self.mesh.extract_surface(**kwars)
@@ -437,5 +459,39 @@ class Geometry():
         else:
             return self._surface_mesh
 
+    # -------------------------------
+    # other functions
 
-    
+    def map_surf_ids_to_global_ids(self, surf_ids, dtype=np.int64):
+        lvsurf = self.get_surface_mesh()
+        surf_to_global = lvsurf.point_data["vtkOriginalPointIds"]
+        return np.array(surf_to_global[surf_ids], dtype=dtype)
+
+    # -------------------------------
+    # plot
+
+    def plot(self, mode="mesh", re=False, **kwargs):
+        plot_args = dict(cmap="Set2",
+                         opacity=1.0,
+                         show_edges=False,
+                         ambient=0.2,
+                         diffuse=0.5,
+                         specular=0.5,
+                         specular_power=90
+                         )
+
+        plot_args.update(kwargs)
+        plotter = pv.Plotter(lighting='three lights')
+        plotter.background_color = 'w'
+        plotter.enable_anti_aliasing()
+        plotter.enable_shadows()
+
+        if mode == "mesh":
+            plotter.add_mesh(self.mesh, **plot_args)
+        elif mode == "surface":
+            plotter.add_mesh(self._surface_mesh, **plot_args)
+
+        if re:
+            return plotter
+        else:
+            plotter.show()

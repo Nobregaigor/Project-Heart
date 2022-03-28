@@ -20,7 +20,20 @@ class LV_Geometry(Geometry):
         self.mitral_info = {}
 
         self._aligment_data = {}
+        
+        # self._centroid = self.est_centroid()
+        
+    
+    def est_centroid(self) -> np.ndarray:
+        """Estimates the centroid of the geometry based on surface mesh.
 
+        Returns:
+            np.ndarray: [x,y,z] coordinates of center
+        """
+        lvsurf = self.get_surface_mesh()
+        center = np.mean(lvsurf.points, axis=0)
+        return center
+    
     @staticmethod
     def est_apex_ref(points, ql=0.03, **kwargs):
         zvalues = points[:, 2]
@@ -64,7 +77,7 @@ class LV_Geometry(Geometry):
         info["long_line"] = long_line
         info["rot_chain"] = rot_chain
         self._aligment_data = info
-        self.set_normal(lv_normal)
+        # self.set_normal(lv_normal)
         return info
 
     def identify_base_and_apex_regions(self, ab_n=10, ab_ql=0.03, ab_qh=0.75, **kwargs):
@@ -107,14 +120,281 @@ class LV_Geometry(Geometry):
         self.mesh.point_data[LV_MESH_DATA.APEX_BASE_REGION.value] = global_regions
 
         # save virtual nodes
-        self.add_virtual_node(LV_VIRTUAL_NODES.APEX.name,
-                              aligment_data["apex_ref"])
-        self.add_virtual_node(LV_VIRTUAL_NODES.BASE.name,
-                              aligment_data["base_ref"])
+        apex_pt = np.mean(pts[aligment_data["apex_region"]], axis=0)
+        base_pt = np.mean(pts[aligment_data["base_region"]], axis=0)
+        
+        self.add_virtual_node(LV_VIRTUAL_NODES.APEX.value, apex_pt, True)
+        self.add_virtual_node(LV_VIRTUAL_NODES.BASE.value, base_pt, True)
+        self.set_normal(unit_vector(base_pt - apex_pt))
 
-        return (surf_regions, global_regions)
+        return surf_regions, global_regions
 
-    def identify_surfaces(self,
+    def guess_epi_endo_based_on_surf_normals(self, threshold: float=90.0, ref_point: np.ndarray= None) -> tuple:
+        """
+            Estimates Epicardium and Endocardium surfaces based on the angle between \
+                vectors from the reference point to each node and their respective\
+                surface normals. If ref_point is not provided, it will use the center \
+                of the geometry.
+        Args:
+            threshold (float, optional): Angles less than threshold will be considered \
+                part of 'Endocardium' while others will be considered part of 'Epicardium'. \
+                Defaults to 90.0.
+            ref_point (np.ndarray or None, optional): Reference point; must be a (1x3) \
+                np.ndarray specifying [x,y,z] coordinates. If set to None, the function \
+                will use the estimated center of the geometry.
+
+        Returns:
+            tuple: Arrays containing values for each node as 'Endo', 'Epi' or Neither \ 
+                    at surface mesh and global mesh.
+        """
+        # extract surface mesh (use extract)
+        lvsurf = self.get_surface_mesh()
+        pts = lvsurf.points
+        # get surface Normals and get respective points-data
+        lvsurf.compute_normals(inplace=True)
+        surf_normals = lvsurf.get_array("Normals", "points")
+        # if ref_point was not specified, est geometry center
+        if ref_point is None:
+            ref_point = self.est_centroid()
+        else:
+            if not isinstance(ref_point, np.ndarray):
+                ref_point = np.array(ref_point)
+        # get vector from pts at surface to center
+        pts_to_ref = ref_point - pts
+        # compute angle difference between surface normals and pts to ref
+        angles = angle_between(pts_to_ref, surf_normals,
+                               check_orientation=False)  # returns [0 to pi]
+        # set initial endo-epi surface guess
+        endo_epi_guess = np.zeros(len(pts))
+        initial_thresh = np.radians(threshold)
+        endo_ids = np.where(angles < initial_thresh)[0]
+        epi_ids = np.where(angles >= initial_thresh)[0]
+        endo_epi_guess[endo_ids] = LV_SURFS.ENDO
+        endo_epi_guess[epi_ids] = LV_SURFS.EPI
+        
+        # -- save data at surface and global mesh
+        
+        # save data at mesh surface
+        self._surface_mesh.point_data[LV_MESH_DATA.EPI_ENDO_GUESS.value] = endo_epi_guess
+        # convert local surf ids to global ids
+        epi_ids_mesh = self.map_surf_ids_to_global_ids(epi_ids, dtype=np.int64)
+        endo_ids_mesh = self.map_surf_ids_to_global_ids(endo_ids, dtype=np.int64)
+        # set epi/endo ids at mesh (global ids)
+        mesh_endo_epi_guess = np.zeros(self.mesh.n_points)
+        mesh_endo_epi_guess[epi_ids_mesh] = LV_SURFS.EPI
+        mesh_endo_epi_guess[endo_ids_mesh] = LV_SURFS.ENDO
+        # save data at global mesh
+        self.mesh.point_data[LV_MESH_DATA.EPI_ENDO_GUESS.value] = mesh_endo_epi_guess
+       
+        return endo_epi_guess, mesh_endo_epi_guess      
+
+    def identify_mitral_and_aortic_regions(self, 
+            a1=0.4,
+            a2=0.5,
+            a3=0.4,
+            a4=80,
+            a5=120,
+            
+            m1=0.15,
+            m2=0.05,
+            m3=0.0666,
+            ):
+        
+        # -------------------------------
+        # get surface mesh
+        lvsurf = self.get_surface_mesh()
+        pts = lvsurf.points
+        surf_normals = lvsurf.get_array("Normals", "points")
+        
+        # -------------------------------
+        # compute gradients
+        lvsurf = lvsurf.compute_derivative(LV_MESH_DATA.EPI_ENDO_GUESS.value)
+        # select gradients of interest (threshold based on magnitude)
+        grads = lvsurf.get_array("gradient")
+        grads_mag = np.linalg.norm(grads, axis=1)
+        # select points of interest (where grads_mag is positive)
+        ioi = np.where(grads_mag > 0)[0]  # indexes of interest
+        poi = pts[ioi]                    # pts of interest
+        # compute centroids at mitral and aortic valves
+        kmeans = KMeans(n_clusters=2, random_state=0).fit(poi)
+        klabels = kmeans.labels_
+        kcenters = kmeans.cluster_centers_
+        # determine labels based on centroid closest to center
+        kdist = np.linalg.norm(self.est_centroid() - kcenters, axis=1)
+        label = np.zeros(len(klabels))
+        
+        if kdist[0] > kdist[1]:
+            label[klabels == 1] = LV_SURFS.MITRAL
+            label[klabels == 0] = LV_SURFS.AORTIC
+            wc = [0.35,0.65]
+        else:
+            label[klabels == 0] = LV_SURFS.MITRAL
+            label[klabels == 1] = LV_SURFS.AORTIC
+            wc = [0.65,0.35]
+        # define clusters
+        clustered = np.zeros(len(pts))
+        clustered[ioi] = label
+        
+        # -------------------------------
+        # Estimate aortic region
+        # select aortic points
+        atr_mask = np.where(clustered == LV_SURFS.AORTIC)[0]
+        atr_pts = pts[atr_mask]
+        # compute centers and radius
+        c_atr = np.mean(atr_pts, axis=0)
+        r_atr = np.mean(np.linalg.norm(atr_pts - c_atr, axis=1))
+        # compute distance from pts to aortic centers
+        d_atr = np.linalg.norm(pts - c_atr, axis=1)
+        # filter by radius
+        atr = np.where(d_atr <= r_atr * (a1+1.0))[0]
+        
+        # -------------------------------
+        # Estimate mitral region
+        # select mitral points
+        mtr_mask = np.where(clustered == LV_SURFS.MITRAL)[0]
+        mtr_pts = pts[mtr_mask]
+        # compute center -> roughly 2/3 of aortic kcenter and mitral kcenter
+        c_mtr = np.average(kcenters, axis=0, weights=wc)
+        # adjust center -> due to concentration of nodes at 'right' side
+        #                  (from mitral to aortic), center was always 
+        #                  skewed to the right. We kind of adjust by
+        #                  adding moving m3*r_mtr dist to the left.
+        r_mtr = np.mean(np.linalg.norm(mtr_pts - c_mtr, axis=1))
+        c_mtr += r_mtr*m3 * np.cross(self.get_normal(), unit_vector(c_atr-c_mtr))
+        # recompute radius
+        r_mtr = np.mean(np.linalg.norm(mtr_pts - c_mtr, axis=1))
+        # compute distance from pts to mitral centers
+        d_mtr = np.linalg.norm(pts - c_mtr, axis=1)
+        # filter by radius
+        mtr = np.where(d_mtr <= r_mtr * (m1+1.0))[0]
+        
+        # -------------------------------
+        # define mitral border
+        # filter by radius
+        mtr_border = np.where(d_mtr <= r_mtr * (m2+1.0))[0]
+        
+        # -------------------------------
+        # compute intersection between mitral and aortic values
+        its = np.intersect1d(atr, mtr)  # intersection
+        
+        # -------------------------------
+        # Refine aortic region
+        # select aortic pts, including those of intersection
+        atr_its = np.union1d(atr, its)       
+        atr_pts = pts[atr_its]
+        c_atr = np.mean(atr_pts, axis=0)        
+        # compute distance from pts to aortic and mitral centers
+        d_atr = np.linalg.norm(pts - c_atr, axis=1)
+        # filter by radius
+        atr = np.where(d_atr <= r_atr * (1.0+a2))[0]
+        its = np.intersect1d(atr, mtr)  # intersection
+        
+        # -------------------------------
+        # define endo_aortic and epi_aortic
+        # compute angles between pts at aortic and its center
+        atr_vecs_1 = c_atr - pts[atr]
+        atr_angles = angle_between(surf_normals[atr], atr_vecs_1, check_orientation=False)
+        # select endo and epi aortic ids based on angle thresholds
+        endo_aortic = atr[np.where((atr_angles < np.radians(a4)))[0]]
+        epi_aortic = atr[np.where((atr_angles > np.radians(a5)))[0]]
+        
+        # -------------------------------
+        # define ids at aortic border
+        # set endo and epi aortic ids as 'mask' values at lv surface mesh
+        #   -> This step is performed so that we can use 'compute_derivative'
+        endo_aortic_mask = np.zeros(len(pts))
+        endo_aortic_mask[endo_aortic] = 1.0
+        lvsurf.point_data[LV_MESH_DATA.ENDO_AORTIC_MASK.value] = endo_aortic_mask
+        epi_aortic_mask = np.zeros(len(pts))
+        epi_aortic_mask[epi_aortic] = 1.0
+        lvsurf.point_data[LV_MESH_DATA.EPI_AORTIC_MASK.value] = epi_aortic_mask
+        # select ids at the border of endo aortic mask using gradient method
+        lvsurf = lvsurf.compute_derivative(LV_MESH_DATA.ENDO_AORTIC_MASK.value)
+        lvsurf = lvsurf.compute_derivative("gradient")
+        grads = lvsurf.get_array("gradient")
+        grads_mag = np.linalg.norm(grads, axis=1)
+        ioi_atr_endo = np.where(grads_mag > 0)[0] 
+        # select ids at the border of epi aortic mask using gradient method
+        lvsurf = lvsurf.compute_derivative(LV_MESH_DATA.EPI_AORTIC_MASK.value)
+        lvsurf = lvsurf.compute_derivative("gradient")
+        grads = lvsurf.get_array("gradient")
+        grads_mag = np.linalg.norm(grads, axis=1)
+        ioi_atr_epi = np.where(grads_mag > 0)[0]
+        # select ids at aortic border by intersecting ids fround at endo and
+        # epi aortic masks. Note: these masks are too far apart, no border
+        # will be detected
+        atr_border = np.intersect1d(ioi_atr_endo, ioi_atr_epi)
+        
+        # -------------------------------
+        # refine aortic border ids
+        # set current aortic border ids as 'mask' values at lv surface mesh
+        border_aortic_mask = np.zeros(len(pts))
+        border_aortic_mask[atr_border] = 1.0
+        lvsurf.point_data[LV_MESH_DATA.BORDER_AORTIC_MASK.value] = border_aortic_mask
+        # expand ids at aortic border with gradient method
+        lvsurf = lvsurf.compute_derivative(LV_MESH_DATA.BORDER_AORTIC_MASK.value)
+        lvsurf = lvsurf.compute_derivative("gradient")
+        grads = lvsurf.get_array("gradient")
+        grads_mag = np.linalg.norm(grads, axis=1)
+        atr_border = np.where(grads_mag > 0)[0]
+        # update LV_MESH_DATA aortic border info with latest values
+        # -> this step is done just in case we need these values in another function
+        border_aortic_mask = np.zeros(len(pts))
+        border_aortic_mask[atr_border] = 1.0
+        lvsurf.point_data[LV_MESH_DATA.BORDER_AORTIC_MASK.value] = epi_aortic_mask
+        
+        # -------------------------------
+        # refine aortic at endocardio
+        # select current pts at aortic border anc compute its center
+        atr_border_pts = pts[atr_border]
+        c_atr_border = np.mean(atr_border_pts, axis=0)
+        # select current pts at aortic border
+        endo_aortic_pts = pts[endo_aortic]
+        # compute distances between center of aortic border and endo aortic pts
+        d_atr = np.linalg.norm(endo_aortic_pts - c_atr_border, axis=1)
+        # filter by radius
+        endo_aortic = endo_aortic[np.where(d_atr <= r_atr * (a3+1.0))[0]]
+               
+        # -------------------------------
+        # set mask by layering values
+        clustered = np.zeros(len(pts))
+        clustered[epi_aortic] = LV_SURFS.EPI_AORTIC
+        clustered[endo_aortic] = LV_SURFS.ENDO_AORTIC
+        clustered[atr_border] = LV_SURFS.BORDER_AORTIC
+        clustered[mtr] = LV_SURFS.MITRAL
+        clustered[mtr_border] = LV_SURFS.BORDER_MITRAL
+        clustered[its] = LV_SURFS.AM_INTERCECTION
+        
+        # -------------------------------
+        # transform ids from local surf values to global mesh ids
+        mesh_clustered = np.zeros(self.mesh.n_points)
+        mesh_clustered[lvsurf.point_data["vtkOriginalPointIds"]] = clustered
+
+        self._surface_mesh.point_data[LV_MESH_DATA.AM_CLUSTERS.value] = clustered
+        self.mesh.point_data[LV_MESH_DATA.AM_CLUSTERS.value] = mesh_clustered
+        
+        return clustered, mesh_clustered
+    
+    def identify_surfaces(self, endo_epi_args={}, apex_base_args={}, aortic_mitral_args={}):
+        
+        endo_epi, mesh_endo_epi = self.guess_epi_endo_based_on_surf_normals(**endo_epi_args)
+        apex_base, mesh_apex_base = self.identify_base_and_apex_regions(**apex_base_args)
+        aortic_mitral, mesh_aortic_mitral = self.identify_mitral_and_aortic_regions(**aortic_mitral_args)
+        
+        
+        idxs_1 = np.where(apex_base!=0)[0]
+        endo_epi[idxs_1] = apex_base[idxs_1]
+        
+        idxs_2 = np.where(aortic_mitral!=0)[0]
+        endo_epi[idxs_2] = aortic_mitral[idxs_2]
+             
+        self._surface_mesh.point_data["TESTE"] = endo_epi
+        
+
+        
+        
+
+    def identify_surfaces2(self,
                           alpha_atr=0.5,  # coeff for radial distance computation
                           alpha_mtr=0.5,
                           beta_atr=0.9,  # coeff for second radial distance computation
@@ -149,10 +429,6 @@ class LV_Geometry(Geometry):
         # ensure that we are copying elements and not using original ones
         ab_surf_regions = np.copy(ab_surf_regions)
         ab_mesh_regions = np.copy(ab_mesh_regions)
-        # ab_surf_apex_ids = np.where(ab_surf_regions == LV_SURFS.APEX_REGION)[0]
-        # ab_surf_base_ids = np.where(ab_surf_regions == LV_SURFS.BASE_REGION)[0]
-        # ab_mesh_apex_ids = np.where(ab_mesh_regions == LV_SURFS.APEX_REGION)[0]
-        # ab_mesh_base_ids = np.where(ab_mesh_regions == LV_SURFS.BASE_REGION)[0]
 
         # extract surface mesh (use extract)
         lvsurf = self.get_surface_mesh()
@@ -160,31 +436,14 @@ class LV_Geometry(Geometry):
 
         # ................
         # 1 - Start with an initial guess of endo-epi
-
-        # get surface Normals and get respective points-data
-        lvsurf.compute_normals(inplace=True)
-        surf_normals = lvsurf.get_array("Normals", "points")
-        # est geometry center
-        center = np.mean(pts, axis=0)
-        # get vector from pts at surface to center
-        pts_to_center = center - pts
-        # compute angle difference between surface normals and pts to center
-        angles = angle_between(pts_to_center, surf_normals,
-                               check_orientation=False)  # returns [0 to pi]
-        # set initial endo-epi surface guess
-        endo_epi_guess = np.zeros(len(pts))
-        initial_thresh = np.radians(90)
-        endo_ids = np.where(angles < initial_thresh)[0]
-        epi_ids = np.where(angles >= initial_thresh)[0]
-        endo_epi_guess[endo_ids] = LV_SURFS.ENDO
-        endo_epi_guess[epi_ids] = LV_SURFS.EPI
-        lvsurf.point_data["endo_epi_guess"] = endo_epi_guess
-        lvsurf.set_active_scalars("endo_epi_guess")
+        
+        endo_epi_guess, mesh_endo_epi_guess = self.guess_epi_endo_based_on_surf_normals()
 
         # ................
         # 2 - Find initial guess of Mitral and Aortic clusters
 
         # compute gradients
+        lvsurf.set_active_scalars(LV_MESH_DATA.EPI_ENDO_GUESS.value)
         lvsurf = lvsurf.compute_derivative("endo_epi_guess")
         lvsurf = lvsurf.compute_derivative("gradient")
         lvsurf = lvsurf.compute_derivative("gradient")

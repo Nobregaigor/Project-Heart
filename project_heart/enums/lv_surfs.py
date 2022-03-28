@@ -13,6 +13,12 @@ class LV_SURFS(IntEnum):
     BASE_REGION = 6
     APEX_REGION = 7
 
+    ENDO_AORTIC = 8
+    EPI_AORTIC = 9
+    BORDER_AORTIC = 10
+    BORDER_MITRAL = 11
+    
+
 
 class LV_MESH_DATA(Enum):
 
@@ -20,11 +26,18 @@ class LV_MESH_DATA(Enum):
     APEX_BASE_REGION = "LV_APEX_BASE_REGION"
     APEX_BASE_REGIONS = "LV_APEX_BASE_REGIONS"
 
+    EPI_ENDO_GUESS = "LV_EPI_ENDO_GUESS"
+    AM_CLUSTERS = "LV_AORTIC_MITRAL_CLUSTERS"
+
     # This is for all srufaces except base and apex regions
     SURFS_EXPT_AB = "LV_SURFS_EXPT_AB"
 
     # This is for all srufaces (including apex and base regions)
     SURFS = "LV_SURFS"
+
+    ENDO_AORTIC_MASK = "LV_ENDO_AORTIC_MASK"
+    EPI_AORTIC_MASK = "LV_EPI_AORTIC_MASK"
+    BORDER_AORTIC_MASK = "LV_BORDER_AORTIC_MASK"
 
 
 class LV_VIRTUAL_NODES(Enum):
