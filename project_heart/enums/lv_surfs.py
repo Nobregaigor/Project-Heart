@@ -4,42 +4,59 @@ from enum import IntEnum, Enum
 class LV_SURFS(IntEnum):
     OTHER = 0
 
+    # ENDOCARDIUM, EPICARDIUM
     ENDO = 1
     EPI = 2
-    AORTIC = 3
-    MITRAL = 4
-    AM_INTERCECTION = 5
-
-    BASE_REGION = 6
-    APEX_REGION = 7
-
-    ENDO_AORTIC = 8
-    EPI_AORTIC = 9
     
-    BORDER_AORTIC = 10
-    BORDER_MITRAL = 11
+    # AORTIC VALUES
+    AORTIC = 3
+    ENDO_AORTIC = 4
+    EPI_AORTIC = 5
+    BORDER_AORTIC = 6
+    
+    # MITRAL VALUES
+    MITRAL = 7
+    ENDO_MITRAL = 8
+    EPI_MITRAL = 9
+    BORDER_MITRAL = 10
+    
+    # AORTIC, MITRAL INTERSECTION VALUES
+    AM_INTERCECTION = 11
+    ENDO_AM_INTERCECTION = 12
+    EPI_AM_INTERCECTION = 13
+    
+    # AORTIC AND MITRAL REGIONS AS ENDO-EPI
+    ENDO_AM_REGION = 14
+    EPI_AM_REGION = 15
+    
+    # BASAL REGIONS
+    BASE_REGION = 16
+    ENDO_BASE_REGION = 17
+    EPI_BASE_REGION = 18
+    
+    # APEX REGIONS
+    APEX_REGION = 19
+    ENDO_APEX_REGION = 20
+    EPI_APEX_REGION = 21
+    
+    
 
 
 class LV_MESH_DATA(Enum):
 
-    APEX_BASE_FILTER = "LV_APEX_BASE_FILTER"
-    APEX_BASE_REGION = "LV_APEX_BASE_REGION"
-    APEX_BASE_REGIONS = "LV_APEX_BASE_REGIONS"
+    APEX_BASE_REGIONS = "LV_APEX_BASE_REGIONS"  # apex and base, no distinction between endo and epi
+    AB_ENDO_EPI = "LV_APEX_BASE_REGIONS_ENDO_EPI" # apex endo, apex epi, base endo, base epi
 
-    EPI_ENDO_GUESS = "LV_EPI_ENDO_GUESS"
-
-    # This is for all srufaces except base and apex regions
-    SURFS_EXPT_AB = "LV_SURFS_EXPT_AB"
-
-    # This is for all surfaces (including apex and base regions)
-    SURFS = "LV_SURFS"
+    EPI_ENDO_GUESS = "LV_EPI_ENDO_GUESS" # 'guess' based on angle between surf normals and geo center
+    EPI_ENDO = "LV_EPI_ENDO" # final est. of epi and endo surfs
+      
+    AM_SURFS = "LV_AM_SURFS" # aortic, mitral and intersection (no detailed info)
+    AM_DETAILED = "LV_AORTIC_MITRAL_CLUSTERS" # detailed aortic (endo, epi, border), mitral aortic (endo, epi, border), am_intercection (endo, epi) ... 
+    AM_EPI_ENDO = "LV_AM_EPI_ENDO" # aortic and mitral region with endo-epi layers
     
-    AM_SURFS = "LV_AM_SURFS"
-    AM_DETAILED = "LV_AORTIC_MITRAL_CLUSTERS"
-
-    ENDO_AORTIC_MASK = "LV_ENDO_AORTIC_MASK"
-    EPI_AORTIC_MASK = "LV_EPI_AORTIC_MASK"
-    BORDER_AORTIC_MASK = "LV_BORDER_AORTIC_MASK"
+    SURFS = "LV_SURFS" # EPI_ENDO + AM_SURFS
+    SURFS_DETAILED = "SURFS_DETAILED" # EPI_ENDO + AM_DETAILED
+    
 
 
 class LV_VIRTUAL_NODES(Enum):

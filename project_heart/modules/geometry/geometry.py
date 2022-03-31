@@ -484,9 +484,11 @@ class Geometry():
 
     def plot(self,
              mode="mesh",
+             scalars=None,
              re=False,
              vnodes=[],
              vcolor="red",
+             cat_exclude_zero=False,
              **kwargs):
 
         plot_args = dict(cmap="Set2",
@@ -505,9 +507,18 @@ class Geometry():
         plotter.enable_shadows()
 
         if mode == "mesh":
-            plotter.add_mesh(self.mesh, **plot_args)
+            mesh = self.mesh
         elif mode == "surface":
-            plotter.add_mesh(self._surface_mesh, **plot_args)
+            mesh = self.get_surface_mesh()
+
+        if cat_exclude_zero:
+            vals = np.copy(mesh.get_array(scalars, "points"))
+            vals[vals == 0] = np.min(vals[vals > 0])-1
+            # /np.sum(vals)
+            mesh.point_data["cat_exclude_zero_FOR_PLOT"] = vals
+            scalars = "cat_exclude_zero_FOR_PLOT"
+
+        plotter.add_mesh(mesh, scalars=scalars, **plot_args)
 
         if len(vnodes) > 0:
             for i, vn in enumerate(vnodes):
