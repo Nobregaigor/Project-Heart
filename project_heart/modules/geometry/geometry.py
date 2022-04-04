@@ -539,6 +539,17 @@ class Geometry():
         # return pointer to saved data
         return mesh.cell_data[data_key]
 
+    def smooth_surface(self, **kwargs):
+        """ Adjust point coordinates using Laplacian smoothing.\n
+            Uses Pyvista smoothing method: https://bit.ly/37ee3hU \n
+            WARNING: This function applies smoothing at surface level \n
+            by modifying their coordinates directly, which does not imply \n
+            that cell volumes (if volumetric mesh) will be adjusted.
+        """
+        self._surface_mesh = self.get_surface_mesh().smooth(**kwargs)
+        surf_to_global = self._surface_mesh.point_data["vtkOriginalPointIds"]
+        self.mesh.points[surf_to_global] = self._surface_mesh.points.copy()
+
     # -------------------------------
     # plot
 
