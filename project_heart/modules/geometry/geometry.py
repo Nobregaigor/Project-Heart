@@ -479,6 +479,66 @@ class Geometry():
         surf_to_global = lvsurf.point_data["vtkOriginalPointIds"]
         return np.array(surf_to_global[surf_ids], dtype=dtype)
 
+    def get_node_ids_for_each_cell(self, surface=False, **kwargs):
+
+        if surface:
+            mesh = self.get_surface_mesh()
+        else:
+            mesh = self.mesh
+
+        faces = deque()
+        i, offset = 0, 0
+        cc = mesh.cells  # fetch up front
+        while i < mesh.n_cells:
+            nn = cc[offset]
+            faces.append(cc[offset+1:offset+1+nn])
+            offset += nn + 1
+            i += 1
+        return faces
+
+    def transform_point_data_to_cell_data(self,
+                                          data_key,
+                                          method="max",
+                                          surface=False,
+                                          dtype=None,
+                                          **kwargs):
+
+        if surface:
+            mesh = self.get_surface_mesh()
+        else:
+            mesh = self.mesh
+
+        if method == "max":
+            fun = np.max
+        elif method == "min":
+            fun = np.min
+        else:
+            if not callable(method):
+                raise ValueError(
+                    "method must be 'max' or 'min' or a callable function.")
+            else:
+                fun = method
+
+        # get the node id map for each cell
+        cell_node_ids = self.get_node_ids_for_each_cell(surface=surface)
+        # get current data at points array
+        pt_data = mesh.get_array(data_key, "points")
+        # create new array with same length as number of cells
+        cells_data = np.zeros(mesh.n_cells)
+        # for each cell, apply function based on values from all cell nodes
+        for cell_index, node_ids in enumerate(cell_node_ids):
+            cells_data[cell_index] = fun(pt_data[node_ids])
+
+        # set dtype as same from point data if not specified.
+        if dtype is None:
+            dtype = pt_data.dtype
+
+        # save new data at cell level
+        mesh.cell_data[data_key] = cells_data.astype(dtype)
+
+        # return pointer to saved data
+        return mesh.cell_data[data_key]
+
     # -------------------------------
     # plot
 
@@ -512,10 +572,12 @@ class Geometry():
             mesh = self.get_surface_mesh()
 
         if cat_exclude_zero:
-            vals = np.copy(mesh.get_array(scalars, "points"))
+            vals = np.copy(mesh.get_array(scalars))
             vals[vals == 0] = np.min(vals[vals > 0])-1
-            # /np.sum(vals)
-            mesh.point_data["cat_exclude_zero_FOR_PLOT"] = vals
+            if len(vals) == mesh.n_points:
+                mesh.point_data["cat_exclude_zero_FOR_PLOT"] = vals
+            else:
+                mesh.cell_data["cat_exclude_zero_FOR_PLOT"] = vals
             scalars = "cat_exclude_zero_FOR_PLOT"
 
         plotter.add_mesh(mesh, scalars=scalars, **plot_args)
