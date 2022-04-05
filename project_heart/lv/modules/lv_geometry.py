@@ -32,8 +32,8 @@ class LV_Geometry(Geometry):
             np.ndarray: [x,y,z] coordinates of center
         """
         lvsurf = self.get_surface_mesh()
-        center = np.mean(lvsurf.points, axis=0)
-        return center
+        # center = np.mean(lvsurf.points, axis=0)
+        return centroid(lvsurf.points) #center
     
     @staticmethod
     def est_apex_ref(points, ql=0.03, **kwargs):

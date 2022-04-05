@@ -69,7 +69,8 @@ class Geometry():
     def from_pyvista_wrap(self, arr, **kwargs):
         self.mesh = pv.wrap(arr, **kwargs)
 
-    def from_nodes_elements(self,
+    @classmethod
+    def from_nodes_elements(cls,
                             nodes: np.ndarray,
                             elements: np.ndarray,
                             el_offset: int = 0,
@@ -106,9 +107,10 @@ class Geometry():
         for key, value in cells_dict.items():
             cells_dict[key] = np.vstack(value).astype(e_dtype)
         # create mesh
-        self.mesh = pv.UnstructuredGrid(cells_dict, points)
+        return cls(mesh=pv.UnstructuredGrid(cells_dict, points))
 
-    def from_xplt(self, xplt, **kwargs):
+    @classmethod
+    def from_xplt(cls, xplt, **kwargs):
         if isinstance(xplt, pathlib.Path):
             from febio_python.xplt import read_xplt
             xplt = read_xplt(str(xplt))
@@ -117,10 +119,10 @@ class Geometry():
             xplt = read_xplt(xplt)
 
         # create mesh dataset from nodes and elements in xplt file
-        self.from_nodes_elements(
+        geo = cls.from_nodes_elements(
             xplt["nodes"], xplt["elems"][0][:, 1:], **kwargs)  # WARNING: xplt["elems"][0] is temporary, I will modify to xplt["elems"] later (this is due an error in xplt_parser)
         # add timesteps
-        self.states.set_timesteps(xplt["timesteps"])
+        geo.states.set_timesteps(xplt["timesteps"])
         # add states
         n = len(xplt["timesteps"])
         for i, (key, data_format) in enumerate(zip(xplt["data_keys"], xplt["data_format"])):
@@ -132,7 +134,8 @@ class Geometry():
             #     _data[step] = data_sequence[step]
             _data = np.vstack(np.array(data[:, i])).reshape(
                 (n, shape[0], shape[1]))  # optimized version
-            self.states.add(key, _data, DATA_FORMAT(data_format))
+            geo.states.add(key, _data, DATA_FORMAT(data_format))
+        return geo
 
     # ----------------------------------------------------------------
     # Write methods (TO DO)
