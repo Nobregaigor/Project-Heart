@@ -485,7 +485,7 @@ class Geometry():
     def get_node_ids_for_each_cell(self, surface=False, **kwargs):
 
         if surface:
-            mesh = self.get_surface_mesh()
+            mesh = self.get_surface_mesh().copy().cast_to_unstructured_grid()
         else:
             mesh = self.mesh
 
