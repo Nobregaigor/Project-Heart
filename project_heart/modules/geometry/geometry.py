@@ -68,13 +68,12 @@ class Geometry():
 
     @classmethod
     def from_pyvista_read(cls, filename, identifier=None, threshold=None, **kwargs):
-        # save reference file info
-        self._ref_file = Path(filename)
-        self._ref_dir = self._ref_file.parents[0]
-
         geo = cls(mesh=pv.read(filename, **kwargs))
         if identifier is not None:
             geo.filter_mesh_by_scalar(identifier, threshold)
+        # save reference file info
+        geo._ref_file = Path(filename)
+        geo._ref_dir = geo._ref_file.parents[0]
         return geo
 
     @classmethod
@@ -123,9 +122,6 @@ class Geometry():
 
     @classmethod
     def from_xplt(cls, xplt, **kwargs):
-        self._ref_file = Path(xplt)
-        self._ref_dir = self._ref_file.parents[0]
-
         if isinstance(xplt, pathlib.Path):
             from febio_python.xplt import read_xplt
             xplt = read_xplt(str(xplt))
@@ -150,6 +146,9 @@ class Geometry():
             _data = np.vstack(np.array(data[:, i])).reshape(
                 (n, shape[0], shape[1]))  # optimized version
             geo.states.add(key, _data, DATA_FORMAT(data_format))
+        # save reference file info
+        geo._ref_file = Path(xplt)
+        geo._ref_dir = geo._ref_file.parents[0]
         return geo
 
     # ----------------------------------------------------------------
@@ -371,8 +370,7 @@ class Geometry():
             ValueError: if max id is greater than number of nodes/points
             KeyError: _description_
         """
-        if isinstance(name, Enum):
-            name = name.value
+        name = self.check_enum(name)
         # check if ids is numpy array
         if not isinstance(ids, np.ndarray):
             raise ValueError("ids must be np.ndarray of integers")
@@ -497,6 +495,10 @@ class Geometry():
         surf_to_global = lvsurf.point_data["vtkOriginalPointIds"]
         return np.array(surf_to_global[surf_ids], dtype=dtype)
 
+    def get_surface_id_map_from_mesh(self):
+        lvsurf = self.get_surface_mesh()
+        return lvsurf.point_data["vtkOriginalPointIds"]
+
     def get_node_ids_for_each_cell(self, surface=False, **kwargs):
 
         if surface:
@@ -545,7 +547,10 @@ class Geometry():
         # get current data at points array
         pt_data = mesh.get_array(data_key, "points")
         # create new array with same length as number of cells
-        cells_data = np.zeros((mesh.n_cells, pt_data.shape[-1]))
+        if len(pt_data.shape) == 1:
+            cells_data = np.zeros(mesh.n_cells)
+        else:
+            cells_data = np.zeros((mesh.n_cells, pt_data.shape[-1]))
         # for each cell, apply function based on values from all cell nodes
         for cell_index, node_ids in enumerate(cell_node_ids):
             cells_data[cell_index] = fun(pt_data[node_ids])

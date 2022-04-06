@@ -31,7 +31,7 @@ class LV_Geometry(Geometry):
         self._default_fiber_markers = markers = {
             "epi": LV_SURFS.EPI.value, 
             "lv": LV_SURFS.ENDO.value, 
-            "base": LV_SURFS.MITRAL.value
+            "base": LV_SURFS.BASE_BORDER.value
             }
         
         # ------ Flags
@@ -574,19 +574,18 @@ class LV_Geometry(Geometry):
         mesh_layers[surf_to_global] = layers
         self._surface_mesh.point_data[LV_MESH_DATA.SURFS.value] = layers.astype(np.int64)
         self.mesh.point_data[LV_MESH_DATA.SURFS.value] = mesh_layers.astype(np.int64)
-        
-        
+                
         # create nodesets
         if create_nodesets:
-            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=True)
-            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.AB_ENDO_EPI.value, overwrite=True)
-            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=True)
-            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=True)
+            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
+            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
+            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=False)
+            self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=False)
         
         # set flag to indicate surfaces were identified from this method:
         self._surfaces_identified_with_class_method = True
-        
-        
+                
     def create_nodesets_from_surfaces(self, 
                                       mesh_data=LV_MESH_DATA.SURFS.value,
                                       skip={},
@@ -595,8 +594,10 @@ class LV_Geometry(Geometry):
         
         ids = self.mesh.point_data[mesh_data]
         for surf_enum in LV_SURFS:
+            if surf_enum.value in self._nodesets and overwrite == False:
+                continue
             if surf_enum.name != "OTHER" and surf_enum.name not in skip:
-                found_ids = np.where(ids==surf_enum.value)[0]
+                found_ids = np.copy(np.where(ids==surf_enum.value)[0])
                 if len(found_ids) > 0:
                     self.add_nodeset(surf_enum, found_ids, overwrite)
 
@@ -610,6 +611,168 @@ class LV_Geometry(Geometry):
     
     # =============================================================================
     # Fiber methods
+    
+    def identify_fibers_region_ids_ldrb_1(self) -> tuple:
+        """Identifies mesh surface regions for fiber computation based on nodesets. \
+            LDRB only accpets three regions: 'endo', 'epi' and 'border(s)', therefore,\
+            we must combine aortic and mitral regions of interest into a single region.\
+            This method we combine: BORDER_MITRAL and BORDER_AORTIC
+            
+        Raises:
+            RuntimeError: Length of one of required nodesets is 0.
+
+        Returns:
+            tuple: (surface regions ids, mesh regions ids)
+        """
+        # get nodesets
+        endo = self.get_nodeset(LV_SURFS.ENDO)
+        epi = self.get_nodeset(LV_SURFS.EPI)
+        mitral = self.get_nodeset(LV_SURFS.BORDER_MITRAL)
+        border_aortic = self.get_nodeset(LV_SURFS.BORDER_AORTIC)
+        # check possible errors
+        if len(endo) == 0:
+            raise RuntimeError("No ids found for 'endo'. Please, ensure that 'endo' nodeset is not empty.")
+        if len(epi) == 0:
+            raise RuntimeError("No ids found for 'epi'. Please, ensure that 'epi' nodeset is not empty.")
+        if len(mitral) == 0:
+            raise RuntimeError("No ids found for 'mitral'. Please, ensure that 'EPI_MITRAL' and 'BORDER_MITRAL' nodeset are not empty.")
+        if len(border_aortic) == 0:
+            raise RuntimeError("No ids found for 'border_aortic'. Please, ensure that 'border_aortic' nodeset is not empty.")
+        # combine ids into a single surfac emap 
+        ldrb_mesh_region_ids = np.zeros(self.mesh.n_points)
+        ldrb_mesh_region_ids[endo] = LV_SURFS.ENDO
+        ldrb_mesh_region_ids[epi] = LV_SURFS.EPI
+        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE_BORDER
+        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE_BORDER
+        # get ids for surface
+        lvsurf_map_id = self.get_surface_id_map_from_mesh()
+        lvsurf = self.get_surface_mesh()
+        # save data at surface and mesh level
+        lvsurf[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids[lvsurf_map_id]
+        self.mesh[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids
+        
+        return ldrb_mesh_region_ids, ldrb_mesh_region_ids
+    
+    def identify_fibers_region_ids_ldrb_2(self) -> tuple:
+        """Identifies mesh surface regions for fiber computation based on nodesets. \
+            LDRB only accpets three regions: 'endo', 'epi' and 'border(s)', therefore,\
+            we must combine aortic and mitral regions of interest into a single region.\
+            This method we combine: EPI_MITRAL, BORDER_MITRAL and BORDER_AORTIC
+            
+        Raises:
+            RuntimeError: Length of one of required nodesets is 0.
+
+        Returns:
+            tuple: (surface regions ids, mesh regions ids)
+        """
+        # get nodesets
+        endo = self.get_nodeset(LV_SURFS.ENDO)
+        epi = self.get_nodeset(LV_SURFS.EPI)
+        mitral = np.union1d(self.get_nodeset(LV_SURFS.EPI_MITRAL), self.get_nodeset(LV_SURFS.BORDER_MITRAL))
+        border_aortic = self.get_nodeset(LV_SURFS.BORDER_AORTIC)
+        # check possible errors
+        if len(endo) == 0:
+            raise RuntimeError("No ids found for 'endo'. Please, ensure that 'endo' nodeset is not empty.")
+        if len(epi) == 0:
+            raise RuntimeError("No ids found for 'epi'. Please, ensure that 'epi' nodeset is not empty.")
+        if len(mitral) == 0:
+            raise RuntimeError("No ids found for 'mitral'. Please, ensure that 'EPI_MITRAL' and 'BORDER_MITRAL' nodeset are not empty.")
+        if len(border_aortic) == 0:
+            raise RuntimeError("No ids found for 'border_aortic'. Please, ensure that 'border_aortic' nodeset is not empty.")
+        # combine ids into a single surfac emap 
+        ldrb_mesh_region_ids = np.zeros(self.mesh.n_points)
+        ldrb_mesh_region_ids[endo] = LV_SURFS.ENDO
+        ldrb_mesh_region_ids[epi] = LV_SURFS.EPI
+        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE_BORDER
+        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE_BORDER
+        # get ids for surface
+        lvsurf_map_id = self.get_surface_id_map_from_mesh()
+        lvsurf = self.get_surface_mesh()
+        # save data at surface and mesh level
+        lvsurf[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids[lvsurf_map_id]
+        self.mesh[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids
+        
+        return ldrb_mesh_region_ids, ldrb_mesh_region_ids
+    
+    def identify_fibers_region_ids_ldrb_3(self) -> tuple:
+        """Identifies mesh surface regions for fiber computation based on nodesets. \
+            LDRB only accpets three regions: 'endo', 'epi' and 'border(s)', therefore,\
+            we must combine aortic and mitral regions of interest into a single region.\
+            This method we combine: ENDO_MITRAL, EPI_MITRAL, BORDER_MITRAL and BORDER_AORTIC
+            
+        Raises:
+            RuntimeError: Length of one of required nodesets is 0.
+
+        Returns:
+            tuple: (surface regions ids, mesh regions ids)
+        """
+        # get nodesets
+        endo = self.get_nodeset(LV_SURFS.ENDO)
+        epi = self.get_nodeset(LV_SURFS.EPI)
+        mitral = np.union1d(
+            self.get_nodeset(LV_SURFS.ENDO_MITRAL), 
+            self.get_nodeset(LV_SURFS.EPI_MITRAL), 
+            self.get_nodeset(LV_SURFS.BORDER_MITRAL)
+            )
+        border_aortic = self.get_nodeset(LV_SURFS.BORDER_AORTIC)
+        # check possible errors
+        if len(endo) == 0:
+            raise RuntimeError("No ids found for 'endo'. Please, ensure that 'endo' nodeset is not empty.")
+        if len(epi) == 0:
+            raise RuntimeError("No ids found for 'epi'. Please, ensure that 'epi' nodeset is not empty.")
+        if len(mitral) == 0:
+            raise RuntimeError("No ids found for 'mitral'. Please, ensure that 'EPI_MITRAL' and 'BORDER_MITRAL' nodeset are not empty.")
+        if len(border_aortic) == 0:
+            raise RuntimeError("No ids found for 'border_aortic'. Please, ensure that 'border_aortic' nodeset is not empty.")
+        # combine ids into a single surfac emap 
+        ldrb_mesh_region_ids = np.zeros(self.mesh.n_points)
+        ldrb_mesh_region_ids[endo] = LV_SURFS.ENDO
+        ldrb_mesh_region_ids[epi] = LV_SURFS.EPI
+        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE_BORDER
+        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE_BORDER
+        # get ids for surface
+        lvsurf_map_id = self.get_surface_id_map_from_mesh()
+        lvsurf = self.get_surface_mesh()
+        # save data at surface and mesh level
+        lvsurf[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids[lvsurf_map_id]
+        self.mesh[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids
+        
+        return ldrb_mesh_region_ids, ldrb_mesh_region_ids
+       
+    def identify_fibers_region_ids_ldrb(self, mode:str) -> tuple:
+        """
+            Identifies mesh surface regions for fiber computation based on nodesets. \
+            LDRB only accpets three regions: 'endo', 'epi' and 'border(s)', therefore,\
+            we must combine aortic and mitral regions of interest into a single region.\
+            
+            This method wraps all implemented modes to identify surfaces for LDRB.\
+            The main difference between each method is the union1d of 'BASE_BORDER':
+            
+            LDRB_1: BORDER_MITRAL and BORDER_AORTIC
+            
+            LDRB_2: EPI_MITRAL, BORDER_MITRAL and BORDER_AORTIC
+            
+            LDRB_3: ENDO_MITRAL, EPI_MITRAL, BORDER_MITRAL and BORDER_AORTIC
+            
+        Args:
+            mode (str or Enum): Mode of fiber regions to identify. Check LV Enum for details.
+
+        Raises:
+            NotImplementedError: If mode is not supported or not implemented, it will raise Error.
+
+        Returns:
+            tuple: _description_
+        """
+        mode = self.check_enum(mode)
+        if mode == LV_FIBER_MODES.LDRB_1.value:
+            return self.identify_fibers_region_ids_ldrb_1()
+        elif mode == LV_FIBER_MODES.LDRB_2.value:
+            return self.identify_fibers_region_ids_ldrb_2()
+        elif mode == LV_FIBER_MODES.LDRB_3.value:
+            return self.identify_fibers_region_ids_ldrb_3()
+        else:
+            raise NotImplementedError("Mode '%s' not implemented or not supported." % mode)
+    
     
     def add_fibers(self, name:str, fdata:np.ndarray):
         name = self.check_enum(name)
@@ -661,12 +824,21 @@ class LV_Geometry(Geometry):
         # check for surface region ids (values for each node in surface describing region id)
         (in_mesh, in_surf_mesh) = self.check_mesh_data(surfRegionsIds)
         if not in_surf_mesh:
-            if self.check_surf_initialization():
-                raise ValueError("Surface regions ids '{}' is not initialized within internal algorithm. \
-                    Did you add to surface mesh data?".format(surfRegionsIds)) 
-            else:
+            found_ids = False
+            try:
+                self.identify_fibers_region_ids_ldrb(surfRegionsIds)
+                found_ids = True
+            except NotImplementedError:
                 raise ValueError("Surface regions ids '{}' not found in mesh data. \
-                    Did you identify surfaces? See 'LV.identify_surfaces'.")
+                    Tried to compute using 'identify_fibers_region_ids_ldrb', but method \
+                    was not implemented. Please, check surfRegionsIds mesh data key.")
+            if not found_ids:
+                if self.check_surf_initialization():
+                    raise ValueError("Surface regions ids '{}' is not initialized within internal algorithm. \
+                        Did you add to surface mesh data?".format(surfRegionsIds)) 
+                else:
+                    raise ValueError("Surface regions ids '{}' not found in mesh data. \
+                        Did you identify surfaces? See 'LV.identify_surfaces'.")
         # check markers
         if markers is None:
             markers = self._default_fiber_markers

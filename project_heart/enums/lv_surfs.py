@@ -2,7 +2,7 @@ from enum import IntEnum, Enum
 
 
 class LV_SURFS(IntEnum):
-    OTHER = 0
+    OTHER = 0  # DO NOT MODIFY THIS ONE.
 
     # ENDOCARDIUM, EPICARDIUM
     ENDO = 1
@@ -39,6 +39,9 @@ class LV_SURFS(IntEnum):
     ENDO_APEX_REGION = 20
     EPI_APEX_REGION = 21
 
+    # BASE BORDER
+    BASE_BORDER = 22
+
 
 class LV_MESH_DATA(Enum):
 
@@ -60,8 +63,18 @@ class LV_MESH_DATA(Enum):
     SURFS = "LV_SURFS"  # EPI_ENDO + AM_SURFS
     SURFS_DETAILED = "SURFS_DETAILED"  # EPI_ENDO + AM_DETAILED
 
+    LDRB_1 = "LV_FIBERS_LDRB_1"
+    LDRB_2 = "LV_FIBERS_LDRB_2"
+    LDRB_3 = "LV_FIBERS_LDRB_3"
+
     # Fibers
     FIBERS = "LV_FIBERS"
+
+
+class LV_FIBER_MODES(Enum):
+    LDRB_1 = LV_MESH_DATA.LDRB_1.value
+    LDRB_2 = LV_MESH_DATA.LDRB_2.value
+    LDRB_3 = LV_MESH_DATA.LDRB_3.value
 
 
 class LV_VIRTUAL_NODES(Enum):
