@@ -164,7 +164,11 @@ class Geometry():
         """ Write states to csv file """
         raise NotImplementedError()
 
-    def to_dict(self, **kwargs) -> dict:
+    def to_dict(self,
+                mesh_point_data={},
+                mesh_cell_data={},
+                export_all_mesh_data=False,
+                **kwargs) -> dict:
 
         _d = dict()
         _d[GEO_DICT.NODES.value] = np.array(
@@ -178,6 +182,17 @@ class Geometry():
         _d[GEO_DICT.DISCRETE_SETS.value] = self._discrete_sets
 
         _d[GEO_DICT.BC.value] = self._bcs
+
+        # Export mesh data
+        _d[GEO_DICT.MESH_POINT_DATA.value] = {}
+        _d[GEO_DICT.MESH_CELL_DATA.value] = {}
+        if export_all_mesh_data:
+            mesh_point_data = self.mesh.point_data.keys()
+            mesh_cell_data = self.mesh.cell_data.keys()
+        for key in mesh_point_data:
+            _d[GEO_DICT.MESH_POINT_DATA.value][key] = self.mesh.point_data[key].tolist()
+        for key in mesh_cell_data:
+            _d[GEO_DICT.MESH_CELL_DATA.value][key] = self.mesh.cell_data[key].tolist()
 
         return _d
 
