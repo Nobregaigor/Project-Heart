@@ -799,6 +799,8 @@ class LV_Geometry(Geometry):
                         save_xdmfs=False,
                         xdmfs_dir=None,
                         xdmfs_basename=None,
+
+                        del_generated_files=True,
                        ):
         
         # ------------------
@@ -840,11 +842,11 @@ class LV_Geometry(Geometry):
                     raise ValueError("Surface regions ids '{}' not found in mesh data. \
                         Did you identify surfaces? See 'LV.identify_surfaces'.")
         # check markers
-        if markers is None:
+        if len(markers) == 0: # empty
             markers = self._default_fiber_markers
-        if len(markers) !=3 or "endo" not in markers or "lv" not in markers or "base" not in markers:
+        if (len(markers) !=3) or ("epi" not in markers) or ("lv" not in markers) or ("base" not in markers):
             raise ValueError("Markers must represent dictionary values for ids at surface. \
-                It must contain 3 key/value pairs for 'endo', 'lv', and 'base'.\
+                It must contain 3 key/value pairs for 'epi', 'lv', and 'base'.\
                 Please, see https://github.com/finsberg/ldrb for details.")
         # check xdmfs_dir if xdmfs was requested
         if save_xdmfs:
@@ -852,7 +854,6 @@ class LV_Geometry(Geometry):
                 import dolfin
             except ImportError:
                 raise ImportError("Fenics dolfin library is required to save xdmfs.")
-
             # check for suitable directory
             if xdmfs_dir is not None:
                 if not os.path.isdir(str(xdmfs_dir)):
@@ -887,25 +888,35 @@ class LV_Geometry(Geometry):
         mesh = self.prep_for_gmsh(cellregionIds, mesh=mesh) # adds "gmsh:physical" and "gmsh:geometrical"
         # create temporary directory for saving current files
         import tempfile
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            tmpdir = Path(tmpdirname)
-            # save using meshio (I did not test other gmsh formats and binary files.)
-            gmshfilepath = tmpdir/"gmshfile.msh"
-            pv.save_meshio(gmshfilepath, mesh, file_format="gmsh22", binary=False)
-            # create fenics mesh and face function
-            mesh, ffun, _ = ldrb.gmsh2dolfin(str(gmshfilepath), unlink=False)
-            # compute fibers
-            fiber, sheet, sheet_normal = ldrb.dolfin_ldrb(
-                mesh=mesh,
-                fiber_space=fiber_space,
-                ffun=ffun,
-                markers=markers,  
-                alpha_endo_lv=alpha_endo_lv,  # Fiber angle on the endocardium
-                alpha_epi_lv=alpha_epi_lv,  # Fiber angle on the epicardium
-                beta_endo_lv=beta_endo_lv,  # Sheet angle on the endocardium
-                beta_epi_lv=beta_epi_lv,  # Sheet angle on the epicardium
-                **ldrb_kwargs
-            )
+        # with tempfile.TemporaryDirectory() as tmpdirname:
+        # tmpdir = Path(tmpdirname)
+        # save using meshio (I did not test other gmsh formats and binary files.)
+        gmshfilepath = "gmshfile.msh"
+        pv.save_meshio(gmshfilepath, mesh, file_format="gmsh22", binary=False)
+        # create fenics mesh and face function
+        mesh, ffun, _ = ldrb.gmsh2dolfin(gmshfilepath, unlink=False)
+        # compute fibers
+        fiber, sheet, sheet_normal = ldrb.dolfin_ldrb(
+            mesh=mesh,
+            fiber_space=fiber_space,
+            ffun=ffun,
+            markers=markers,  
+            alpha_endo_lv=alpha_endo_lv,  # Fiber angle on the endocardium
+            alpha_epi_lv=alpha_epi_lv,  # Fiber angle on the epicardium
+            beta_endo_lv=beta_endo_lv,  # Sheet angle on the endocardium
+            beta_epi_lv=beta_epi_lv,  # Sheet angle on the epicardium
+            **ldrb_kwargs
+        )
+        # remove created files
+        if del_generated_files:
+            for ldrb_support_file in [
+                gmshfilepath,
+                "mesh_gmshfile.h5", 
+                "mesh_gmshfile.xdmf", 
+                "triangle_mesh_gmshfile.h5", 
+                "triangle_mesh_gmshfile.xdmf"]:
+                if os.path.exists(ldrb_support_file):
+                    os.remove(ldrb_support_file)
         # save each fiber component, if requested
         if save_xdmfs:
             xdmfs_basepath = xdmfs_dir/xdmfs_basename
@@ -922,15 +933,32 @@ class LV_Geometry(Geometry):
         # when converting our mesh to fenics format using dolfin_ldrb, we lose our structure
         # and nodes/cells are completely re-arranged. To work around this, we need to map 
         # new indexes (point locations) to old indexes. 
-        map_from_mesh_to_pts = relate_closest(lv.mesh.points, mesh.coordinates())[0][:,1]
+        map_from_mesh_to_pts = relate_closest(self.mesh.points, mesh.coordinates())[0][:,1]
+        fiber_pts_vec = fiber_pts_vec.take(map_from_mesh_to_pts, axis=0)
+        sheet_pts_vec = sheet_pts_vec.take(map_from_mesh_to_pts, axis=0)
+        sheet_normal_pts_vec = sheet_normal_pts_vec.take(map_from_mesh_to_pts, axis=0)
         # Add data to mesh
-        self.add_fibers(LV_FIBERS.F0, fiber_pts_vec.take(map_from_mesh_to_pts, axis=0))
-        self.add_fibers(LV_FIBERS.S0, sheet_pts_vec.take(map_from_mesh_to_pts, axis=0))
-        self.add_fibers(LV_FIBERS.N0, sheet_normal_pts_vec.take(map_from_mesh_to_pts, axis=0))
+        self.add_fibers(LV_FIBERS.F0, fiber_pts_vec)
+        self.add_fibers(LV_FIBERS.S0, sheet_pts_vec)
+        self.add_fibers(LV_FIBERS.N0, sheet_normal_pts_vec)
         # Convert nodal data to cell data
         self.transform_point_data_to_cell_data(LV_FIBERS.F0, "mean", axis=0)
         self.transform_point_data_to_cell_data(LV_FIBERS.S0, "mean", axis=0)
         self.transform_point_data_to_cell_data(LV_FIBERS.N0, "mean", axis=0)
+        # Compute angles between normal and fiber vectors
+        fiber_angles = np.degrees(self.compute_angles_wrt_normal(fiber_pts_vec, False, False) - np.pi*0.5)
+        sheet_angles = np.degrees(self.compute_angles_wrt_normal(sheet_pts_vec, False, False) - np.pi*0.5)
+        sheet_normal_angles = np.degrees(self.compute_angles_wrt_normal(sheet_normal_pts_vec, False, False) - np.pi*0.5)
+        # add angles
+        self.mesh.point_data[LV_FIBERS.F0_ANGLES.value] = fiber_angles
+        self.mesh.point_data[LV_FIBERS.S0_ANGLES.value] = sheet_angles
+        self.mesh.point_data[LV_FIBERS.N0_ANGLES.value] = sheet_normal_angles
+        # Convert nodal data to cell data
+        self.transform_point_data_to_cell_data(LV_FIBERS.F0_ANGLES, "mean", axis=0)
+        self.transform_point_data_to_cell_data(LV_FIBERS.S0_ANGLES, "mean", axis=0)
+        self.transform_point_data_to_cell_data(LV_FIBERS.N0_ANGLES, "mean", axis=0)
+
+
         
         
 

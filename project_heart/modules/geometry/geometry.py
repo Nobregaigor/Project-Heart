@@ -538,10 +538,19 @@ class Geometry():
                                           dtype=None,
                                           axis=-1,
                                           **kwargs):
-
+        # cehck if data_key is Enum representation of data key value
+        data_key = self.check_enum(data_key)
+        # cehck if data_key is present in mesh or surface mesh
+        (in_mesh, in_surf_mesh) = self.check_mesh_data(data_key)
         if surface:
+            if not in_surf_mesh:
+                raise ValueError(
+                    "data key '{}' not found in surface mesh data.".format(data_key))
             mesh = self.get_surface_mesh()
         else:
+            if not in_mesh:
+                raise ValueError(
+                    "data key '{}' not found in mesh data.".format(data_key))
             mesh = self.mesh
 
         if method == "max":
@@ -556,7 +565,6 @@ class Geometry():
                     "method must be 'max' or 'min' or a callable function.")
             else:
                 fun = method
-
         # get the node id map for each cell
         cell_node_ids = self.get_node_ids_for_each_cell(surface=surface)
         # get current data at points array
@@ -622,6 +630,15 @@ class Geometry():
         mesh.cell_data["gmsh:physical"] = cellregionIds
         mesh.cell_data["gmsh:geometrical"] = cellregionIds
         return mesh
+
+    def compute_angles_wrt_normal(self, vec_arr, check_orientation=False, degrees=False):
+        normal_vec = np.repeat(np.expand_dims(
+            self.get_normal(), 1), len(vec_arr), axis=1).T
+        angles = angle_between(normal_vec, vec_arr,
+                               check_orientation=check_orientation)
+        if degrees:
+            angles = np.degrees(angles)
+        return angles
 
     # -------------------------------
     # plot
