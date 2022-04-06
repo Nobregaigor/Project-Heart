@@ -24,6 +24,11 @@ class LV_Geometry(Geometry):
         
         # self._centroid = self.est_centroid()
         
+        # ------ Flags
+        self._surfaces_identified_with_class_method = False
+        
+        
+        
     
     def est_centroid(self) -> np.ndarray:
         """Estimates the centroid of the geometry based on surface mesh.
@@ -570,6 +575,10 @@ class LV_Geometry(Geometry):
             self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=True)
             self.create_nodesets_from_surfaces(mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=True)
         
+        # set flag to indicate surfaces were identified from this method:
+        self._surfaces_identified_with_class_method = True
+        
+        
     def create_nodesets_from_surfaces(self, 
                                       mesh_data=LV_MESH_DATA.SURFS.value,
                                       skip={},
@@ -583,6 +592,25 @@ class LV_Geometry(Geometry):
                 if len(found_ids) > 0:
                     self.add_nodeset(surf_enum, found_ids, overwrite)
 
+
+    # =============================================================================
+    # Check methods
+    
+    def check_surf_initialization(self):
+        return self._surfaces_identified_with_class_method
+       
+    
+    # =============================================================================
+    # Fiber methods
+    
+    def compute_fibers(self, ):
+        
+        # check for mesh types
+        assert(self.check_tet4_mesh()), "Mesh must be composed of pure tetrahedrons."
+        assert(self.check_tri3_surfmesh()), "Surface mesh must be composed of pure triangles."
+
+
+    
     # =============================================================================
     # Boundary conditions
 

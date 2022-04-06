@@ -10,6 +10,7 @@ from project_heart import utils
 import numpy as np
 from collections import deque
 import json
+import functools
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -66,8 +67,9 @@ class Geometry():
             geo.filter_mesh_by_scalar(identifier, threshold)
         return geo
 
-    def from_pyvista_wrap(self, arr, **kwargs):
-        self.mesh = pv.wrap(arr, **kwargs)
+    @classmethod
+    def from_pyvista_wrap(cls, arr, **kwargs):
+        return cls(mesh=pv.wrap(arr, **kwargs))
 
     @classmethod
     def from_nodes_elements(cls,
@@ -504,6 +506,7 @@ class Geometry():
                                           method="max",
                                           surface=False,
                                           dtype=None,
+                                          axis=-1,
                                           **kwargs):
 
         if surface:
@@ -512,9 +515,11 @@ class Geometry():
             mesh = self.mesh
 
         if method == "max":
-            fun = np.max
+            fun = functools.partial(np.max, axis=axis)
         elif method == "min":
-            fun = np.min
+            fun = functools.partial(np.min, axis=axis)
+        elif method == "mean":
+            fun = functools.partial(np.mean, axis=axis)
         else:
             if not callable(method):
                 raise ValueError(
@@ -527,7 +532,7 @@ class Geometry():
         # get current data at points array
         pt_data = mesh.get_array(data_key, "points")
         # create new array with same length as number of cells
-        cells_data = np.zeros(mesh.n_cells)
+        cells_data = np.zeros((mesh.n_cells, pt_data.shape[-1]))
         # for each cell, apply function based on values from all cell nodes
         for cell_index, node_ids in enumerate(cell_node_ids):
             cells_data[cell_index] = fun(pt_data[node_ids])
@@ -615,3 +620,103 @@ class Geometry():
             return plotter
         else:
             plotter.show()
+
+    # -------------------------------
+    # Check Methods
+
+    def check_enum(self, name):
+        if isinstance(name, Enum):
+            name = name.value
+        return name
+
+    def check_mesh_data(self, mesh_data: str) -> tuple:
+        """Check whether given mesh_data is in mesh or surface mesh
+
+        Args:
+            mesh_data (str): Mesh data name (or Enum corresponding to mesh data name).
+
+        Returns:
+            tuple (bool, bool): (in_mesh, in_surf_mesh)
+        """
+
+        mesh_data = self.check_enum(mesh_data)
+
+        in_mesh = mesh_data in self.mesh.array_names
+        in_surf_mesh = mesh_data in self.get_surface_mesh().array_names
+
+        return (in_mesh, in_surf_mesh)
+
+    def check_tet4_mesh(self) -> bool:
+        """Checks if mesh is composed of pure simple tetrahedrons (4 nodes).
+
+        Returns:
+            bool
+        """
+        cells_dict = self.cells()
+        if len(cells_dict) > 1:  # If mesh is not composed of pure tet4 elements
+            return False
+        if VTK_ELEMENTS.TETRA.value in cells_dict:
+            return True
+        return False
+
+    def check_tri3_surfmesh(self) -> bool:
+        """Checks if surface mesh is composed of pure simple triangles (3 nodes).
+
+        Returns:
+            bool
+        """
+        surf = self.get_surface_mesh().copy()
+        cells_dict = surf.cast_to_unstructured_grid().cells_dict
+        if len(cells_dict) > 1:  # If mesh is not composed of pure tri elements
+            return False
+        if VTK_ELEMENTS.TRIANGLE.value in cells_dict:
+            return True
+        return False
+
+    def check_hex8_mesh(self) -> bool:
+        """Checks if mesh is composed of pure simple hexahedrons (8 nodes).
+
+        Returns:
+            bool
+        """
+        cells_dict = self.cells()
+        if len(cells_dict) > 1:  # If mesh is not composed of pure tet4 elements
+            return False
+        if VTK_ELEMENTS.HEXAHEDRON.value in cells_dict:
+            return True
+        return False
+
+    def check_vtkElements_mesh(self, vtk_elem_value: int) -> bool:
+        """Checks if mesh is composed of pure 'vtk_elem_value'.
+
+        Args:
+            vtk_elem_value (int or Enum): Vtk element number representation. 
+
+        Returns:
+            bool
+        """
+        vtk_elem_value = self.check_enum(vtk_elem_value)
+        cells_dict = self.cells()
+        if len(cells_dict) > 1:  # If mesh is not composed of pure tet4 elements
+            return False
+        if vtk_elem_value in cells_dict:
+            return True
+        return False
+
+    def check_vtkElements_surfmesh(self, vtk_elem_value: int) -> bool:
+        """Checks if surface mesh is composed of pure 'vtk_elem_value'.
+
+        Args:
+            vtk_elem_value (int or Enum): Vtk element number representation. 
+
+        Returns:
+            bool
+        """
+        vtk_elem_value = self.check_enum(vtk_elem_value)
+        surf = self.get_surface_mesh().copy()
+        cells_dict = surf.cast_to_unstructured_grid().cells_dict
+        if len(cells_dict) > 1:  # If mesh is not composed of pure tet4 elements
+            return False
+        if vtk_elem_value in cells_dict:
+            return True
+        return False
