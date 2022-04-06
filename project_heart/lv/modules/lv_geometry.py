@@ -10,6 +10,9 @@ from sklearn.cluster import KMeans
 
 from functools import reduce
 
+from pathlib import Path
+import os
+
 class LV_Geometry(Geometry):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -24,10 +27,15 @@ class LV_Geometry(Geometry):
         
         # self._centroid = self.est_centroid()
         
+        # ------ default values
+        self._default_fiber_markers = markers = {
+            "epi": LV_SURFS.EPI.value, 
+            "lv": LV_SURFS.ENDO.value, 
+            "base": LV_SURFS.MITRAL.value
+            }
+        
         # ------ Flags
         self._surfaces_identified_with_class_method = False
-        
-        
         
     
     def est_centroid(self) -> np.ndarray:
@@ -603,14 +611,156 @@ class LV_Geometry(Geometry):
     # =============================================================================
     # Fiber methods
     
-    def compute_fibers(self, ):
-        
-        # check for mesh types
-        assert(self.check_tet4_mesh()), "Mesh must be composed of pure tetrahedrons."
-        assert(self.check_tri3_surfmesh()), "Surface mesh must be composed of pure triangles."
-
+    def add_fibers(self, name:str, fdata:np.ndarray):
+        name = check_enum(name)
+        if len(fdata) == self.mesh.n_points:
+            self.mesh.point_data[name] = np.copy(fdata)
+        elif len(fdata) == self.mesh.n_cells:
+            self.mesh.cell_data[name] = np.copy(fdata)
+        else:
+            raise ValueError("Length of fiber data must be equal to the number of points\
+                or cells in the mesh. Fibers are not saved surface mesh by default, if\
+                you are trying to add fibers only at surface level, please do it manually.")
 
     
+    def compute_fibers(self, 
+                        surfRegionsIds:str,
+                        fiber_space="P_1",
+                        alpha_endo_lv=60,  # Fiber angle on the endocardium
+                        alpha_epi_lv=-60,  # Fiber angle on the epicardium
+                        beta_endo_lv=0,  # Sheet angle on the endocardium
+                        beta_epi_lv=0,  # Sheet angle on the epicardium
+                        markers={},
+                        ldrb_kwargs={},
+                        
+                        save_xdmfs=False,
+                        xdmfs_dir=None,
+                        xdmfs_basename=None,
+                       ):
+        
+        # ------------------
+        # check for error conditions before inital fiber computation steps
+        # try to import ldrb library
+        try:
+            import ldrb
+        except ImportError:
+            raise ImportError("ldrb library is required for fiber computation.\
+                Please, see https://github.com/finsberg/ldrb for details.")
+        # try to import meshion for mesh file manipulation (gmsh)
+        try:
+            import meshio:
+        except ImportError:
+            raise ImportError("Meshio library is required for mesh file manipulation\
+                during fiber computation.")
+        # check if given surfRegionsIds is Enum
+        surfRegionsIds = self.check_enum(surfRegionsIds)
+        # check for mesh types (required pure tetrahedral mesh)
+        assert(self.check_tet4_mesh()), "Mesh must be composed of pure tetrahedrons."
+        assert(self.check_tri3_surfmesh()), "Surface mesh must be composed of pure triangles."
+        # check for surface region ids (values for each node in surface describing region id)
+        (in_mesh, in_surf_mesh) = self.check_mesh_data(surfRegionsIds)
+        if not in_surf_mesh:
+            if self.check_surf_initialization():
+                raise ValueError("Surface regions ids '{}' is not initialized within internal algorithm. \
+                    Did you add to surface mesh data?".format(surfRegionsIds)) 
+            else:
+                raise ValueError("Surface regions ids '{}' not found in mesh data. \
+                    Did you identify surfaces? See 'LV.identify_surfaces'.")
+        # check markers
+        if markers is None:
+            markers = self._default_fiber_markers
+        if len(markers) !=3 or "endo" not in markers or "lv" not in markers or "base" not in markers:
+            raise ValueError("Markers must represent dictionary values for ids at surface. \
+                It must contain 3 key/value pairs for 'endo', 'lv', and 'base'.\
+                Please, see https://github.com/finsberg/ldrb for details.")
+        # check xdmfs_dir if xdmfs was requested
+        if save_xdmfs:
+            try:
+                import dolfin
+            except ImportError:
+                raise ImportError("Fenics dolfin library is required to save xdmfs.")
+
+            # check for suitable directory
+            if xdmfs_dir is not None:
+                if not os.path.isdir(str(xdmfs_dir)):
+                    os.makedirs(xdmfs_dir)
+            else:
+                if self._ref_dir is None:
+                    raise ValueError("save_xdmfs was requested but could not find suitable directory\
+                        to save files. Did you not initialized from a file? Please use xdmfs_dir.")
+                else:
+                    xdmfs_dir = self.xdmfs_dir
+            # check for xdmfs basename
+            if xdmfs_basename is not None:
+                if not isinstance(xdmfs_basename, str):
+                    raise ValueError("xdmfs_basename must be a string.")
+            else:
+                if self._ref_file is None:
+                    raise ValueError("save_xdmfs was requested but could not find suitable basename\
+                        to save files. Did you not initialized from a file? Please use xdmfs_basename.")
+                else:
+                    xdmfs_basename = os.path.basename(self._ref_file).split('.')[0]
+                
+        # ------------------
+        # prep for ldrb library
+        # transform point region ids into cell ids at surface level
+        cellregionIdsSurf = self.transform_point_data_to_cell_data(surfRegionsIds, surface=True)
+        # combine volumetric mesh with surface mesh
+        mesh = self.merge_mesh_and_surface_mesh()
+        # adjust regions to include both surface and volume (with zeros)
+        cellregionIds = np.hstack((cellregionIdsSurf, np.zeros(mesh.n_cells- len(cellregionIdsSurf))))
+        # add gmsh data
+        mesh.clear_data() # for some reason, no other info is accepted when loading in ldrb
+        mesh = self.prep_for_gmsh(cellregionIds, mesh=mesh) # adds "gmsh:physical" and "gmsh:geometrical"
+        # create temporary directory for saving current files
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
+            # save using meshio (I did not test other gmsh formats and binary files.)
+            gmshfilepath = tmpdir/"gmshfile.msh"
+            pv.save_meshio(gmshfilepath, mesh, file_format="gmsh22", binary=False)
+            # create fenics mesh and face function
+            mesh, ffun, _ = ldrb.gmsh2dolfin(str(gmshfilepath), unlink=False)
+            # compute fibers
+            fiber, sheet, sheet_normal = ldrb.dolfin_ldrb(
+                mesh=mesh,
+                fiber_space=fiber_space,
+                ffun=ffun,
+                markers=markers,  
+                alpha_endo_lv=alpha_endo_lv,  # Fiber angle on the endocardium
+                alpha_epi_lv=alpha_epi_lv,  # Fiber angle on the epicardium
+                beta_endo_lv=beta_endo_lv,  # Sheet angle on the endocardium
+                beta_epi_lv=beta_epi_lv,  # Sheet angle on the epicardium
+                **ldrb_kwargs
+            )
+        # save each fiber component, if requested
+        if save_xdmfs:
+            xdmfs_basepath = xdmfs_dir/xdmfs_basename
+            with dolfin.XDMFFile(mesh.mpi_comm(), xdmfs_basepath/"_fiber.xdmf") as xdmf:
+                xdmf.write(fiber)
+            with dolfin.XDMFFile(mesh.mpi_comm(), xdmfs_basepath/"_sheet.xdmf") as xdmf:
+                xdmf.write(sheet)
+            with dolfin.XDMFFile(mesh.mpi_comm(), xdmfs_basepath/"_sheet_normal.xdmf") as xdmf:
+                xdmf.write(sheet_normal)
+        # re-arrange fibers data to fit our mesh structure
+        fiber_pts_vec = fiber.compute_vertex_values().reshape((3,-1)).T
+        sheet_pts_vec = sheet.compute_vertex_values().reshape((3,-1)).T
+        sheet_normal_pts_vec = sheet_normal.compute_vertex_values().reshape((3,-1)).T
+        # when converting our mesh to fenics format using dolfin_ldrb, we lose our structure
+        # and nodes/cells are completely re-arranged. To work around this, we need to map 
+        # new indexes (point locations) to old indexes. 
+        map_from_mesh_to_pts = relate_closest(lv.mesh.points, mesh.coordinates())[0][:,1]
+        # Add data to mesh
+        self.add_fibers(LV_FIBERS.F0, fiber_pts_vec.take(map_from_mesh_to_pts, axis=0))
+        self.add_fibers(LV_FIBERS.S0, sheet_pts_vec.take(map_from_mesh_to_pts, axis=0))
+        self.add_fibers(LV_FIBERS.N0, sheet_normal_pts_vec.take(map_from_mesh_to_pts, axis=0))
+        # Convert nodal data to cell data
+        self.transform_point_data_to_cell_data(LV_FIBERS.F0, "mean", axis=0)
+        self.transform_point_data_to_cell_data(LV_FIBERS.S0, "mean", axis=0)
+        self.transform_point_data_to_cell_data(LV_FIBERS.N0, "mean", axis=0)
+        
+        
+
     # =============================================================================
     # Boundary conditions
 

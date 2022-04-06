@@ -12,6 +12,8 @@ from collections import deque
 import json
 import functools
 
+from pathlib import Path
+
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -50,6 +52,10 @@ class Geometry():
         self._Y = np.array([0., 1., 0.])
         self._Z = np.array([0., 0., 1.])
 
+        # other into
+        self._ref_file = None
+        self._ref_dir = None
+
     def __print__(self):
         return self.mesh
 
@@ -62,6 +68,10 @@ class Geometry():
 
     @classmethod
     def from_pyvista_read(cls, filename, identifier=None, threshold=None, **kwargs):
+        # save reference file info
+        self._ref_file = Path(filename)
+        self._ref_dir = self._ref_file.parents[0]
+
         geo = cls(mesh=pv.read(filename, **kwargs))
         if identifier is not None:
             geo.filter_mesh_by_scalar(identifier, threshold)
@@ -113,6 +123,9 @@ class Geometry():
 
     @classmethod
     def from_xplt(cls, xplt, **kwargs):
+        self._ref_file = Path(xplt)
+        self._ref_dir = self._ref_file.parents[0]
+
         if isinstance(xplt, pathlib.Path):
             from febio_python.xplt import read_xplt
             xplt = read_xplt(str(xplt))
@@ -557,6 +570,38 @@ class Geometry():
         self._surface_mesh = self.get_surface_mesh().smooth(**kwargs)
         surf_to_global = self._surface_mesh.point_data["vtkOriginalPointIds"]
         self.mesh.points[surf_to_global] = self._surface_mesh.points.copy()
+
+    def merge_mesh_and_surface_mesh(self) -> pv.UnstructuredGrid:
+        """Combines mesh and surface mesh into a single mesh dataset. This is often\
+            required for some FEA solvers or other libraries (such as LDRB).
+
+        Returns:
+            pv.UnstructuredGrid: Merged mesh.
+        """
+        mesh = self.mesh.copy()
+        mesh = mesh.merge(self.get_surface_mesh().copy())
+        return mesh
+
+    def prep_for_gmsh(self,
+                      cellregionIds: np.ndarray,
+                      mesh: pv.UnstructuredGrid = None,
+                      ) -> pv.UnstructuredGrid:
+        """Prepares a given mesh for gmsh meshion export. Includes gmsh:physical\
+            and gmsh:geometrical data with 'cellregionIds' data.
+
+        Args:
+            cellregionIds (np.ndarray): Integer list identifying regions.
+            mesh (pv.UnstructuredGrid, optional): Mesh object to export. Defaults to None (uses self.mesh).
+
+        Returns:
+            pv.UnstructuredGrid: Mesh dataset with "gmsh:physical" and "gmsh:geometrical" in cell_data.
+        """
+        if mesh is None:
+            mesh = self.mesh.copy()
+
+        mesh.cell_data["gmsh:physical"] = cellregionIds
+        mesh.cell_data["gmsh:geometrical"] = cellregionIds
+        return mesh
 
     # -------------------------------
     # plot
