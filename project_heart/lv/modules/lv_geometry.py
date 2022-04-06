@@ -612,7 +612,7 @@ class LV_Geometry(Geometry):
     # Fiber methods
     
     def add_fibers(self, name:str, fdata:np.ndarray):
-        name = check_enum(name)
+        name = self.check_enum(name)
         if len(fdata) == self.mesh.n_points:
             self.mesh.point_data[name] = np.copy(fdata)
         elif len(fdata) == self.mesh.n_cells:
@@ -646,9 +646,10 @@ class LV_Geometry(Geometry):
         except ImportError:
             raise ImportError("ldrb library is required for fiber computation.\
                 Please, see https://github.com/finsberg/ldrb for details.")
+        
         # try to import meshion for mesh file manipulation (gmsh)
         try:
-            import meshio:
+            import meshio
         except ImportError:
             raise ImportError("Meshio library is required for mesh file manipulation\
                 during fiber computation.")
