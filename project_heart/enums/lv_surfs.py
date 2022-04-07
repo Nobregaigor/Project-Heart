@@ -86,6 +86,8 @@ class LV_VIRTUAL_NODES(Enum):
     MITRAL = "MITRAL"
 
     AORTIC_BORDER = "AORTIC_BORDER"
+    MITRAL_BORDER = "MITRAL_BORDER"
+    
 
 
 class LV_RIM(Enum):
@@ -95,6 +97,9 @@ class LV_RIM(Enum):
     RELATIONS = "RIM_RELATIONS"
     DISTS = "RIM_DISTS"
     REF_NODESET = "REF_NODESET"
+
+class LV_BCS(Enum):
+    RIM_SPRINGS = "RIM_SPRINGS"
 
 
 class LV_AM_INFO(Enum):

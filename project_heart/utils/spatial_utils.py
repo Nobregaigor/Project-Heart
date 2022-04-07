@@ -60,3 +60,9 @@ def centroid(points, ql=0.01, qh=0.99):
     c[2] = (np.max(z) + np.min(z)) * 0.5
 
     return c
+
+
+def radius(points, center=None):
+    if center is None:
+        center = centroid(points)
+    return np.mean(np.linalg.norm(points - center, axis=1))

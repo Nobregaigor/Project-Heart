@@ -168,13 +168,25 @@ class Geometry():
                 mesh_point_data={},
                 mesh_cell_data={},
                 export_all_mesh_data=False,
-                **kwargs) -> dict:
+                nodeset_enums: list = None,
+                ** kwargs) -> dict:
 
         _d = dict()
         _d[GEO_DICT.NODES.value] = np.array(
             self.points(), dtype=np.float64)  # xyz
         _d[GEO_DICT.ELEMENTS.value] = self.elements(as_json_ready=True)
-        _d[GEO_DICT.NODESETS.value] = self._nodesets
+
+        if nodeset_enums:
+            if not isinstance(nodeset_enums, list):
+                raise ValueError(
+                    "nodeset_enums must be list of enum-like values for nodesets.")
+            _d[GEO_DICT.NODESETS.value] = dict()
+            for ns_enumlike in nodeset_enums:
+                _d[GEO_DICT.NODESETS.value].update(
+                    self.get_nodesets_from_enum(ns_enumlike))
+        else:
+            _d[GEO_DICT.NODESETS.value] = self._nodesets
+
         _d[GEO_DICT.ELEMTSETS.value] = self._elemsets
         _d[GEO_DICT.SURFACES.value] = self._surfaces_oi
 
@@ -210,7 +222,7 @@ class Geometry():
         with open(filename, "w") as outfile:
             # json.dump(serialized_d, outfile, indent=indent, sort_keys=sort_keys, **kwargs)
             json.dump(non_serialized_d, outfile, sort_keys=False,
-                      cls=NumpyEncoder, **kwargs)
+                      cls=NumpyEncoder)
 
     # ----------------------------------------------------------------
     # Reference methods
@@ -413,8 +425,7 @@ class Geometry():
             return self._nodesets[name]
 
     def add_virtual_node(self, name, node, replace=False) -> None:
-        if isinstance(name, Enum):
-            name = name.value
+        name = self.check_enum(name)
         if replace == False and name in self._virtual_nodes:
             raise KeyError(
                 "Virtual node '%s' already exists. If you want to replace it, set replace flag to true." % name)
@@ -478,11 +489,11 @@ class Geometry():
                 "discrete_set must have shape of [nx2], where n refers to number of node relations")
         self._discrete_sets[name] = discrete_set
 
-    def add_bc(self, name, bc, replace=False):
+    def add_bc(self, name, bc_type, bc, replace=False):
         if replace == False and name in self._bcs:
             raise KeyError(
                 "Boundary condition '%s' already exists. If you want to replace it, set replace flag to true." % name)
-        self._bcs[name] = bc
+        self._bcs[name] = (bc_type, bc)
 
     # -------------------------------
     # Mesh wrapped functions
@@ -639,6 +650,19 @@ class Geometry():
         if degrees:
             angles = np.degrees(angles)
         return angles
+
+    def get_nodesets_from_enum(self, enum_like):
+        if not isinstance(enum_like, object):
+            raise ValueError(
+                "enum_like must be Enum related to saved nodesets.")
+        data = dict()
+        for item in enum_like:
+            try:
+                data[item.name] = self.get_nodeset(item.value)
+            except KeyError:
+                continue
+                # print("Unknown node set: %s" % item.name)
+        return data
 
     # -------------------------------
     # plot
