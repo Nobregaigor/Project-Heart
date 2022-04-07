@@ -56,6 +56,9 @@ class Geometry():
         self._ref_file = None
         self._ref_dir = None
 
+        self._cell_list = None
+        self._surf_cell_list = None
+
     def __print__(self):
         return self.mesh
 
@@ -169,6 +172,7 @@ class Geometry():
                 mesh_cell_data={},
                 export_all_mesh_data=False,
                 nodeset_enums: list = None,
+                surfaces_oi_enums: list = None,
                 ** kwargs) -> dict:
 
         _d = dict()
@@ -176,19 +180,31 @@ class Geometry():
             self.points(), dtype=np.float64)  # xyz
         _d[GEO_DICT.ELEMENTS.value] = self.elements(as_json_ready=True)
 
+        # nodesets
         if nodeset_enums:
             if not isinstance(nodeset_enums, list):
                 raise ValueError(
                     "nodeset_enums must be list of enum-like values for nodesets.")
             _d[GEO_DICT.NODESETS.value] = dict()
-            for ns_enumlike in nodeset_enums:
+            for enumlike in nodeset_enums:
                 _d[GEO_DICT.NODESETS.value].update(
-                    self.get_nodesets_from_enum(ns_enumlike))
+                    self.get_nodesets_from_enum(enumlike))
         else:
             _d[GEO_DICT.NODESETS.value] = self._nodesets
 
         _d[GEO_DICT.ELEMTSETS.value] = self._elemsets
-        _d[GEO_DICT.SURFACES.value] = self._surfaces_oi
+
+        # surfaces
+        if surfaces_oi_enums:
+            if not isinstance(surfaces_oi_enums, list):
+                raise ValueError(
+                    "surfaces_oi_enums must be list of enum-like values for nodesets.")
+            _d[GEO_DICT.SURFACES.value] = dict()
+            for enumlike in nodeset_enums:
+                _d[GEO_DICT.SURFACES.value].update(
+                    self.get_surface_oi_from_enum(enumlike))
+        else:
+            _d[GEO_DICT.SURFACES.value] = self._surfaces_oi
 
         _d[GEO_DICT.VIRTUAL_NODES.value] = self._virtual_nodes
         _d[GEO_DICT.DISCRETE_SETS.value] = self._discrete_sets
@@ -424,6 +440,18 @@ class Geometry():
         else:
             return self._nodesets[name]
 
+    def get_surface_oi(self, name: str):
+        if isinstance(name, Enum):
+            str_val = name.name
+            name = name.value
+        else:
+            str_val = name
+        if name not in self._nodesets:
+            raise KeyError(
+                "Surface of interest '%s' does not exist." % str_val)
+        else:
+            return self._surfaces_oi[name]
+
     def add_virtual_node(self, name, node, replace=False) -> None:
         name = self.check_enum(name)
         if replace == False and name in self._virtual_nodes:
@@ -527,20 +555,39 @@ class Geometry():
 
     def get_node_ids_for_each_cell(self, surface=False, **kwargs):
 
+        # prep
         if surface:
+            if self._surf_cell_list is not None:
+                return self._surf_cell_list
             mesh = self.get_surface_mesh().copy().cast_to_unstructured_grid()
         else:
+            if self._cell_list is not None:
+                return self._cell_list
             mesh = self.mesh
 
-        faces = deque()
-        i, offset = 0, 0
-        cc = mesh.cells  # fetch up front
-        while i < mesh.n_cells:
-            nn = cc[offset]
-            faces.append(cc[offset+1:offset+1+nn])
-            offset += nn + 1
-            i += 1
-        return faces
+        # compute - old (slow) method
+        # faces = deque()
+        # i, offset = 0, 0
+        # cc = mesh.cells  # fetch up front
+        # while i < mesh.n_cells:
+        #     nn = cc[offset]
+        #     faces.append(cc[offset+1:offset+1+nn])
+        #     offset += nn + 1
+        #     i += 1
+
+        # compute
+        cells_ids_list = deque()
+        for cell_array in mesh.cells_dict.values():
+            for cell in cell_array:
+                cells_ids_list.append(cell)
+
+        # save
+        if surface:
+            self._surf_cell_list = cells_ids_list
+        else:
+            self._cell_list = cells_ids_list
+
+        return cells_ids_list
 
     def transform_point_data_to_cell_data(self,
                                           data_key,
@@ -659,6 +706,42 @@ class Geometry():
         for item in enum_like:
             try:
                 data[item.name] = self.get_nodeset(item.value)
+            except KeyError:
+                continue
+                # print("Unknown node set: %s" % item.name)
+        return data
+
+    def create_surface_oi_from_surface(self, surf_name):
+
+        cell_id_list = self.get_node_ids_for_each_cell(surface=True)
+        surf_name = self.check_enum(surf_name)
+        try:
+            surf = self.get_surface_mesh()
+            index_map = surf.cell_data[surf_name]
+        except KeyError:
+            self.transform_point_data_to_cell_data(
+                surf_name, "max", surface=True)
+            surf = self.get_surface_mesh()
+            index_map = surf.cell_data[surf_name]
+
+        unique_vals = np.unique(index_map)
+        for val in unique_vals:
+            ioi = np.where(index_map == val)[0]
+            surf_oi = deque()
+            for i in ioi:
+                surf_oi.append(cell_id_list[i])
+            self._surfaces_oi[val] = list(surf_oi)
+
+        return self._surfaces_oi
+
+    def get_surface_oi_from_enum(self, enum_like):
+        if not isinstance(enum_like, object):
+            raise ValueError(
+                "enum_like must be Enum related to saved nodesets.")
+        data = dict()
+        for item in enum_like:
+            try:
+                data[item.name] = self.get_surface_oi(item.value)
             except KeyError:
                 continue
                 # print("Unknown node set: %s" % item.name)
