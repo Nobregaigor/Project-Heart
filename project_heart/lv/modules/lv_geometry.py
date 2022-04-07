@@ -1268,7 +1268,8 @@ class LV_Geometry(Geometry):
             LV_RIM.REF_NODESET.value: surface
         }
 
-        self.add_bc(bc_name, LV_BCS.RIM_SPRINGS.value, rim_data)
+        self.add_discrete_set(bc_name, nodes_rim_relations) # save discrete set
+        self.add_bc(bc_name, LV_BCS.RIM_SPRINGS.value, rim_data) # save bc data
 
         return rim_data
 
