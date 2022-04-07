@@ -484,7 +484,7 @@ class Geometry():
             except:
                 ValueError(
                     "Could not transform discrete_set into a np.ndarray.")
-        if len(discrete_set) > 2 or discrete_set.shape[1] != 2:
+        if len(discrete_set.shape) > 2 or discrete_set.shape[1] != 2:
             raise ValueError(
                 "discrete_set must have shape of [nx2], where n refers to number of node relations")
         self._discrete_sets[name] = discrete_set
