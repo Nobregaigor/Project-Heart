@@ -995,6 +995,33 @@ class LV_Geometry(Geometry):
 
                        del_generated_files=True,
                        ):
+        """DOC PENDING.
+
+        This is a wrap method for the LDRB library: https://github.com/finsberg/ldrb.\
+        Credits should be to the owners of the original LDRB library.
+
+        Args:
+            surfRegionsIds (str): _description_
+            fiber_space (str, optional): _description_. Defaults to "P_1".
+            alpha_endo_lv (int, optional): _description_. Defaults to 60.
+            ldrb_kwargs (dict, optional): _description_. Defaults to {}.
+            save_xdmfs (bool, optional): _description_. Defaults to False.
+            xdmfs_dir (_type_, optional): _description_. Defaults to None.
+            xdmfs_basename (_type_, optional): _description_. Defaults to None.
+            del_generated_files (bool, optional): _description_. Defaults to True.
+
+        Raises:
+            ImportError: _description_
+            ImportError: _description_
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
+            ImportError: _description_
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
+        """
 
         # ------------------
         # check for error conditions before inital fiber computation steps

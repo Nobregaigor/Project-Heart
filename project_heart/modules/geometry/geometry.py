@@ -811,6 +811,21 @@ class Geometry():
                        backend=TETRA_BACKEND.TETGEN,
                        make_manifold=True,
                        **kwargs):
+        """DOC PENDING.
+        
+        This is a wrap method for the Wildmeshing library: https://wildmeshing.github.io/python/\
+        and the tetgen library https://tetgen.pyvista.org/. \
+        Credits should be to the owners of the original libraries.
+
+        Args:
+            backend (_type_, optional): _description_. Defaults to TETRA_BACKEND.TETGEN.
+            make_manifold (bool, optional): _description_. Defaults to True.
+
+        Raises:
+            ImportError: _description_
+            ImportError: _description_
+            NotImplementedError: _description_
+        """
 
         backend = self.check_enum(backend)
         if backend == TETRA_BACKEND.WILDMESHING:
