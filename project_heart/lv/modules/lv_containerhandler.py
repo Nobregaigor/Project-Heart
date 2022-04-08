@@ -1238,7 +1238,9 @@ class LV_ContainerHandler(BaseContainerHandler):
             self.mesh.cell_data[LV_FIBERS.N0_ANGLES.value] = sheet_normal_angles
 
     def regress_fibers(self, other_LV,
-                       container_loc=GEO_DATA.MESH_POINT_DATA, **kwargs):
+                       container_loc=GEO_DATA.MESH_POINT_DATA,
+                       compute_angles=True,
+                       **kwargs):
         if not issubclass(other_LV.__class__, BaseContainerHandler):
             raise ValueError(
                 "Other LV object must be subclass of BaseContainerHandler.")
@@ -1255,7 +1257,11 @@ class LV_ContainerHandler(BaseContainerHandler):
             raise ValueError("Could not find '{}' in other LV object within '{}' container".format(
                 key, container_loc))
         # apply regression
-        return self.regress_from_other(other_LV, to_regress, container_loc=container_loc, **kwargs)
+        reg_data = self.regress_from_other(
+            other_LV, to_regress, container_loc=container_loc, **kwargs)
+        if compute_angles:
+            self.compute_fiber_angles()
+        return reg_data
 
     # =============================================================================
     # Boundary conditions
