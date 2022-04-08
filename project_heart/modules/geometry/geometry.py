@@ -1,4 +1,6 @@
+import os
 from os import path
+
 import pathlib
 from turtle import st
 
@@ -83,24 +85,15 @@ class Geometry():
     def from_pyvista_wrap(cls, arr, **kwargs):
         return cls(mesh=pv.wrap(arr, **kwargs))
 
-    @classmethod
-    def from_nodes_elements(cls,
-                            nodes: np.ndarray,
-                            elements: np.ndarray,
-                            el_offset: int = 0,
-                            p_dtype: np.dtype = np.float32,
-                            e_dtype: np.dtype = np.int64,
-                            **kwargs):
-        """Creates a mesh dataset from pre-defined nodes and elements. 
-            Note: as it creates mesh purely based on nodes and elements, any additional information will be ignored.
+    @staticmethod
+    def set_pv_UnstructuredGrid_from_nodes_and_elements(
+        nodes,
+        elements,
+        el_offset: int = 0,
+        p_dtype: np.dtype = np.float32,
+        e_dtype: np.dtype = np.int64
+    ):
 
-        Args:
-            nodes (np.ndarray): An array containing [x,y,z] coordinates (size should be nx3).
-            elements (np.ndarray): A nested list of elements (expected as np.object array) indicating the node index of each element.
-            el_offset (int): offset that indicates which element it should start counting from. Defaults to 0.
-            p_dtype (np.type, optional): dtype of points. Defaults to np.float32.
-            e_dtype (np.type, optional): dtype of elements. Defaults to np.int64.
-        """
         points = np.array(
             nodes, dtype=p_dtype)  # ensure points is treated as a numpy array
         # create dictionary of cell types
@@ -120,8 +113,36 @@ class Geometry():
         # stack each cell type as numpy arrays
         for key, value in cells_dict.items():
             cells_dict[key] = np.vstack(value).astype(e_dtype)
+
+        return pv.UnstructuredGrid(cells_dict, points)
+
+    @classmethod
+    def from_nodes_elements(cls,
+                            nodes: np.ndarray,
+                            elements: np.ndarray,
+                            el_offset: int = 0,
+                            p_dtype: np.dtype = np.float32,
+                            e_dtype: np.dtype = np.int64,
+                            **kwargs):
+        """Creates a mesh dataset from pre-defined nodes and elements. 
+            Note: as it creates mesh purely based on nodes and elements, any additional information will be ignored.
+
+        Args:
+            nodes (np.ndarray): An array containing [x,y,z] coordinates (size should be nx3).
+            elements (np.ndarray): A nested list of elements (expected as np.object array) indicating the node index of each element.
+            el_offset (int): offset that indicates which element it should start counting from. Defaults to 0.
+            p_dtype (np.type, optional): dtype of points. Defaults to np.float32.
+            e_dtype (np.type, optional): dtype of elements. Defaults to np.int64.
+        """
+        mesh = Geometry.set_pv_UnstructuredGrid_from_nodes_and_elements(
+            nodes=nodes,
+            elements=elements,
+            el_offset=el_offset,
+            p_dtype=p_dtype,
+            e_dtype=e_dtype,
+        )
         # create mesh
-        return cls(mesh=pv.UnstructuredGrid(cells_dict, points))
+        return cls(mesh=mesh)
 
     @classmethod
     def from_xplt(cls, xplt, **kwargs):
@@ -373,6 +394,9 @@ class Geometry():
             raise ValueError(
                 "Should specify what to get by using a GEO_DATA value or its respective integer.")
 
+        what = self.check_enum(what)
+        key = self.check_enum(key)
+
         if what == GEO_DATA.NODES:
             return self.nodes()
         elif what == GEO_DATA.ELEMS:
@@ -381,9 +405,33 @@ class Geometry():
             if key is None:
                 raise ValueError("State Data 'key' must be specified.")
             return self.states.get(key, mask=mask, i=i, t=t)
+        elif what == GEO_DATA.MESH_POINT_DATA:
+            if mask is not None:
+                return self.mesh.point_data[key][mask]
+            else:
+                return self.mesh.point_data[key]
+        elif what == GEO_DATA.MESH_CELL_DATA:
+            if mask is not None:
+                return self.mesh.cell_data[key][mask]
+            else:
+                return self.mesh.cell_data[key]
+        elif what == GEO_DATA.SURF_POINT_DATA:
+            if mask is not None:
+                return self.get_surface_mesh().point_data[key][mask]
+            else:
+                return self.get_surface_mesh().point_data[key]
+        elif what == GEO_DATA.SURF_CELL_DATA:
+            if mask is not None:
+                return self.get_surface_mesh().cell_data[key][mask]
+            else:
+                return self.get_surface_mesh().cell_data[key]
         else:
-            raise ValueError(
-                "Not sure where to get data from: 'what', %s, should be one of the GEO_DATA values." % what)
+            try:
+                what_enum = GEO_DATA(what)
+                raise ValueError("%s not found" % what_enum.name)
+            except:
+                raise ValueError(
+                    "Not sure where to get data from: 'what', %s, should be one of the GEO_DATA values." % what)
 
     def set_normal(self, normal: np.ndarray, dtype: np.dtype = np.float64) -> np.ndarray:
         self._normal = np.asarray(normal, dtype=dtype)
@@ -394,6 +442,13 @@ class Geometry():
             raise RuntimeError(
                 "Normal was not initialized. Either set it manually or use a class method to do so.")
         return self._normal
+
+    def get_bc(self, bc_name: str) -> tuple:
+        try:
+            return self._bcs[bc_name]
+        except KeyError:
+            raise ValueError(
+                "bc_name '%s' not found. Did you create it?" % bc_name)
 
     # ----------------------------------------------------------------
     # add methods
@@ -535,11 +590,14 @@ class Geometry():
         self._surface_mesh = self.mesh.extract_surface(**kwars)
         return self._surface_mesh
 
-    def get_surface_mesh(self, **kwargs):
-        if self._surface_mesh.n_points == 0:
+    def get_surface_mesh(self, force_extract=False, **kwargs):
+        if force_extract:
             return self.extract_surface_mesh(**kwargs)
         else:
-            return self._surface_mesh
+            if self._surface_mesh.n_points == 0:
+                return self.extract_surface_mesh(**kwargs)
+            else:
+                return self._surface_mesh
 
     # -------------------------------
     # other functions
@@ -746,6 +804,57 @@ class Geometry():
                 continue
                 # print("Unknown node set: %s" % item.name)
         return data
+
+    def tetrahedralize(self,
+                       backend=TETRA_BACKEND.TETGEN,
+                       make_manifold=True,
+                       **kwargs):
+
+        backend = self.check_enum(backend)
+        if backend == TETRA_BACKEND.WILDMESHING:
+            try:
+                import wildmeshing as wm
+            except ImportError:
+                raise ImportError(
+                    "Wildmeshing library is required to tetrahedralize mesh with 'wildmeshing' backend. See https://wildmeshing.github.io/python/ for details.")
+
+            # get Vertices and faces (surface mesh)
+            surf = self.get_surface_mesh()
+            V = surf.points
+            F = surf.cast_to_unstructured_grid().cells_dict[5]
+            # apply tetrahedralization
+            tetra = wm.Tetrahedralizer(**kwargs)
+            tetra.set_mesh(V, F)
+            tetra.tetrahedralize()
+            VT, TT = tetra.get_tet_mesh()
+            mesh = Geometry.set_pv_UnstructuredGrid_from_nodes_and_elements(
+                nodes=VT,
+                elements=TT,
+                el_offset=0,
+                p_dtype=np.float32,
+                e_dtype=np.int64,
+            )
+            self.mesh = mesh            # save new mesh
+            self.extract_surface_mesh()  # force extra new surface mesh
+            os.remove("__tracked_surface.stl") # delete generated file
+            
+        elif backend == TETRA_BACKEND.TETGEN:
+            try:
+                import tetgen
+            except ImportError:
+                raise ImportError(
+                    "tetgen library is required to tetrahedralize mesh with 'tetgen' backend. See https://tetgen.pyvista.org/ for details.")
+
+            tet = tetgen.TetGen(self.get_surface_mesh().triangulate())
+            if make_manifold:
+                tet.make_manifold()
+            tet.tetrahedralize(**kwargs)
+            self.mesh = tet.grid         # save new mesh
+            self.extract_surface_mesh()  # force extra new surface mesh
+
+        else:
+            raise NotImplementedError(
+                "We current support 'wildmeshing' and 'tetgen' backends. Check TETRA_BACKEND enum for details.")
 
     # -------------------------------
     # plot

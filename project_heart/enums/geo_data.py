@@ -17,6 +17,8 @@ class GEO_DATA(IntEnum):
     STATES = 3
     STATE = 3
 
-    FIELD = 4
-    DATA = 4
-    MESH = 4
+    MESH_POINT_DATA = 4
+    MESH_CELL_DATA = 5
+
+    SURF_POINT_DATA = 6
+    SURF_MESH_DATA = 7
