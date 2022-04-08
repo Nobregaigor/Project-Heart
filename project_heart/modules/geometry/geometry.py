@@ -8,6 +8,7 @@ import pyvista as pv
 
 from .components import States
 from project_heart.enums import *
+from project_heart.utils.vector_utils import angle_between
 from project_heart import utils
 import numpy as np
 from collections import deque
@@ -750,7 +751,7 @@ class Geometry():
     def compute_angles_wrt_normal(self, vec_arr, check_orientation=False, degrees=False):
         normal_vec = np.repeat(np.expand_dims(
             self.get_normal(), 1), len(vec_arr), axis=1).T
-        angles = angle_between(normal_vec, vec_arr,
+        angles = angle_between(vec_arr, normal_vec,
                                check_orientation=check_orientation)
         if degrees:
             angles = np.degrees(angles)
@@ -836,8 +837,8 @@ class Geometry():
             )
             self.mesh = mesh            # save new mesh
             self.extract_surface_mesh()  # force extra new surface mesh
-            os.remove("__tracked_surface.stl") # delete generated file
-            
+            os.remove("__tracked_surface.stl")  # delete generated file
+
         elif backend == TETRA_BACKEND.TETGEN:
             try:
                 import tetgen
