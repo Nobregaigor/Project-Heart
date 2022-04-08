@@ -1198,6 +1198,14 @@ class LV_ContainerHandler(BaseContainerHandler):
             LV_FIBERS.N0_ANGLES, "mean", axis=0)
 
     def compute_fiber_angles(self, cell_data: bool = False):
+
+        # ensure that normal was initialized
+        try:
+            self.get_normal()
+        except:
+            self.compute_normal()
+
+        # prooced
         if not cell_data:
             fiber_pts_vec = self.mesh.point_data[LV_FIBERS.F0.value]
             sheet_pts_vec = self.mesh.point_data[LV_FIBERS.S0.value]
@@ -1228,6 +1236,26 @@ class LV_ContainerHandler(BaseContainerHandler):
             self.mesh.cell_data[LV_FIBERS.F0_ANGLES.value] = fiber_angles
             self.mesh.cell_data[LV_FIBERS.S0_ANGLES.value] = sheet_angles
             self.mesh.cell_data[LV_FIBERS.N0_ANGLES.value] = sheet_normal_angles
+
+    def regress_fibers(self, other_LV,
+                       container_loc=GEO_DATA.MESH_POINT_DATA, **kwargs):
+        if not issubclass(other_LV.__class__, BaseContainerHandler):
+            raise ValueError(
+                "Other LV object must be subclass of BaseContainerHandler.")
+
+        # get list of fibers to regress
+        to_regress = [LV_FIBERS.F0, LV_FIBERS.S0, LV_FIBERS.N0]
+        # check if other LV contains such information
+        try:
+            for key in to_regress:
+                _ = other_LV.get(container_loc, key)
+        except:
+            container_loc = self.check_enum(container_loc)
+            key = self.check_enum(key)
+            raise ValueError("Could not find '{}' in other LV object within '{}' container".format(
+                key, container_loc))
+        # apply regression
+        return self.regress_from_other(other_LV, to_regress, container_loc=container_loc, **kwargs)
 
     # =============================================================================
     # Boundary conditions
@@ -1360,3 +1388,30 @@ class LV_ContainerHandler(BaseContainerHandler):
             else:
                 lines = lines.merge(lines_from_points(np.array([a, b])))
         return lines
+
+    # =================================================================
+    # Other
+
+    def compute_normal(self):
+        try:
+            apex = self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
+            base = self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
+            self.set_normal(unit_vector(base - apex))
+        except:
+            try:
+                apex = centroid(self.points(
+                    mask=self.get_nodeset(LV_SURFS.APEX_REGION)))
+                base = centroid(self.points(
+                    mask=self.get_nodeset(LV_SURFS.BASE_REGION)))
+                self.add_virtual_node(LV_VIRTUAL_NODES.APEX, apex)
+                self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base)
+                self.set_normal(unit_vector(base - apex))
+            except:
+                try:
+                    self.identify_base_and_apex_surfaces()
+                except:
+                    raise RuntimeError(
+                        """Unable to compute normal. Prooced with another method\
+                           See 'identify_base_and_apex_surfaces' and 'set_normal'\
+                           for details.
+                        """)

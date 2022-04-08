@@ -363,10 +363,10 @@ class BaseContainerHandler():
     # Get methods -> returns point, cell or state(s) data
 
     def get(self, what: str = GEO_DATA.STATES,
-            key: str or None = None,
-            mask: np.ndarray or None = None,
-            i: int or None = None,
-            t: float or None = None) -> np.ndarray:
+            key: str = None,
+            mask: np.ndarray = None,
+            i: int = None,
+            t: float = None) -> np.ndarray:
         """
         This method is convinient way to retrieve specified data from the BaseContainerHandler object. 
         The argument 'what' must be specified, it determines the location in which the
@@ -381,7 +381,8 @@ class BaseContainerHandler():
 
         Args:
             what (GEO_DATA, optional): A string inferreing to GEO_DATA (where to look for the data). Defaults to GEO_DATA.STATES.
-            key (str, optional): Identifies the state data to be retrieved. Defaults to None.
+            key (str, enum or list/tuple of keys, optional): Identifies the state data to be retrieved.\
+                If list is provided, will try to vertically stack data. Defaults to None.
             mask (np.ndarray or None, optional): A boolean or index array. Defaults to None.
             i (int or None, optional): Timestep index. Defaults to None.
             t (float or None, optional): Timestep value. Defaults to None.
@@ -397,6 +398,13 @@ class BaseContainerHandler():
         if not (isinstance(what, int) or isinstance(what, GEO_DATA)):
             raise ValueError(
                 "Should specify what to get by using a GEO_DATA value or its respective integer.")
+
+        if isinstance(key, (list, tuple, np.ndarray)):
+            try:
+                return np.hstack([self.get(what, subkey, mask, i, t) for subkey in key])
+            except:
+                raise ValueError("Could stack data from list of keys. \
+                    Try calling this function one key at a time.")
 
         what = self.check_enum(what)
         key = self.check_enum(key)
@@ -878,9 +886,9 @@ class BaseContainerHandler():
 
     @staticmethod
     def regress(X, Y, XI,
-                hidden_layer_sizes: tuple = (150,),
+                hidden_layer_sizes: tuple = (100,),
                 early_stopping: bool = True,
-                validation_fraction: float = 0.15,
+                validation_fraction: float = 0.25,
                 **kwargs):
         try:
             from sklearn.neural_network import MLPRegressor
@@ -889,7 +897,7 @@ class BaseContainerHandler():
                 "sklearn is required to perform regression. See https://bit.ly/3NX9bhR for details.")
 
         if XI.shape[-1] != X.shape[-1]:
-            raise ValueError("Number of features must match.")
+            raise ValueError("Number of features must match. Please, verify.")
 
         reg = MLPRegressor(hidden_layer_sizes,
                            early_stopping=early_stopping,
@@ -899,66 +907,77 @@ class BaseContainerHandler():
         return reg.predict(XI)
 
     def regress_from_array(self,
-                           data: np.ndarray,
+                           arr: np.ndarray,
                            new_xyz_domain: np.ndarray,
                            **kwargs):
 
-        # try to match xyz with given data size
-        if len(data) == self.mesh.n_points:
+        # try to match xyz with given arr size
+        if len(arr) == self.mesh.n_points:
             xyz = self.points()
-        elif len(data) == self.mesh.n_cells:
-            if len(self.cells().keys()) > 1:
-                raise NotImplementedError("Currently, we only support interpolation of 'pure' geometries:\
-                    they must contain only one type of cells. You can try to interpolate over points.")
-            xyz = list(self.cells().values())[0]
-        elif len(data) == self.get_surface_mesh().n_points:
+        elif len(arr) == self.get_surface_mesh().n_points:
             xyz = self.get_surface_mesh().points
         else:
             raise ValueError(
-                "Could not match data length with mesh points, mesh cells or surface mesh points.")
+                """Could not match arr length with mesh points, or surface mesh points.\
+                Regression is only supported for point arr, as number of features for\
+                training and predicting must match exactly.""")
 
-        return BaseContainerHandler.regress(xyz, data, new_xyz_domain, **kwargs)
+        return BaseContainerHandler.regress(xyz, arr, new_xyz_domain, **kwargs)
 
-    def regress_data(self,
-                     data_type: int,
-                     data_key: str,
-                     new_xyz_domain: np.ndarray,
-                     **kwargs):
+    def regress_from_data(self,
+                          data_key: str,
+                          new_xyz_domain: np.ndarray,
+                          container_loc: int = GEO_DATA.MESH_POINT_DATA,
+                          **kwargs):
+        if container_loc != GEO_DATA.MESH_POINT_DATA and container_loc != GEO_DATA.SURF_POINT_DATA:
+            raise ValueError(
+                """Regression is only supported for point data, as number of features for\
+                training and predicting must match exactly.""")
 
         # get data -> will raise error if could not retrieve data
-        data = self.get(data_type, data_key)
+        data = self.get(container_loc, data_key)
         return self.regress_from_array(data, new_xyz_domain, **kwargs)
 
-    def regress_from_other_BaseContainerHandler(self, geolike: object, data_type: int, data_key: str, **kwargs):
-        if not issubclass(geolike.__class__, BaseContainerHandler):
+    def regress_from_other(self,
+                           other: object,
+                           data_key: str,
+                           container_loc: int = GEO_DATA.MESH_POINT_DATA,
+                           **kwargs):
+        if not issubclass(other.__class__, BaseContainerHandler):
             raise ValueError(
-                "Geolike object must be derived from BaseContainerHandler class.")
+                "other object must be derived from BaseContainerHandler class.")
 
         data_key = self.check_enum(data_key)
 
-        if data_type == GEO_DATA.MESH_POINT_DATA:
+        if container_loc == GEO_DATA.MESH_POINT_DATA:
             xyz = self.points()
-        elif data_type == GEO_DATA.MESH_CELL_DATA:
-            if len(self.cells().keys()) > 1:
-                raise NotImplementedError("Currently, we only support interpolation of 'pure' geometries:\
-                    they must contain only one type of cells. You can try to interpolate over points.")
-            xyz = list(self.cells().values())[0]
-        elif data_type == GEO_DATA.SURF_POINT_DATA:
+            container = self.mesh.point_data
+        elif container_loc == GEO_DATA.SURF_POINT_DATA:
             xyz = self.get_surface_mesh().points
+            container = self.get_surface_mesh().point_data
         else:
             raise ValueError(
-                "We only support MESH_POINT_DATA, MESH_CELL_DATA, or SURF_POINT_DATA.")
+                """
+                We only support MESH_POINT_DATA or SURF_POINT_DATA.\
+                Regression is only supported for point data, as number of features for\
+                training and predicting must match exactly. \
+                If data is avaiable as point data, you can perform regression over\
+                point data and then transform the result to cell data. \
+                See documentation for further details.
+                """)
 
         # apply regression
-        other_data = geolike.get(data_type, data_key)
-        reg_data = geolike.regress_from_array(other_data, xyz, **kwargs)
+        reg_data = other.regress_from_data(
+            data_key, xyz, container_loc=container_loc, **kwargs)
 
-        if data_type == GEO_DATA.MESH_POINT_DATA:
-            self.mesh.point_data[data_key] = reg_data
-        elif data_type == GEO_DATA.MESH_CELL_DATA:
-            self.mesh.cell_data[data_key] = reg_data
-        elif data_type == GEO_DATA.SURF_POINT_DATA:
-            self.get_surface_mesh().point_data[data_key] = reg_data
+        if isinstance(data_key, (list, tuple, np.ndarray)):
+            for i, key in enumerate(data_key):
+                offset = 0
+                shape = other.get(container_loc, key).shape
+                d = reg_data[:, offset:offset+shape[-1]]
+                container[self.check_enum(key)] = d
+        else:
+            container[data_key] = reg_data
 
         return reg_data
 
