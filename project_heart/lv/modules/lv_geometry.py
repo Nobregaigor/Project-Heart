@@ -1243,7 +1243,8 @@ class LV_Geometry(Geometry):
                 for this boundary condition.".format(surf_name))
 
         # select pts at surface
-        pts = self.points(mask=self.get_nodeset(surface))
+        ioi = self.get_nodeset(surface)
+        pts = self.points(mask=ioi)
         # get lv normal
         # lvnormal = self.get_normal()
         # fit a plat on pts and get plane normal (will be the rim's normal)
@@ -1258,6 +1259,7 @@ class LV_Geometry(Geometry):
         # create rim nodes and set relations with surface nodes
         rim, rim_center, rim_el = create_rim_circunference(c, r, height, -n, x)
         nodes_rim_relations, nodes_rim_dists = relate_closest(pts, rim)
+        nodes_rim_relations[:, 0] = ioi
 
         rim_data = {
             LV_RIM.NODES.value: rim,
@@ -1268,7 +1270,8 @@ class LV_Geometry(Geometry):
             LV_RIM.REF_NODESET.value: surface
         }
 
-        self.add_discrete_set(bc_name, nodes_rim_relations) # save discrete set
+        # save discrete set
+        self.add_discrete_set(bc_name, nodes_rim_relations)
         self.add_bc(bc_name, LV_BCS.RIM_SPRINGS.value,
                     rim_data)  # save bc data
 
@@ -1283,8 +1286,8 @@ class LV_Geometry(Geometry):
         rim_pts = rim_data[LV_RIM.NODES.value]
         relations = rim_data[LV_RIM.RELATIONS.value]
 
-        geo_pts = self.points(mask=self.get_nodeset(rim_ref_nods))
-        pts_a = geo_pts[relations[:, 0]][::n_skip]
+        # geo_pts = self.points(mask=self.get_nodeset(rim_ref_nods))
+        pts_a = self.points(mask=relations[:, 0][::n_skip])
         pts_b = rim_pts[relations[:, 1]][::n_skip]
 
         lines = None

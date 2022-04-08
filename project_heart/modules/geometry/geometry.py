@@ -772,6 +772,7 @@ class Geometry():
 
     def create_surface_oi_from_surface(self, surf_name):
 
+        surf_map = self.get_surface_id_map_from_mesh()
         cell_id_list = self.get_node_ids_for_each_cell(surface=True)
         surf_name = self.check_enum(surf_name)
         try:
@@ -788,7 +789,7 @@ class Geometry():
             ioi = np.where(index_map == val)[0]
             surf_oi = deque()
             for i in ioi:
-                surf_oi.append(cell_id_list[i])
+                surf_oi.append(surf_map[cell_id_list[i]])
             self._surfaces_oi[val] = list(surf_oi)
 
         return self._surfaces_oi
