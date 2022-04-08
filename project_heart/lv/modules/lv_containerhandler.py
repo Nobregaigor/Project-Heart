@@ -1,4 +1,4 @@
-from project_heart.modules.geometry import Geometry
+from project_heart.modules.container import BaseContainerHandler
 from project_heart.utils.vector_utils import *
 from project_heart.utils.spatial_utils import *
 from project_heart.utils.spatial_points import *
@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 
 
-class LV_Geometry(Geometry):
+class LV_ContainerHandler(BaseContainerHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -67,8 +67,10 @@ class LV_Geometry(Geometry):
 
     @staticmethod
     def est_apex_and_base_refs(points, **kwargs):
-        apex_ref, apex_region_idxs = LV_Geometry.est_apex_ref(points, **kwargs)
-        base_ref, base_region_idxs = LV_Geometry.est_base_ref(points, **kwargs)
+        apex_ref, apex_region_idxs = LV_ContainerHandler.est_apex_ref(
+            points, **kwargs)
+        base_ref, base_region_idxs = LV_ContainerHandler.est_base_ref(
+            points, **kwargs)
         info = {
             "apex_ref": apex_ref,
             "base_ref": base_ref,
@@ -79,12 +81,14 @@ class LV_Geometry(Geometry):
     def est_pts_aligment_with_lv_normal(self, points, n=5, rot_chain=[], **kwargs):
         pts = np.copy(points)
         for _ in range(n):
-            long_line, _ = LV_Geometry.est_apex_and_base_refs(pts, **kwargs)
+            long_line, _ = LV_ContainerHandler.est_apex_and_base_refs(
+                pts, **kwargs)
             lv_normal = unit_vector(long_line[0] - long_line[1])
             curr_rot = get_rotation(lv_normal, self._Z)
             pts = curr_rot.apply(pts)
             rot_chain.append(curr_rot)
-        long_line, info = LV_Geometry.est_apex_and_base_refs(pts, **kwargs)
+        long_line, info = LV_ContainerHandler.est_apex_and_base_refs(
+            pts, **kwargs)
         lv_normal = unit_vector(long_line[0] - long_line[1])
         info["rot_pts"] = pts
         info["normal"] = lv_normal
@@ -1193,7 +1197,7 @@ class LV_Geometry(Geometry):
         self.transform_point_data_to_cell_data(
             LV_FIBERS.N0_ANGLES, "mean", axis=0)
 
-    def compute_fiber_angles(self, cell_data:bool=False):
+    def compute_fiber_angles(self, cell_data: bool = False):
         if not cell_data:
             fiber_pts_vec = self.mesh.point_data[LV_FIBERS.F0.value]
             sheet_pts_vec = self.mesh.point_data[LV_FIBERS.S0.value]

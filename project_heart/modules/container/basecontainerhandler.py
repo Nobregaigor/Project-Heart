@@ -25,7 +25,10 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-class Geometry():
+class BaseContainerHandler():
+    """Data storage obj.
+    """
+
     def __init__(self,
                  mesh=None,
                  *args, **kwargs):
@@ -135,7 +138,7 @@ class Geometry():
             p_dtype (np.type, optional): dtype of points. Defaults to np.float32.
             e_dtype (np.type, optional): dtype of elements. Defaults to np.int64.
         """
-        mesh = Geometry.set_pv_UnstructuredGrid_from_nodes_and_elements(
+        mesh = BaseContainerHandler.set_pv_UnstructuredGrid_from_nodes_and_elements(
             nodes=nodes,
             elements=elements,
             el_offset=el_offset,
@@ -365,7 +368,7 @@ class Geometry():
             i: int or None = None,
             t: float or None = None) -> np.ndarray:
         """
-        This method is convinient way to retrieve specified data from the Geometry object. 
+        This method is convinient way to retrieve specified data from the BaseContainerHandler object. 
         The argument 'what' must be specified, it determines the location in which the
         method will look for the data. The 'mask' argument can be used to retrieve only
         specified range; it can be boolean or index array. If data is to be retrieved from
@@ -844,7 +847,7 @@ class Geometry():
             tetra.set_mesh(V, F)
             tetra.tetrahedralize()
             VT, TT = tetra.get_tet_mesh()
-            mesh = Geometry.set_pv_UnstructuredGrid_from_nodes_and_elements(
+            mesh = BaseContainerHandler.set_pv_UnstructuredGrid_from_nodes_and_elements(
                 nodes=VT,
                 elements=TT,
                 el_offset=0,
@@ -914,7 +917,7 @@ class Geometry():
             raise ValueError(
                 "Could not match data length with mesh points, mesh cells or surface mesh points.")
 
-        return Geometry.regress(xyz, data, new_xyz_domain, **kwargs)
+        return BaseContainerHandler.regress(xyz, data, new_xyz_domain, **kwargs)
 
     def regress_data(self,
                      data_type: int,
@@ -926,10 +929,10 @@ class Geometry():
         data = self.get(data_type, data_key)
         return self.regress_from_array(data, new_xyz_domain, **kwargs)
 
-    def regress_from_other_geometry(self, geolike: object, data_type: int, data_key: str, **kwargs):
-        if not issubclass(geolike.__class__, Geometry):
+    def regress_from_other_BaseContainerHandler(self, geolike: object, data_type: int, data_key: str, **kwargs):
+        if not issubclass(geolike.__class__, BaseContainerHandler):
             raise ValueError(
-                "Geolike object must be derived from Geometry class.")
+                "Geolike object must be derived from BaseContainerHandler class.")
 
         data_key = self.check_enum(data_key)
 

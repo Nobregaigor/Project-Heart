@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime
 
 from project_heart.enums import *
-from .geometry import Geometry
+from .basecontainerhandler import Geometry
 
 
 from os import path
