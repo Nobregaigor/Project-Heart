@@ -1,4 +1,4 @@
-*.feb
+# *.feb
 *.xplt
 
 # Byte-compiled / optimized / DLL files
