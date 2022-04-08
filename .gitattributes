@@ -2,4 +2,4 @@
 * text=auto
 
 # Set jupyter notebooks as 'Python language'
-*/**.ipynb linguist-language=Python
+/*/**.ipynb linguist-language=Python
