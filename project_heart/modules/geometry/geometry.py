@@ -812,7 +812,7 @@ class Geometry():
                        make_manifold=True,
                        **kwargs):
         """DOC PENDING.
-        
+
         This is a wrap method for the Wildmeshing library: https://wildmeshing.github.io/python/\
         and the tetgen library https://tetgen.pyvista.org/. \
         Credits should be to the owners of the original libraries.
@@ -872,6 +872,92 @@ class Geometry():
         else:
             raise NotImplementedError(
                 "We current support 'wildmeshing' and 'tetgen' backends. Check TETRA_BACKEND enum for details.")
+
+    @staticmethod
+    def regress(X, Y, XI,
+                hidden_layer_sizes: tuple = (150,),
+                early_stopping: bool = True,
+                validation_fraction: float = 0.15,
+                **kwargs):
+        try:
+            from sklearn.neural_network import MLPRegressor
+        except ImportError:
+            raise ImportError(
+                "sklearn is required to perform regression. See https://bit.ly/3NX9bhR for details.")
+
+        if XI.shape[-1] != X.shape[-1]:
+            raise ValueError("Number of features must match.")
+
+        reg = MLPRegressor(hidden_layer_sizes,
+                           early_stopping=early_stopping,
+                           validation_fraction=validation_fraction,
+                           **kwargs)
+        reg.fit(X, Y)
+        return reg.predict(XI)
+
+    def regress_from_array(self,
+                           data: np.ndarray,
+                           new_xyz_domain: np.ndarray,
+                           **kwargs):
+
+        # try to match xyz with given data size
+        if len(data) == self.mesh.n_points:
+            xyz = self.points()
+        elif len(data) == self.mesh.n_cells:
+            if len(self.cells().keys()) > 1:
+                raise NotImplementedError("Currently, we only support interpolation of 'pure' geometries:\
+                    they must contain only one type of cells. You can try to interpolate over points.")
+            xyz = list(self.cells().values())[0]
+        elif len(data) == self.get_surface_mesh().n_points:
+            xyz = self.get_surface_mesh().points
+        else:
+            raise ValueError(
+                "Could not match data length with mesh points, mesh cells or surface mesh points.")
+
+        return Geometry.regress(xyz, data, new_xyz_domain, **kwargs)
+
+    def regress_data(self,
+                     data_type: int,
+                     data_key: str,
+                     new_xyz_domain: np.ndarray,
+                     **kwargs):
+
+        # get data -> will raise error if could not retrieve data
+        data = self.get(data_type, data_key)
+        return self.regress_from_array(data, new_xyz_domain, **kwargs)
+
+    def regress_from_other_geometry(self, geolike: object, data_type: int, data_key: str, **kwargs):
+        if not issubclass(geolike.__class__, Geometry):
+            raise ValueError(
+                "Geolike object must be derived from Geometry class.")
+
+        data_key = self.check_enum(data_key)
+
+        if data_type == GEO_DATA.MESH_POINT_DATA:
+            xyz = self.points()
+        elif data_type == GEO_DATA.MESH_CELL_DATA:
+            if len(self.cells().keys()) > 1:
+                raise NotImplementedError("Currently, we only support interpolation of 'pure' geometries:\
+                    they must contain only one type of cells. You can try to interpolate over points.")
+            xyz = list(self.cells().values())[0]
+        elif data_type == GEO_DATA.SURF_POINT_DATA:
+            xyz = self.get_surface_mesh().points
+        else:
+            raise ValueError(
+                "We only support MESH_POINT_DATA, MESH_CELL_DATA, or SURF_POINT_DATA.")
+
+        # apply regression
+        other_data = geolike.get(data_type, data_key)
+        reg_data = geolike.regress_from_array(other_data, xyz, **kwargs)
+
+        if data_type == GEO_DATA.MESH_POINT_DATA:
+            self.mesh.point_data[data_key] = reg_data
+        elif data_type == GEO_DATA.MESH_CELL_DATA:
+            self.mesh.cell_data[data_key] = reg_data
+        elif data_type == GEO_DATA.SURF_POINT_DATA:
+            self.get_surface_mesh().point_data[data_key] = reg_data
+
+        return reg_data
 
     # -------------------------------
     # plot
@@ -935,6 +1021,36 @@ class Geometry():
             return plotter
         else:
             plotter.show()
+
+    def plot_streamlines(self,
+                         vectors: str,
+                         scalars=None,
+                         decimate_boundary=0.90,
+                         max_steps=1000,
+                         surface_streamlines=False,
+                         streamline_args={}
+                         ):
+
+        vectors = self.check_enum(vectors)
+        seed_mesh = self.mesh.decimate_boundary(decimate_boundary)
+        stream = self.mesh.streamlines_from_source(seed_mesh,
+                                                   vectors,
+                                                   surface_streamlines=surface_streamlines,
+                                                   max_steps=max_steps,
+                                                   integration_direction="both",
+                                                   **streamline_args
+                                                   )
+        if scalars is None:
+            scalars = vectors
+        else:
+            scalars = self.check_enum(scalars)
+        p = pv.Plotter()
+        p.enable_anti_aliasing()
+        p.enable_shadows()
+        p.background_color = 'w'
+        # p.add_mesh(lv.mesh, color="beige")
+        p.add_mesh(stream, scalars=scalars, lighting=True)
+        p.show()
 
     # -------------------------------
     # Check Methods

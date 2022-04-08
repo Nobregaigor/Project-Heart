@@ -1193,6 +1193,38 @@ class LV_Geometry(Geometry):
         self.transform_point_data_to_cell_data(
             LV_FIBERS.N0_ANGLES, "mean", axis=0)
 
+    def compute_fiber_angles(self, cell_data:bool=False):
+        if not cell_data:
+            fiber_pts_vec = self.mesh.point_data[LV_FIBERS.F0.value]
+            sheet_pts_vec = self.mesh.point_data[LV_FIBERS.S0.value]
+            sheet_normal_pts_vec = self.mesh.point_data[LV_FIBERS.N0.value]
+            # Compute angles between normal and fiber vectors
+            fiber_angles = np.degrees(self.compute_angles_wrt_normal(
+                fiber_pts_vec, False, False) - np.pi*0.5)
+            sheet_angles = np.degrees(self.compute_angles_wrt_normal(
+                sheet_pts_vec, False, False) - np.pi*0.5)
+            sheet_normal_angles = np.degrees(self.compute_angles_wrt_normal(
+                sheet_normal_pts_vec, False, False) - np.pi*0.5)
+            # add angles
+            self.mesh.point_data[LV_FIBERS.F0_ANGLES.value] = fiber_angles
+            self.mesh.point_data[LV_FIBERS.S0_ANGLES.value] = sheet_angles
+            self.mesh.point_data[LV_FIBERS.N0_ANGLES.value] = sheet_normal_angles
+        else:
+            fiber_pts_vec = self.mesh.cell_data[LV_FIBERS.F0.value]
+            sheet_pts_vec = self.mesh.cell_data[LV_FIBERS.S0.value]
+            sheet_normal_pts_vec = self.mesh.cell_data[LV_FIBERS.N0.value]
+            # Compute angles between normal and fiber vectors
+            fiber_angles = np.degrees(self.compute_angles_wrt_normal(
+                fiber_pts_vec, False, False) - np.pi*0.5)
+            sheet_angles = np.degrees(self.compute_angles_wrt_normal(
+                sheet_pts_vec, False, False) - np.pi*0.5)
+            sheet_normal_angles = np.degrees(self.compute_angles_wrt_normal(
+                sheet_normal_pts_vec, False, False) - np.pi*0.5)
+            # add angles
+            self.mesh.cell_data[LV_FIBERS.F0_ANGLES.value] = fiber_angles
+            self.mesh.cell_data[LV_FIBERS.S0_ANGLES.value] = sheet_angles
+            self.mesh.cell_data[LV_FIBERS.N0_ANGLES.value] = sheet_normal_angles
+
     # =============================================================================
     # Boundary conditions
 
