@@ -627,23 +627,18 @@ class BaseContainerHandler():
 
         # prep
         if surface:
+            if self.check_pure_surfmesh():
+                return list(self.get_surface_mesh().cast_to_unstructured_grid().cells_dict.values())[0]
             if self._surf_cell_list is not None:
                 return self._surf_cell_list
             mesh = self.get_surface_mesh().copy().cast_to_unstructured_grid()
         else:
+            if self.check_pure_mesh():
+                return list(self.cells())[0]
+
             if self._cell_list is not None:
                 return self._cell_list
             mesh = self.mesh
-
-        # compute - old (slow) method
-        # faces = deque()
-        # i, offset = 0, 0
-        # cc = mesh.cells  # fetch up front
-        # while i < mesh.n_cells:
-        #     nn = cc[offset]
-        #     faces.append(cc[offset+1:offset+1+nn])
-        #     offset += nn + 1
-        #     i += 1
 
         # compute
         cells_ids_list = deque()
@@ -1081,6 +1076,12 @@ class BaseContainerHandler():
         if isinstance(name, Enum):
             name = name.value
         return name
+
+    def check_pure_mesh(self):
+        return True if len(self.cells()) == 0 else False
+
+    def check_pure_surfmesh(self):
+        return True if len(self.get_surface_mesh().cast_to_unstructured_grid().cells_dict) == 0 else False
 
     def check_mesh_data(self, mesh_data: str) -> tuple:
         """Check whether given mesh_data is in mesh or surface mesh
