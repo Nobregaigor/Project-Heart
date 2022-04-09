@@ -996,7 +996,10 @@ class BaseContainerHandler():
              vnodes=[],
              vcolor="red",
              cat_exclude_zero=False,
+             categorical=False,
              **kwargs):
+        
+        scalars = self.check_enum(scalars)
 
         plot_args = dict(cmap="Set2",
                          opacity=1.0,
@@ -1026,7 +1029,17 @@ class BaseContainerHandler():
             else:
                 mesh.cell_data["cat_exclude_zero_FOR_PLOT"] = vals
             scalars = "cat_exclude_zero_FOR_PLOT"
-
+        if categorical:
+            vals = np.copy(mesh.get_array(scalars))
+            unique_vals = np.unique(vals)
+            for i, v in enumerate(unique_vals):
+                vals[np.where(vals == v)[0]] = i
+            if len(vals) == mesh.n_points:
+                mesh.point_data["CATEGORICAL_FOR_PLOT"] = vals
+            else:
+                mesh.cell_data["CATEGORICAL_FOR_PLOT"] = vals
+            scalars = "CATEGORICAL_FOR_PLOT"
+        
         plotter.add_mesh(mesh, scalars=scalars, **plot_args)
 
         if len(vnodes) > 0:

@@ -41,6 +41,7 @@ class LV_SURFS(IntEnum):
 
     # BASE BORDER
     BASE_BORDER = 22
+    BASE = 23
 
 
 class LV_MESH_DATA(Enum):
