@@ -151,11 +151,19 @@ class BaseContainerHandler():
     @classmethod
     def from_xplt(cls, xplt, **kwargs):
         if isinstance(xplt, pathlib.Path):
-            from febio_python.xplt import read_xplt
+            try:
+                from febio_python.xplt import read_xplt
+            except ImportError:
+                raise ImportError(
+                    "fbeio_python.xplt is required to parse xplt data. Please, check https://github.com/Nobregaigor/febio-python for details.")
             xplt_path = xplt
             xplt = read_xplt(str(xplt))
         if isinstance(xplt, str):
-            from febio_python.xplt import read_xplt
+            try:
+                from febio_python.xplt import read_xplt
+            except ImportError:
+                raise ImportError(
+                    "fbeio_python.xplt is required to parse xplt data. Please, check https://github.com/Nobregaigor/febio-python for details.")
             xplt_path = xplt
             xplt = read_xplt(xplt)
 
