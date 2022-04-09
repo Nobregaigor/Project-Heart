@@ -152,9 +152,11 @@ class BaseContainerHandler():
     def from_xplt(cls, xplt, **kwargs):
         if isinstance(xplt, pathlib.Path):
             from febio_python.xplt import read_xplt
+            xplt_path = xplt
             xplt = read_xplt(str(xplt))
         if isinstance(xplt, str):
             from febio_python.xplt import read_xplt
+            xplt_path = xplt
             xplt = read_xplt(xplt)
 
         # create mesh dataset from nodes and elements in xplt file
@@ -175,7 +177,7 @@ class BaseContainerHandler():
                 (n, shape[0], shape[1]))  # optimized version
             geo.states.add(key, _data, DATA_FORMAT(data_format))
         # save reference file info
-        geo._ref_file = Path(xplt)
+        geo._ref_file = Path(xplt_path)
         geo._ref_dir = geo._ref_file.parents[0]
         return geo
 
