@@ -189,6 +189,22 @@ class BaseContainerHandler():
         geo._ref_dir = geo._ref_file.parents[0]
         return geo
 
+    @classmethod
+    def from_file(cls, filepath, **kwargs):
+        if isinstance(filepath, Path):
+            filepath = str(filepath)
+        ext = os.path.splitext(filepath)[-1]
+        if ext == '.xplt':
+            return cls.from_xplt(filepath, **kwargs)
+        elif ext == '.feb':
+            raise NotImplementedError("Feb extension not yet implemented.")
+        else:
+            try:
+                return cls.from_pyvista_read(filepath, **kwargs)
+            except:
+                raise RuntimeError(
+                    "Could not read input file. We currentl support '.xplt', and pyvista read methods: https://bit.ly/3uByq1P")
+
     # ----------------------------------------------------------------
     # Write methods (TO DO)
 
