@@ -369,8 +369,8 @@ class BaseContainerHandler():
         """
         return self.States.data
 
-    # ----------------------------------------------------------------
-    # Get methods -> returns point, cell or state(s) data
+    # ------------------------
+    # Get (joker method)
 
     def get(self, what: str = GEO_DATA.STATES,
             key: str = None,
@@ -455,6 +455,9 @@ class BaseContainerHandler():
                 raise ValueError(
                     "Not sure where to get data from: 'what', %s, should be one of the GEO_DATA values." % what)
 
+    # ------------------------
+    # Normal
+
     def set_normal(self, normal: np.ndarray, dtype: np.dtype = np.float64) -> np.ndarray:
         self._normal = np.asarray(normal, dtype=dtype)
         return self._normal
@@ -465,6 +468,24 @@ class BaseContainerHandler():
                 "Normal was not initialized. Either set it manually or use a class method to do so.")
         return self._normal
 
+    def compute_angles_wrt_normal(self, vec_arr, check_orientation=False, degrees=False):
+        normal_vec = np.repeat(np.expand_dims(
+            self.get_normal(), 1), len(vec_arr), axis=1).T
+        angles = angle_between(vec_arr, normal_vec,
+                               check_orientation=check_orientation)
+        if degrees:
+            angles = np.degrees(angles)
+        return angles
+
+    # ------------------------
+    # Boundary conditions
+
+    def add_bc(self, name, bc_type, bc, replace=False):
+        if replace == False and name in self._bcs:
+            raise KeyError(
+                "Boundary condition '%s' already exists. If you want to replace it, set replace flag to true." % name)
+        self._bcs[name] = (bc_type, bc)
+
     def get_bc(self, bc_name: str) -> tuple:
         try:
             return self._bcs[bc_name]
@@ -472,8 +493,8 @@ class BaseContainerHandler():
             raise ValueError(
                 "bc_name '%s' not found. Did you create it?" % bc_name)
 
-    # ----------------------------------------------------------------
-    # add methods
+    # ------------------------
+    # Nodesets
 
     def add_nodeset(self, name: str, ids: np.ndarray, overwrite: bool = False, dtype: np.dtype = np.int64) -> None:
         """Adds a list of indexes as a nodeset. 
@@ -517,6 +538,22 @@ class BaseContainerHandler():
         else:
             return self._nodesets[name]
 
+    def get_nodesets_from_enum(self, enum_like):
+        if not isinstance(enum_like, object):
+            raise ValueError(
+                "enum_like must be Enum related to saved nodesets.")
+        data = dict()
+        for item in enum_like:
+            try:
+                data[item.name] = self.get_nodeset(item.value)
+            except KeyError:
+                continue
+                # print("Unknown node set: %s" % item.name)
+        return data
+
+    # ------------------------
+    # Surface
+
     def get_surface_oi(self, name: str):
         if isinstance(name, Enum):
             str_val = name.name
@@ -528,6 +565,9 @@ class BaseContainerHandler():
                 "Surface of interest '%s' does not exist." % str_val)
         else:
             return self._surfaces_oi[name]
+
+    # ------------------------
+    # Virtual nodes and virtual elements
 
     def add_virtual_node(self, name, node, replace=False) -> None:
         name = self.check_enum(name)
@@ -559,6 +599,9 @@ class BaseContainerHandler():
             raise KeyError(
                 "Virtual elem '%s' does not exist. Did you create it?" % name)
         return self._virtual_elems[name]
+
+    # ------------------------
+    # discrete sets
 
     def add_discrete_set(self, name, discrete_set: np.ndarray, replace: bool = False, dtype: np.dtype = np.int64) -> None:
         """Adds a discrete set to the current object. Discreset sets, in this case, are defined as relationships\
@@ -594,12 +637,6 @@ class BaseContainerHandler():
                 "discrete_set must have shape of [nx2], where n refers to number of node relations")
         self._discrete_sets[name] = discrete_set
 
-    def add_bc(self, name, bc_type, bc, replace=False):
-        if replace == False and name in self._bcs:
-            raise KeyError(
-                "Boundary condition '%s' already exists. If you want to replace it, set replace flag to true." % name)
-        self._bcs[name] = (bc_type, bc)
-
     # -------------------------------
     # Mesh wrapped functions
 
@@ -607,6 +644,9 @@ class BaseContainerHandler():
         self.mesh.set_active_scalars(identifier)
         self.mesh = self.mesh.threshold(threshold, **kwargs)
         self._surface_mesh = self.mesh.extract_surface()
+
+    # -------------------------------
+    # Surface mesh related functions
 
     def extract_surface_mesh(self, **kwars):
         self._surface_mesh = self.mesh.extract_surface(**kwars)
@@ -621,17 +661,38 @@ class BaseContainerHandler():
             else:
                 return self._surface_mesh
 
-    # -------------------------------
-    # other functions
-
-    def map_surf_ids_to_global_ids(self, surf_ids, dtype=np.int64):
-        lvsurf = self.get_surface_mesh()
-        surf_to_global = lvsurf.point_data["vtkOriginalPointIds"]
-        return np.array(surf_to_global[surf_ids], dtype=dtype)
-
     def get_surface_id_map_from_mesh(self):
         lvsurf = self.get_surface_mesh()
         return lvsurf.point_data["vtkOriginalPointIds"]
+
+    def map_surf_ids_to_global_ids(self, surf_ids, dtype=np.int64):
+        surf_to_global = self.get_surface_id_map_from_mesh()
+        return np.array(surf_to_global[surf_ids], dtype=dtype)
+
+    def smooth_surface(self, **kwargs):
+        """ Adjust point coordinates using Laplacian smoothing.\n
+            Uses Pyvista smoothing method: https://bit.ly/37ee3hU \n
+            WARNING: This function applies smoothing at surface level \n
+            by modifying their coordinates directly, which does not imply \n
+            that cell volumes (if volumetric mesh) will be adjusted.
+        """
+        self._surface_mesh = self.get_surface_mesh().smooth(**kwargs)
+        surf_to_global = self._surface_mesh.point_data["vtkOriginalPointIds"]
+        self.mesh.points[surf_to_global] = self._surface_mesh.points.copy()
+
+    def merge_mesh_and_surface_mesh(self) -> pv.UnstructuredGrid:
+        """Combines mesh and surface mesh into a single mesh dataset. This is often\
+            required for some FEA solvers or other libraries (such as LDRB).
+
+        Returns:
+            pv.UnstructuredGrid: Merged mesh.
+        """
+        mesh = self.mesh.copy()
+        mesh = mesh.merge(self.get_surface_mesh().copy())
+        return mesh
+
+    # -------------------------------
+    # points to cell data related functions
 
     def get_node_ids_for_each_cell(self, surface=False, **kwargs):
 
@@ -721,71 +782,6 @@ class BaseContainerHandler():
         # return pointer to saved data
         return mesh.cell_data[data_key]
 
-    def smooth_surface(self, **kwargs):
-        """ Adjust point coordinates using Laplacian smoothing.\n
-            Uses Pyvista smoothing method: https://bit.ly/37ee3hU \n
-            WARNING: This function applies smoothing at surface level \n
-            by modifying their coordinates directly, which does not imply \n
-            that cell volumes (if volumetric mesh) will be adjusted.
-        """
-        self._surface_mesh = self.get_surface_mesh().smooth(**kwargs)
-        surf_to_global = self._surface_mesh.point_data["vtkOriginalPointIds"]
-        self.mesh.points[surf_to_global] = self._surface_mesh.points.copy()
-
-    def merge_mesh_and_surface_mesh(self) -> pv.UnstructuredGrid:
-        """Combines mesh and surface mesh into a single mesh dataset. This is often\
-            required for some FEA solvers or other libraries (such as LDRB).
-
-        Returns:
-            pv.UnstructuredGrid: Merged mesh.
-        """
-        mesh = self.mesh.copy()
-        mesh = mesh.merge(self.get_surface_mesh().copy())
-        return mesh
-
-    def prep_for_gmsh(self,
-                      cellregionIds: np.ndarray,
-                      mesh: pv.UnstructuredGrid = None,
-                      ) -> pv.UnstructuredGrid:
-        """Prepares a given mesh for gmsh meshion export. Includes gmsh:physical\
-            and gmsh:geometrical data with 'cellregionIds' data.
-
-        Args:
-            cellregionIds (np.ndarray): Integer list identifying regions.
-            mesh (pv.UnstructuredGrid, optional): Mesh object to export. Defaults to None (uses self.mesh).
-
-        Returns:
-            pv.UnstructuredGrid: Mesh dataset with "gmsh:physical" and "gmsh:geometrical" in cell_data.
-        """
-        if mesh is None:
-            mesh = self.mesh.copy()
-
-        mesh.cell_data["gmsh:physical"] = cellregionIds
-        mesh.cell_data["gmsh:geometrical"] = cellregionIds
-        return mesh
-
-    def compute_angles_wrt_normal(self, vec_arr, check_orientation=False, degrees=False):
-        normal_vec = np.repeat(np.expand_dims(
-            self.get_normal(), 1), len(vec_arr), axis=1).T
-        angles = angle_between(vec_arr, normal_vec,
-                               check_orientation=check_orientation)
-        if degrees:
-            angles = np.degrees(angles)
-        return angles
-
-    def get_nodesets_from_enum(self, enum_like):
-        if not isinstance(enum_like, object):
-            raise ValueError(
-                "enum_like must be Enum related to saved nodesets.")
-        data = dict()
-        for item in enum_like:
-            try:
-                data[item.name] = self.get_nodeset(item.value)
-            except KeyError:
-                continue
-                # print("Unknown node set: %s" % item.name)
-        return data
-
     def create_surface_oi_from_surface(self, surf_name):
 
         surf_map = self.get_surface_id_map_from_mesh()
@@ -822,6 +818,9 @@ class BaseContainerHandler():
                 continue
                 # print("Unknown node set: %s" % item.name)
         return data
+
+    # -------------------------------
+    # Tetrehedralization
 
     def tetrahedralize(self,
                        backend=TETRA_BACKEND.TETGEN,
@@ -888,6 +887,9 @@ class BaseContainerHandler():
         else:
             raise NotImplementedError(
                 "We current support 'wildmeshing' and 'tetgen' backends. Check TETRA_BACKEND enum for details.")
+
+    # -------------------------------
+    # Regression
 
     @staticmethod
     def regress(X, Y, XI,
@@ -987,6 +989,30 @@ class BaseContainerHandler():
         return reg_data
 
     # -------------------------------
+    # Other functions
+
+    def prep_for_gmsh(self,
+                      cellregionIds: np.ndarray,
+                      mesh: pv.UnstructuredGrid = None,
+                      ) -> pv.UnstructuredGrid:
+        """Prepares a given mesh for gmsh meshion export. Includes gmsh:physical\
+            and gmsh:geometrical data with 'cellregionIds' data.
+
+        Args:
+            cellregionIds (np.ndarray): Integer list identifying regions.
+            mesh (pv.UnstructuredGrid, optional): Mesh object to export. Defaults to None (uses self.mesh).
+
+        Returns:
+            pv.UnstructuredGrid: Mesh dataset with "gmsh:physical" and "gmsh:geometrical" in cell_data.
+        """
+        if mesh is None:
+            mesh = self.mesh.copy()
+
+        mesh.cell_data["gmsh:physical"] = cellregionIds
+        mesh.cell_data["gmsh:geometrical"] = cellregionIds
+        return mesh
+
+    # -------------------------------
     # plot
 
     def plot(self,
@@ -998,7 +1024,7 @@ class BaseContainerHandler():
              cat_exclude_zero=False,
              categorical=False,
              **kwargs):
-        
+
         scalars = self.check_enum(scalars)
 
         plot_args = dict(cmap="Set2",
@@ -1039,7 +1065,7 @@ class BaseContainerHandler():
             else:
                 mesh.cell_data["CATEGORICAL_FOR_PLOT"] = vals
             scalars = "CATEGORICAL_FOR_PLOT"
-        
+
         plotter.add_mesh(mesh, scalars=scalars, **plot_args)
 
         if len(vnodes) > 0:
