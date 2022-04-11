@@ -96,6 +96,7 @@ class N_PTS_IN_ELEMENT(IntEnum):
     TRIANGLE = 3
     TETRAHEDRON = 4
     HEXAHEDRON = 8
+    QUADRATIC_HEXAHEDRON = 20
 
 # =============================================================================
 # Conversion between length(element) to its type
@@ -107,5 +108,6 @@ N_PTS_TO_VTK_ELTYPE = dict(
         (N_PTS_IN_ELEMENT.TRIANGLE, VTK_ELEMENTS.TRIANGLE),
         (N_PTS_IN_ELEMENT.TETRAHEDRON, VTK_ELEMENTS.TETRA),
         (N_PTS_IN_ELEMENT.HEXAHEDRON, VTK_ELEMENTS.HEXAHEDRON),
+        (N_PTS_IN_ELEMENT.QUADRATIC_HEXAHEDRON, VTK_ELEMENTS.QUADRATIC_HEXAHEDRON),
     )
 )
