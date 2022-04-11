@@ -37,7 +37,8 @@ class BaseContainerHandler():
         else:
             self.mesh = mesh
 
-        self._surface_mesh = pv.UnstructuredGrid()
+        self.surface_mesh = pv.UnstructuredGrid()
+
         self.states = States()
         self._nodesets = {}  # {"nodeset_name": [ids...], ...}
         self._elemsets = {}  # {"elemset_name": [ids...], ...}
@@ -659,23 +660,23 @@ class BaseContainerHandler():
     def filter_mesh_by_scalar(self, identifier: str, threshold: list, **kwargs) -> None:
         self.mesh.set_active_scalars(identifier)
         self.mesh = self.mesh.threshold(threshold, **kwargs)
-        self._surface_mesh = self.mesh.extract_surface()
+        self.surface_mesh = self.mesh.extract_surface()
 
     # -------------------------------
     # Surface mesh related functions
 
     def extract_surface_mesh(self, **kwars):
-        self._surface_mesh = self.mesh.extract_surface(**kwars)
-        return self._surface_mesh
+        self.surface_mesh = self.mesh.extract_surface(**kwars)
+        return self.surface_mesh
 
     def get_surface_mesh(self, force_extract=False, **kwargs):
         if force_extract:
             return self.extract_surface_mesh(**kwargs)
         else:
-            if self._surface_mesh.n_points == 0:
+            if self.surface_mesh.n_points == 0:
                 return self.extract_surface_mesh(**kwargs)
             else:
-                return self._surface_mesh
+                return self.surface_mesh
 
     def get_surface_id_map_from_mesh(self):
         lvsurf = self.get_surface_mesh()
@@ -692,9 +693,9 @@ class BaseContainerHandler():
             by modifying their coordinates directly, which does not imply \n
             that cell volumes (if volumetric mesh) will be adjusted.
         """
-        self._surface_mesh = self.get_surface_mesh().smooth(**kwargs)
-        surf_to_global = self._surface_mesh.point_data["vtkOriginalPointIds"]
-        self.mesh.points[surf_to_global] = self._surface_mesh.points.copy()
+        self.surface_mesh = self.get_surface_mesh().smooth(**kwargs)
+        surf_to_global = self.surface_mesh.point_data["vtkOriginalPointIds"]
+        self.mesh.points[surf_to_global] = self.surface_mesh.points.copy()
 
     def merge_mesh_and_surface_mesh(self) -> pv.UnstructuredGrid:
         """Combines mesh and surface mesh into a single mesh dataset. This is often\
@@ -706,6 +707,17 @@ class BaseContainerHandler():
         mesh = self.mesh.copy()
         mesh = mesh.merge(self.get_surface_mesh().copy())
         return mesh
+
+    def set_facet_data(self, key, data, **kwargs):
+        self.get_surface_mesh(**kwargs).cell_data[key] = data
+
+    def get_facet_data(self, key, **kwargs):
+        key = self.check_enum(key)
+        surf = self.get_surface_mesh()
+        if key in surf.cell_data:
+            return surf.cell_data[key]
+        else:
+            raise KeyError("Was not able to find data in facet data.")
 
     # -------------------------------
     # points to cell data related functions

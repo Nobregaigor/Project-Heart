@@ -20,5 +20,7 @@ class GEO_DATA(IntEnum):
     MESH_POINT_DATA = 4
     MESH_CELL_DATA = 5
 
+    # surface mesh
     SURF_POINT_DATA = 6
     SURF_MESH_DATA = 7
+    FACET_DATA = 7

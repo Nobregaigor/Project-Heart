@@ -125,7 +125,7 @@ class LV_ContainerHandler(BaseContainerHandler):
         surf_regions = np.zeros(len(pts))
         surf_regions[aligment_data["apex_region"]] = LV_SURFS.APEX_REGION
         surf_regions[aligment_data["base_region"]] = LV_SURFS.BASE_REGION
-        self._surface_mesh.point_data[LV_MESH_DATA.APEX_BASE_REGIONS.value] = surf_regions.astype(
+        self.surface_mesh.point_data[LV_MESH_DATA.APEX_BASE_REGIONS.value] = surf_regions.astype(
             np.int64)
 
         # set global region ids (for entire mesh)
@@ -194,7 +194,7 @@ class LV_ContainerHandler(BaseContainerHandler):
         # -- save data at surface and global mesh
 
         # save data at mesh surface
-        self._surface_mesh.point_data[LV_MESH_DATA.EPI_ENDO_GUESS.value] = endo_epi_guess.astype(
+        self.surface_mesh.point_data[LV_MESH_DATA.EPI_ENDO_GUESS.value] = endo_epi_guess.astype(
             np.int64)
         # convert local surf ids to global ids
         epi_ids_mesh = self.map_surf_ids_to_global_ids(epi_ids, dtype=np.int64)
@@ -469,17 +469,17 @@ class LV_ContainerHandler(BaseContainerHandler):
 
         # -------------------------------
         # save mesh data
-        self._surface_mesh.point_data[LV_MESH_DATA.AM_DETAILED.value] = clustered.astype(
+        self.surface_mesh.point_data[LV_MESH_DATA.AM_DETAILED.value] = clustered.astype(
             np.int64)
         self.mesh.point_data[LV_MESH_DATA.AM_DETAILED.value] = mesh_clustered.astype(
             np.int64)
 
-        self._surface_mesh.point_data[LV_MESH_DATA.AM_SURFS.value] = am_highlighted.astype(
+        self.surface_mesh.point_data[LV_MESH_DATA.AM_SURFS.value] = am_highlighted.astype(
             np.int64)
         self.mesh.point_data[LV_MESH_DATA.AM_SURFS.value] = mesh_am_highlighted.astype(
             np.int64)
 
-        self._surface_mesh.point_data[LV_MESH_DATA.AM_EPI_ENDO.value] = am_endo_epi_regions.astype(
+        self.surface_mesh.point_data[LV_MESH_DATA.AM_EPI_ENDO.value] = am_endo_epi_regions.astype(
             np.int64)
         self.mesh.point_data[LV_MESH_DATA.AM_EPI_ENDO.value] = mesh_am_endo_epi_regions.astype(
             np.int64)
@@ -648,7 +648,7 @@ class LV_ContainerHandler(BaseContainerHandler):
         # update endo-epi based on detailed info from aortic_mitral surfs
         # now that we have all surface IDs, we can adjust endo_epi based on detailed
         # information from aortic and mitral data.
-        surf_to_global = self._surface_mesh.point_data["vtkOriginalPointIds"]
+        surf_to_global = self.surface_mesh.point_data["vtkOriginalPointIds"]
 
         # set copy of values (do not modify them directly)
         updated_endo_epi = np.copy(endo_epi)
@@ -668,7 +668,7 @@ class LV_ContainerHandler(BaseContainerHandler):
         mesh_updated_endo_epi[np.where(mesh_am_epi_endo == LV_SURFS.EPI_AM_REGION.value)[
             0]] = LV_SURFS.EPI
         # save new data
-        self._surface_mesh[LV_MESH_DATA.EPI_ENDO.value] = updated_endo_epi
+        self.surface_mesh[LV_MESH_DATA.EPI_ENDO.value] = updated_endo_epi
         self.mesh[LV_MESH_DATA.EPI_ENDO.value] = mesh_updated_endo_epi
 
         # ------------------------------
@@ -692,7 +692,7 @@ class LV_ContainerHandler(BaseContainerHandler):
         mesh_updated_apex_base[surf_to_global] = updated_apex_base
 
         # save new data
-        self._surface_mesh[LV_MESH_DATA.AB_ENDO_EPI.value] = updated_apex_base.astype(
+        self.surface_mesh[LV_MESH_DATA.AB_ENDO_EPI.value] = updated_apex_base.astype(
             np.int64)
         self.mesh[LV_MESH_DATA.AB_ENDO_EPI.value] = mesh_updated_apex_base.astype(
             np.int64)
@@ -712,7 +712,7 @@ class LV_ContainerHandler(BaseContainerHandler):
         # ioi = np.where(mesh_aortic_mitral!=LV_SURFS.OTHER.value)[0]
         # mesh_layers[ioi] = mesh_aortic_mitral[ioi]
         # save results at surface and mesh levels
-        self._surface_mesh.point_data[LV_MESH_DATA.SURFS_DETAILED.value] = layers.astype(
+        self.surface_mesh.point_data[LV_MESH_DATA.SURFS_DETAILED.value] = layers.astype(
             np.int64)
         self.mesh.point_data[LV_MESH_DATA.SURFS_DETAILED.value] = mesh_layers.astype(
             np.int64)
@@ -724,13 +724,13 @@ class LV_ContainerHandler(BaseContainerHandler):
         layers = np.copy(updated_endo_epi)
         mesh_layers = np.copy(mesh_updated_endo_epi)
         # match indexes of interest at surface level
-        am_values = self._surface_mesh.get_array(
+        am_values = self.surface_mesh.get_array(
             LV_MESH_DATA.AM_SURFS.value, "points")
         ioi = np.where(am_values != LV_SURFS.OTHER.value)[0]
         layers[ioi] = am_values[ioi]
         # match indexes of interest at mesh (global) level
         mesh_layers[surf_to_global] = layers
-        self._surface_mesh.point_data[LV_MESH_DATA.SURFS.value] = layers.astype(
+        self.surface_mesh.point_data[LV_MESH_DATA.SURFS.value] = layers.astype(
             np.int64)
         self.mesh.point_data[LV_MESH_DATA.SURFS.value] = mesh_layers.astype(
             np.int64)
