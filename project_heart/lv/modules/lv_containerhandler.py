@@ -1107,7 +1107,7 @@ class LV_ContainerHandler(BaseContainerHandler):
         # prep for ldrb library
         # transform point region ids into cell ids at surface level
         cellregionIdsSurf = self.transform_point_data_to_cell_data(
-            surfRegionsIds, surface=True)
+            surfRegionsIds, method="median", surface=True)
         # combine volumetric mesh with surface mesh
         mesh = self.merge_mesh_and_surface_mesh()
         # adjust regions to include both surface and volume (with zeros)

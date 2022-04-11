@@ -769,6 +769,8 @@ class BaseContainerHandler():
             fun = functools.partial(np.min, axis=axis)
         elif method == "mean":
             fun = functools.partial(np.mean, axis=axis)
+        elif method == "median":
+            fun = functools.partial(np.median, axis=axis)
         else:
             if not callable(method):
                 raise ValueError(
