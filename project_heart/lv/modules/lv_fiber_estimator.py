@@ -20,7 +20,14 @@ class LV_FiberEstimator(LV_RegionIdentifier):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def identify_fibers_region_ids_ldrb_1(self) -> tuple:
+        # ------ default values
+        self._default_fiber_markers = {
+            "epi": LV_SURFS.EPI.value,
+            "lv": LV_SURFS.ENDO.value,
+            "base": LV_SURFS.BASE.value
+        }
+
+    def identify_fibers_regions_ldrb_1(self) -> tuple:
         """Identifies mesh surface regions for fiber computation based on nodesets. \
             LDRB only accpets three regions: 'endo', 'epi' and 'border(s)', therefore,\
             we must combine aortic and mitral regions of interest into a single region.\
@@ -54,8 +61,8 @@ class LV_FiberEstimator(LV_RegionIdentifier):
         ldrb_mesh_region_ids = np.zeros(self.mesh.n_points)
         ldrb_mesh_region_ids[endo] = LV_SURFS.ENDO
         ldrb_mesh_region_ids[epi] = LV_SURFS.EPI
-        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE_BORDER
-        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE_BORDER
+        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE
+        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE
         # get ids for surface
         lvsurf_map_id = self.get_surface_id_map_from_mesh()
         lvsurf = self.get_surface_mesh()
@@ -65,7 +72,7 @@ class LV_FiberEstimator(LV_RegionIdentifier):
 
         return ldrb_mesh_region_ids, ldrb_mesh_region_ids
 
-    def identify_fibers_region_ids_ldrb_2(self) -> tuple:
+    def identify_fibers_regions_ldrb_2(self) -> tuple:
         """Identifies mesh surface regions for fiber computation based on nodesets. \
             LDRB only accpets three regions: 'endo', 'epi' and 'border(s)', therefore,\
             we must combine aortic and mitral regions of interest into a single region.\
@@ -100,18 +107,18 @@ class LV_FiberEstimator(LV_RegionIdentifier):
         ldrb_mesh_region_ids = np.zeros(self.mesh.n_points)
         ldrb_mesh_region_ids[endo] = LV_SURFS.ENDO
         ldrb_mesh_region_ids[epi] = LV_SURFS.EPI
-        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE_BORDER
-        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE_BORDER
+        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE
+        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE
         # get ids for surface
         lvsurf_map_id = self.get_surface_id_map_from_mesh()
         lvsurf = self.get_surface_mesh()
         # save data at surface and mesh level
-        lvsurf[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids[lvsurf_map_id]
-        self.mesh[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids
+        lvsurf[LV_MESH_DATA.LDRB_2.value] = ldrb_mesh_region_ids[lvsurf_map_id]
+        self.mesh[LV_MESH_DATA.LDRB_2.value] = ldrb_mesh_region_ids
 
         return ldrb_mesh_region_ids, ldrb_mesh_region_ids
 
-    def identify_fibers_region_ids_ldrb_3(self) -> tuple:
+    def identify_fibers_regions_ldrb_3(self) -> tuple:
         """Identifies mesh surface regions for fiber computation based on nodesets. \
             LDRB only accpets three regions: 'endo', 'epi' and 'border(s)', therefore,\
             we must combine aortic and mitral regions of interest into a single region.\
@@ -149,18 +156,18 @@ class LV_FiberEstimator(LV_RegionIdentifier):
         ldrb_mesh_region_ids = np.zeros(self.mesh.n_points)
         ldrb_mesh_region_ids[endo] = LV_SURFS.ENDO
         ldrb_mesh_region_ids[epi] = LV_SURFS.EPI
-        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE_BORDER
-        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE_BORDER
+        ldrb_mesh_region_ids[mitral] = LV_SURFS.BASE
+        ldrb_mesh_region_ids[border_aortic] = LV_SURFS.BASE
         # get ids for surface
         lvsurf_map_id = self.get_surface_id_map_from_mesh()
         lvsurf = self.get_surface_mesh()
         # save data at surface and mesh level
-        lvsurf[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids[lvsurf_map_id]
-        self.mesh[LV_MESH_DATA.LDRB_1.value] = ldrb_mesh_region_ids
+        lvsurf[LV_MESH_DATA.LDRB_3.value] = ldrb_mesh_region_ids[lvsurf_map_id]
+        self.mesh[LV_MESH_DATA.LDRB_3.value] = ldrb_mesh_region_ids
 
         return ldrb_mesh_region_ids, ldrb_mesh_region_ids
 
-    def identify_fibers_region_ids_ldrb(self, mode: str) -> tuple:
+    def identify_fibers_regions_ldrb(self, mode: str) -> tuple:
         """
             Identifies mesh surface regions for fiber computation based on nodesets. \
             LDRB only accpets three regions: 'endo', 'epi' and 'border(s)', therefore,\
@@ -186,11 +193,11 @@ class LV_FiberEstimator(LV_RegionIdentifier):
         """
         mode = self.check_enum(mode)
         if mode == LV_FIBER_MODES.LDRB_1.value:
-            return self.identify_fibers_region_ids_ldrb_1()
+            return self.identify_fibers_regions_ldrb_1()
         elif mode == LV_FIBER_MODES.LDRB_2.value:
-            return self.identify_fibers_region_ids_ldrb_2()
+            return self.identify_fibers_regions_ldrb_2()
         elif mode == LV_FIBER_MODES.LDRB_3.value:
-            return self.identify_fibers_region_ids_ldrb_3()
+            return self.identify_fibers_regions_ldrb_3()
         else:
             raise NotImplementedError(
                 "Mode '%s' not implemented or not supported." % mode)
@@ -207,7 +214,7 @@ class LV_FiberEstimator(LV_RegionIdentifier):
                 you are trying to add fibers only at surface level, please do it manually.")
 
     def compute_fibers(self,
-                       surfRegionsIds: str,
+                       surf_region_key: str,
                        fiber_space="P_1",
                        alpha_endo_lv=60,  # Fiber angle on the endocardium
                        alpha_epi_lv=-60,  # Fiber angle on the epicardium
@@ -228,7 +235,7 @@ class LV_FiberEstimator(LV_RegionIdentifier):
         Credits should be to the owners of the original LDRB library.
 
         Args:
-            surfRegionsIds (str): _description_
+            surf_region_key (str): _description_
             fiber_space (str, optional): _description_. Defaults to "P_1".
             alpha_endo_lv (int, optional): _description_. Defaults to 60.
             ldrb_kwargs (dict, optional): _description_. Defaults to {}.
@@ -265,28 +272,28 @@ class LV_FiberEstimator(LV_RegionIdentifier):
         except ImportError:
             raise ImportError("Meshio library is required for mesh file manipulation\
                 during fiber computation.")
-        # check if given surfRegionsIds is Enum
-        surfRegionsIds = self.check_enum(surfRegionsIds)
+        # check if given surf_region_key is Enum
+        surf_region_key = self.check_enum(surf_region_key)
         # check for mesh types (required pure tetrahedral mesh)
         assert(self.check_tet4_mesh()
                ), "Mesh must be composed of pure tetrahedrons."
         assert(self.check_tri3_surfmesh()
                ), "Surface mesh must be composed of pure triangles."
         # check for surface region ids (values for each node in surface describing region id)
-        (in_mesh, in_surf_mesh) = self.check_mesh_data(surfRegionsIds)
+        (in_mesh, in_surf_mesh) = self.check_mesh_data(surf_region_key)
         if not in_surf_mesh:
             found_ids = False
             try:
-                self.identify_fibers_region_ids_ldrb(surfRegionsIds)
+                self.identify_fibers_regions_ldrb(surf_region_key)
                 found_ids = True
             except NotImplementedError:
                 raise ValueError("Surface regions ids '{}' not found in mesh data. \
-                    Tried to compute using 'identify_fibers_region_ids_ldrb', but method \
-                    was not implemented. Please, check surfRegionsIds mesh data key.")
+                    Tried to compute using 'identify_fibers_regions_ldrb', but method \
+                    was not implemented. Please, check surf_region_key mesh data key.")
             if not found_ids:
                 if self.check_surf_initialization():
                     raise ValueError("Surface regions ids '{}' is not initialized within internal algorithm. \
-                        Did you add to surface mesh data?".format(surfRegionsIds))
+                        Did you add to surface mesh data?".format(surf_region_key))
                 else:
                     raise ValueError("Surface regions ids '{}' not found in mesh data. \
                         Did you identify surfaces? See 'LV.identify_surfaces'.")
@@ -329,8 +336,18 @@ class LV_FiberEstimator(LV_RegionIdentifier):
         # ------------------
         # prep for ldrb library
         # transform point region ids into cell ids at surface level
-        cellregionIdsSurf = self.transform_point_data_to_cell_data(
-            surfRegionsIds, method="median", surface=True)
+        # cellregionIdsSurf = self.transform_point_data_to_cell_data(
+        #     surf_region_key, method="median", surface=True)
+        try:
+            cellregionIdsSurf = self.get_facet_data(surf_region_key)
+        except KeyError:
+            try:
+                cellregionIdsSurf = self.transform_region_to_facet_data(
+                    surf_region_key)
+            except:
+                raise RuntimeError(
+                    "Could not get facet data for region %s" % surf_region_key)
+
         # combine volumetric mesh with surface mesh
         mesh = self.merge_mesh_and_surface_mesh()
         # adjust regions to include both surface and volume (with zeros)
@@ -463,6 +480,7 @@ class LV_FiberEstimator(LV_RegionIdentifier):
     def regress_fibers(self, other_LV,
                        container_loc=GEO_DATA.MESH_POINT_DATA,
                        compute_angles=True,
+                       convert_to_cell_data=True,
                        **kwargs):
         if not issubclass(other_LV.__class__, BaseContainerHandler):
             raise ValueError(
@@ -482,6 +500,25 @@ class LV_FiberEstimator(LV_RegionIdentifier):
         # apply regression
         reg_data = self.regress_from_other(
             other_LV, to_regress, container_loc=container_loc, **kwargs)
+
+        if convert_to_cell_data:
+            # Convert nodal data to cell data
+            self.transform_point_data_to_cell_data(
+                LV_FIBERS.F0, "mean", axis=0)
+            self.transform_point_data_to_cell_data(
+                LV_FIBERS.S0, "mean", axis=0)
+            self.transform_point_data_to_cell_data(
+                LV_FIBERS.N0, "mean", axis=0)
+
         if compute_angles:
             self.compute_fiber_angles()
+            if convert_to_cell_data:
+                # Convert nodal data to cell data
+                self.transform_point_data_to_cell_data(
+                    LV_FIBERS.F0_ANGLES, "mean", axis=0)
+                self.transform_point_data_to_cell_data(
+                    LV_FIBERS.S0_ANGLES, "mean", axis=0)
+                self.transform_point_data_to_cell_data(
+                    LV_FIBERS.N0_ANGLES, "mean", axis=0)
+
         return reg_data

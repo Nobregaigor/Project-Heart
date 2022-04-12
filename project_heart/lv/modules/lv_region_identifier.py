@@ -755,7 +755,7 @@ class LV_RegionIdentifier(LV_Base):
         #     print("WARNING: This method is not properly working with this configuration. Please, consider using a mesh with triangular surface.")
 
         if not epi_endo_correction or method != "max":
-            self.transform_surface_point_data_to_facet_data(
+            facet_data = self.transform_surface_point_data_to_facet_data(
                 region, method, **kwargs)
         else:
             # to account to shar edges (mostly for ideal cases), we need to prevent
@@ -784,6 +784,8 @@ class LV_RegionIdentifier(LV_Base):
             self.surface_mesh.point_data.pop("TMP-REGION")
             self.surface_mesh.cell_data.pop("TMP-REGION")
 
+        return facet_data
+
     # =========================================================================
     # Others
 
@@ -804,6 +806,31 @@ class LV_RegionIdentifier(LV_Base):
 
     # ----------------------------------------------------------------
     # Others
+
+    # overwrite class compute normal to include identify_base_and_apex_regions
+    def compute_normal(self, **kwargs):
+        try:
+            apex = self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
+            base = self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
+            self.set_normal(unit_vector(base - apex))
+        except:
+            try:
+                apex = centroid(self.points(
+                    mask=self.get_nodeset(LV_SURFS.APEX_REGION)))
+                base = centroid(self.points(
+                    mask=self.get_nodeset(LV_SURFS.BASE_REGION)))
+                self.add_virtual_node(LV_VIRTUAL_NODES.APEX, apex)
+                self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base)
+                self.set_normal(unit_vector(base - apex))
+            except:
+                try:
+                    self.identify_base_and_apex_regions(**kwargs)
+                except:
+                    raise RuntimeError(
+                        """Unable to compute normal. Prooced with another method\
+                           See 'identify_base_and_apex_surfaces' and 'set_normal'\
+                           for details.
+                        """)
 
     def peek_unique_values_in_region(self, surface_name: str, enum_like: Enum = None) -> list:
         """Returns a list of unique values in the given surface. If Enum is specified, \

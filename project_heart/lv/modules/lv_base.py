@@ -27,14 +27,6 @@ class LV_Base(BaseContainerHandler):
         self._aligment_data = {}
 
         # self._centroid = self.est_centroid()
-
-        # ------ default values
-        self._default_fiber_markers = markers = {
-            "epi": LV_SURFS.EPI.value,
-            "lv": LV_SURFS.ENDO.value,
-            "base": LV_SURFS.BASE_BORDER.value
-        }
-
         # ------ Flags
         self._surfaces_identified_with_class_method = False
 
@@ -382,11 +374,5 @@ class LV_Base(BaseContainerHandler):
                 self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base)
                 self.set_normal(unit_vector(base - apex))
             except:
-                try:
-                    self.identify_base_and_apex_surfaces()
-                except:
-                    raise RuntimeError(
-                        """Unable to compute normal. Prooced with another method\
-                           See 'identify_base_and_apex_surfaces' and 'set_normal'\
-                           for details.
-                        """)
+                raise RuntimeError(
+                    """Unable to compute normal. Are you explictly using LV_Base? Trye using a higher-level class instead (see docs), prooced with another method or manually set normal with: 'set_normal'.""")

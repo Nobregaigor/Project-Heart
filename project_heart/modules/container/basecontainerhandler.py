@@ -960,6 +960,10 @@ class BaseContainerHandler():
                 hidden_layer_sizes: tuple = (100,),
                 early_stopping: bool = True,
                 validation_fraction: float = 0.25,
+                apply_StandardScaler=False,
+                apply_QuantileTransformer=True,
+                apply_PowerTransformer=False,
+                scaler=None,
                 **kwargs):
         try:
             from sklearn.neural_network import MLPRegressor
@@ -974,8 +978,32 @@ class BaseContainerHandler():
                            early_stopping=early_stopping,
                            validation_fraction=validation_fraction,
                            **kwargs)
-        reg.fit(X, Y)
-        return reg.predict(XI)
+        if apply_StandardScaler:
+            from sklearn.preprocessing import StandardScaler
+            scaler = StandardScaler(random_state=0).fit(X)
+            X_scaled = scaler.transform(X)
+            reg.fit(X_scaled, Y)
+            return reg.predict(scaler.transform(XI))
+        elif apply_QuantileTransformer:
+            from sklearn.preprocessing import QuantileTransformer
+            scaler = QuantileTransformer(random_state=0).fit(X)
+            X_scaled = scaler.transform(X)
+            reg.fit(X_scaled, Y)
+            return reg.predict(scaler.transform(XI))
+        elif apply_PowerTransformer:
+            from sklearn.preprocessing import PowerTransformer
+            scaler = PowerTransformer(
+                random_state=0,
+                method='box-cox', standardize=True).fit(X)
+            X_scaled = scaler.transform(X)
+            reg.fit(X_scaled, Y)
+            return reg.predict(scaler.transform(XI))
+        elif scaler is not None:
+            X_scaled = scaler.transform(X)
+            reg.fit(X_scaled, Y)
+            return reg.predict(scaler.transform(XI))
+        else:
+            reg.fit(X, Y)
 
     def regress_from_array(self,
                            arr: np.ndarray,
@@ -1141,15 +1169,18 @@ class BaseContainerHandler():
                 for i, v in enumerate(unique_vals):
                     vals[np.where(vals == v)[0]] = i
 
-                if container == "points":
-                    mesh.point_data["CATEGORICAL_FOR_PLOT"] = vals
-                elif container == "cells":
-                    mesh.cell_data["CATEGORICAL_FOR_PLOT"] = vals
+                # if container == "points":
+                #     mesh.point_data["CATEGORICAL_FOR_PLOT"] = vals
+                # elif container == "cells":
+                #     mesh.cell_data["CATEGORICAL_FOR_PLOT"] = vals
 
-                scalars = "CATEGORICAL_FOR_PLOT"
+                # scalars = "CATEGORICAL_FOR_PLOT"
 
         # add mesh
-        plotter.add_mesh(mesh, scalars=scalars, **plot_args)
+        if scalars:
+            plotter.add_mesh(mesh, scalars=vals, **plot_args)
+        else:
+            plotter.add_mesh(mesh, **plot_args)
 
         # add mesh
         if len(vnodes) > 0:
