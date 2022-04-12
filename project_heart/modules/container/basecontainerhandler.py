@@ -719,6 +719,8 @@ class BaseContainerHandler():
         else:
             raise KeyError("Was not able to find data in facet data.")
 
+    def transform_point_data_to_cell_data(self, data_key, method="max", **kwargs):
+        return self.transform_point_data_to_cell_data(data_key, method=method, surface=True, **kwargs)
     # -------------------------------
     # points to cell data related functions
 
@@ -1053,6 +1055,7 @@ class BaseContainerHandler():
              vcolor="red",
              cat_exclude_zero=False,
              categorical=False,
+             preference="points",
              **kwargs):
 
         scalars = self.check_enum(scalars)
@@ -1078,15 +1081,16 @@ class BaseContainerHandler():
             mesh = self.get_surface_mesh()
 
         if cat_exclude_zero:
-            vals = np.copy(mesh.get_array(scalars))
+            vals = np.copy(mesh.get_array(scalars, preference))
             vals[vals == 0] = np.min(vals[vals > 0])-1
             if len(vals) == mesh.n_points:
                 mesh.point_data["cat_exclude_zero_FOR_PLOT"] = vals
             else:
                 mesh.cell_data["cat_exclude_zero_FOR_PLOT"] = vals
             scalars = "cat_exclude_zero_FOR_PLOT"
+
         if categorical:
-            vals = np.copy(mesh.get_array(scalars))
+            vals = np.copy(mesh.get_array(scalars, preference))
             unique_vals = np.unique(vals)
             for i, v in enumerate(unique_vals):
                 vals[np.where(vals == v)[0]] = i
