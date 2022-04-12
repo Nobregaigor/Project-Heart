@@ -1088,12 +1088,19 @@ class BaseContainerHandler():
              vcolor="red",
              categorical=False,
              pretty=True,
+             background_color='w',
              **kwargs):
 
         scalars = self.check_enum(scalars)
 
+        # set plotter
+        plotter = pv.Plotter(lighting='three lights')
+        plotter.background_color = background_color
+
         # set mesh render arguments:
         if pretty:
+            plotter.enable_anti_aliasing()
+            plotter.enable_shadows()
             plot_args = dict(cmap="Set2",
                              opacity=1.0,
                              show_edges=False,
@@ -1106,12 +1113,6 @@ class BaseContainerHandler():
             plot_args = dict(cmap="Set2")
         plot_args.update(kwargs)
 
-        # set plotter
-        plotter = pv.Plotter(lighting='three lights')
-        plotter.background_color = 'w'
-        plotter.enable_anti_aliasing()
-        plotter.enable_shadows()
-
         # set mesh
         if mode == "mesh":
             mesh = self.mesh
@@ -1122,32 +1123,34 @@ class BaseContainerHandler():
         if scalars is not None:
             if container == "points":
                 if scalars not in mesh.point_data:
-                    raise KeyError("Scalar value not found in point data at %s" % mode)
+                    raise KeyError(
+                        "Scalar value not found in point data at %s" % mode)
                 else:
                     vals = np.copy(mesh.point_data[scalars])
             elif container == "cells":
                 if scalars not in mesh.cell_data:
-                    raise KeyError("Scalar value not found in cell data at %s" % mode)
+                    raise KeyError(
+                        "Scalar value not found in cell data at %s" % mode)
                 else:
                     vals = np.copy(mesh.cell_data[scalars])
             else:
                 raise ValueError("Avaiable containers: 'points' and 'cells'")
-            
+
             if categorical:
                 unique_vals = np.unique(vals)
                 for i, v in enumerate(unique_vals):
                     vals[np.where(vals == v)[0]] = i
-                    
+
                 if container == "points":
                     mesh.point_data["CATEGORICAL_FOR_PLOT"] = vals
                 elif container == "cells":
                     mesh.cell_data["CATEGORICAL_FOR_PLOT"] = vals
-                    
+
                 scalars = "CATEGORICAL_FOR_PLOT"
 
         # add mesh
         plotter.add_mesh(mesh, scalars=scalars, **plot_args)
-        
+
         # add mesh
         if len(vnodes) > 0:
             for i, vn in enumerate(vnodes):
