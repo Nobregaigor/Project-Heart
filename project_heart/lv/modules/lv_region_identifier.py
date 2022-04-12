@@ -686,6 +686,8 @@ class LV_RegionIdentifier(LV_Base):
                          base_args={},
                          aortic_mitral_args={},
                          create_nodesets=True,
+                         set_infos=True,
+                         set_normal=False,  # recomputes normal based on newly found base virtual node
                          ):
 
         if geo_type is None:
@@ -709,6 +711,10 @@ class LV_RegionIdentifier(LV_Base):
                     mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
                 self.create_nodesets_from_regions(
                     mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+            if set_infos:
+                self.set_base_info(LV_SURFS.BASE)
+            if set_normal:
+                self.compute_normal()
         elif geo_type == LV_GEO_TYPES.TYPE_A:
             self.identify_base_and_apex_regions(**apex_base_args)
             self.identify_epi_endo_regions(**endo_epi_args)
@@ -720,6 +726,10 @@ class LV_RegionIdentifier(LV_Base):
                     mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
                 self.create_nodesets_from_regions(
                     mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+            if set_infos:
+                self.set_base_info(LV_SURFS.BASE)
+            if set_normal:
+                self.compute_normal()
         elif geo_type == LV_GEO_TYPES.TYPE_B:
             self._identify_typeB_regions(
                 apex_base_args=apex_base_args,
@@ -737,6 +747,9 @@ class LV_RegionIdentifier(LV_Base):
                     mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=False)
                 self.create_nodesets_from_regions(
                     mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=False)
+            # if set_infos: -> these are already created from '_identify_typeB_regions'
+            #     self.set_aortic_info(LV_SURFS.AORTIC)
+            #     self.set_mitral_info(LV_SURFS.MITRAL)
         else:
             raise ValueError(
                 "Invalid geo type: %s. Check LV_GEO_TYPES enums for valid types." % geo_type)

@@ -23,6 +23,7 @@ class LV_Base(BaseContainerHandler):
 
         self.aortic_info = {}
         self.mitral_info = {}
+        self.base_info = {}
 
         self._aligment_data = {}
 
@@ -202,6 +203,38 @@ class LV_Base(BaseContainerHandler):
                 self.add_virtual_node(
                     LV_VIRTUAL_NODES.MITRAL_BORDER, center, True)
 
+    def set_base_info(self,
+                      base_id=LV_SURFS.BASE,
+                      add_virtual_nodes=True,
+                      ) -> None:
+        """Sets base information for other computations, such as boundary conditions.\
+           Creates 'base_info' dictionary with radius, center, and mesh ids.\
+            If 'add_virtual_nodes' is set to true, it will create virtual node information\
+            at center.
+
+        Args:
+            base_id (int, str or Enum, optional): identification of base nodeset. \
+                Defaults to LV_SURFS.base.
+            add_virtual_nodes (bool, optional): Whether to create virtual node information.
+        """
+        if base_id is not None:
+            try:
+                ioi = self.get_nodeset(base_id)
+            except KeyError:
+                raise KeyError("base_id not found within nodesets. Did you create it? \
+                    You can use the function 'identify_surfaces' to automatically create it.")
+            pts = self.nodes(ioi)
+            center = centroid(pts)
+            r = radius(pts, center)
+            self.base_info = {
+                LV_BASE_INFO.RADIUS.value: r,
+                LV_BASE_INFO.CENTER.value: center,
+                LV_BASE_INFO.SURF_IDS.value: None,  # ids at surface
+                LV_BASE_INFO.MESH_IDS.value: ioi,  # ids at mesh
+            }
+            if add_virtual_nodes:
+                self.add_virtual_node(LV_VIRTUAL_NODES.BASE, center, True)
+
     def create_nodesets_from_regions(self,
                                      mesh_data=LV_MESH_DATA.SURFS.value,
                                      skip={},
@@ -296,6 +329,12 @@ class LV_Base(BaseContainerHandler):
                     "Aortic info not found. Did you identify LV surfaces?")
             c = self.aortic_info[LV_AM_INFO.BORDER_CENTER.value]
             r = self.aortic_info[LV_AM_INFO.BORDER_RADIUS.value]
+        elif surface == LV_SURFS.BASE.value:
+            if len(self.base_info) == 0:
+                raise RuntimeError(
+                    "Base info not found. Did you identify LV surfaces?")
+            c = self.base_info[LV_BASE_INFO.CENTER.value]
+            r = self.base_info[LV_BASE_INFO.RADIUS.value]
         else:
             raise ValueError("Surface '{}' not valid or not yet implemented \
                 for this boundary condition.".format(surf_name))
