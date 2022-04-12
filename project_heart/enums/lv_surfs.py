@@ -1,6 +1,15 @@
 from enum import IntEnum, Enum
 
 
+class LV_GEO_TYPES(IntEnum):
+    IDEAL = 0
+
+    NONIDEAL = 1
+    TYPE_A = 1
+
+    TYPE_B = 2
+
+
 class LV_SURFS(IntEnum):
     OTHER = 0  # DO NOT MODIFY THIS ONE.
 
@@ -40,7 +49,7 @@ class LV_SURFS(IntEnum):
     EPI_APEX_REGION = 21
 
     # BASE BORDER
-    BASE_BORDER = 22
+    BASE_BORDER = 23
     BASE = 23
 
 
@@ -113,6 +122,13 @@ class LV_AM_INFO(Enum):
     BORDER_CENTER = "CB"
     BORDER_SURF_IDS = "SB"
     BORDER_MESH_IDS = "MB"
+
+
+class LV_BASE_INFO(Enum):
+    RADIUS = "R"
+    CENTER = "C"
+    SURF_IDS = "S"
+    MESH_IDS = "M"
 
 
 class LV_FIBER_MODES(Enum):

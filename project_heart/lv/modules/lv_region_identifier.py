@@ -17,8 +17,15 @@ import os
 
 
 class LV_RegionIdentifier(LV_Base):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, geo_type=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.geo_type = geo_type
+
+    # =========================================================================
+    # POINT DATA REGION IDENTIFICATION
+
+    # ----------------------------------------------------------------
+    # Common to all types of geometries
 
     def identify_base_and_apex_regions(self, ab_n=10, ab_ql=0.03, ab_qh=0.75, **kwargs):
         """
@@ -48,28 +55,24 @@ class LV_RegionIdentifier(LV_Base):
         surf_regions = np.zeros(len(pts))
         surf_regions[aligment_data["apex_region"]] = LV_SURFS.APEX_REGION
         surf_regions[aligment_data["base_region"]] = LV_SURFS.BASE_REGION
-        self.surface_mesh.point_data[LV_MESH_DATA.APEX_BASE_REGIONS.value] = surf_regions.astype(
-            np.int64)
+        self.set_surface_point_data(
+            LV_MESH_DATA.APEX_BASE_REGIONS, surf_regions.astype(np.int64))
 
         # set global region ids (for entire mesh)
-        surf_to_global = lvsurf.point_data["vtkOriginalPointIds"]
-        global_regions = np.zeros(self.mesh.n_points)
-        global_regions[surf_to_global[aligment_data["apex_region"]]
-                       ] = LV_SURFS.APEX_REGION
-        global_regions[surf_to_global[aligment_data["base_region"]]
-                       ] = LV_SURFS.BASE_REGION
-        self.mesh.point_data[LV_MESH_DATA.APEX_BASE_REGIONS.value] = global_regions.astype(
-            np.int64)
+        id_map = self.get_surface_id_map_from_mesh()
+        apex_base_mesh = np.zeros(self.mesh.n_points)
+        apex_base_mesh[id_map] = surf_regions
+        self.set_mesh_point_data(
+            LV_MESH_DATA.APEX_BASE_REGIONS, apex_base_mesh.astype(np.int64))
 
         # save virtual nodes
         apex_pt = np.mean(pts[aligment_data["apex_region"]], axis=0)
         base_pt = np.mean(pts[aligment_data["base_region"]], axis=0)
-
         self.add_virtual_node(LV_VIRTUAL_NODES.APEX, apex_pt, True)
         self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base_pt, True)
         self.set_normal(unit_vector(base_pt - apex_pt))
 
-        return surf_regions.astype(np.int64), global_regions.astype(np.int64)
+        return surf_regions.astype(np.int64), apex_base_mesh.astype(np.int64)
 
     def identify_epi_endo_regions(self, threshold: float = 90.0, ref_point: np.ndarray = None) -> tuple:
         """
@@ -117,21 +120,143 @@ class LV_RegionIdentifier(LV_Base):
         # -- save data at surface and global mesh
 
         # save data at mesh surface
-        self.surface_mesh.point_data[LV_MESH_DATA.EPI_ENDO_GUESS.value] = endo_epi_guess.astype(
-            np.int64)
-        # convert local surf ids to global ids
-        epi_ids_mesh = self.map_surf_ids_to_global_ids(epi_ids, dtype=np.int64)
-        endo_ids_mesh = self.map_surf_ids_to_global_ids(
-            endo_ids, dtype=np.int64)
-        # set epi/endo ids at mesh (global ids)
-        mesh_endo_epi_guess = np.zeros(self.mesh.n_points)
-        mesh_endo_epi_guess[epi_ids_mesh] = LV_SURFS.EPI
-        mesh_endo_epi_guess[endo_ids_mesh] = LV_SURFS.ENDO
-        # save data at global mesh
-        self.mesh.point_data[LV_MESH_DATA.EPI_ENDO_GUESS.value] = mesh_endo_epi_guess.astype(
-            np.int64)
+        self.set_surface_point_data(
+            LV_MESH_DATA.EPI_ENDO_GUESS, endo_epi_guess.astype(np.int64))  # USED FOR DEGUB
+        self.set_surface_point_data(
+            LV_MESH_DATA.EPI_ENDO, endo_epi_guess.astype(np.int64))  # USED FOR DEGUB
 
-        return endo_epi_guess.astype(np.int64), mesh_endo_epi_guess.astype(np.int64)
+        # save data at mesh
+        id_map = self.get_surface_id_map_from_mesh()
+        epi_endo_mesh = np.zeros(self.mesh.n_points)
+        epi_endo_mesh[id_map] = endo_epi_guess
+        self.set_mesh_point_data(
+            LV_MESH_DATA.EPI_ENDO_GUESS, epi_endo_mesh.astype(np.int64))
+        self.set_mesh_point_data(
+            LV_MESH_DATA.EPI_ENDO, epi_endo_mesh.astype(np.int64))
+
+        return endo_epi_guess.astype(np.int64), epi_endo_mesh.astype(np.int64)
+
+    # ----------------------------------------------------------------
+    # Geometries of 'type A' -> No mitral and aortic valve.
+    # These geometries can be idealized or non-idealized.
+
+    def identify_base_region_ideal(self,
+                                   fe=45,
+                                   db=0.1,
+                                   ba=90,
+                                   axis=None
+                                   ):
+        if not self.check_geo_type_ideal():
+            raise RuntimeError(
+                "LV Geometry type must be set as 'ideal' to run this function.")
+        try:
+            endo_epi = np.copy(
+                self.get(GEO_DATA.SURF_POINT_DATA, LV_MESH_DATA.EPI_ENDO))
+        except KeyError:
+            raise RuntimeError(
+                "Endo-epi regions were not identified. Either set it manually or use 'identify_epi_endo_regions'. ")
+
+        # get surface mesh
+        lvsurf = self.get_surface_mesh()
+        # Get edges
+        edges = self.mesh.extract_feature_edges(fe)
+        edge_pts = edges.points
+        est_base = centroid(edge_pts)
+        est_radius = radius(edge_pts)
+        # select pts close to est_base based on dist threshold on axis
+        pts = lvsurf.points
+        lvnormal = self.get_normal()
+        if axis == None:
+            axis = np.where(lvnormal == np.max(lvnormal))[0]
+        d_base = np.abs(est_base[axis] - pts[:, axis])
+        ioi = np.where(d_base <= db)[0]
+        # filter selected pts based on surface angle
+        lvsurf.compute_normals(inplace=True)
+        surf_normals = lvsurf.get_array("Normals", "points")
+        # select reference vector based on orientation axis
+        if axis == 0:
+            ref_vec = self._X
+        elif axis == 1:
+            ref_vec = self._Y
+        elif axis == 2:
+            ref_vec = self._Z
+        vec_arr = np.repeat(np.expand_dims(ref_vec, 1), len(ioi), axis=1).T
+        base_angles = angle_between(
+            surf_normals[ioi], vec_arr, check_orientation=False)
+        # filter by angle w.r.t. orientation axis
+        ioi = ioi[np.where(base_angles <= np.radians(ba))[0]]
+        # filter by endo (don't overlap endo values)
+        ioi = ioi[np.where(endo_epi[ioi] != LV_SURFS.ENDO)]
+        # identify final surfaces
+        endo_epi_base = np.copy(endo_epi)
+        endo_epi_base[ioi] = LV_SURFS.BASE
+        # map to 'global' mesh ids
+        id_map = self.get_surface_id_map_from_mesh()
+        endo_epi_base_mesh = np.zeros(self.mesh.n_points)
+        endo_epi_base_mesh[id_map] = endo_epi_base
+
+        # add data to mesh
+        self.set_surface_point_data(LV_MESH_DATA.SURFS, endo_epi_base)
+        self.set_mesh_point_data(LV_MESH_DATA.SURFS, endo_epi_base_mesh)
+
+    def identify_base_region_nonideal(self,
+                                      fe=15,
+                                      br=1.25,
+                                      ba=100):
+        if not self.check_geo_type_typeA():
+            raise RuntimeError(
+                "LV Geometry type must be set as 'typeA' or 'nonIdeal' to run this function.")
+        try:
+            endo_epi = np.copy(
+                self.get(GEO_DATA.SURF_POINT_DATA, LV_MESH_DATA.EPI_ENDO))
+        except KeyError:
+            raise RuntimeError(
+                "Endo-epi regions were not identified. Either set it manually or use 'identify_epi_endo_regions'. ")
+
+        # get surface mesh
+        lvsurf = self.get_surface_mesh()
+        # Get edges
+        edges = self.mesh.extract_feature_edges(fe)
+        edges = edges.extract_largest()
+        edges = edges.extract_largest()
+        edge_pts = edges.points
+        est_base = centroid(edge_pts)
+        est_radius = radius(edge_pts)
+        # select pts close to est_base based on % of est_radius
+        pts = lvsurf.points
+        d_base = np.linalg.norm(pts - est_base, axis=1)
+        ioi = np.where(d_base <= est_radius*br)[0]
+        # re-estimate base centroid and radius
+        poi = pts[ioi]
+        # filter selected pts based on surface angle
+        lvsurf.compute_normals(inplace=True)
+        surf_normals = lvsurf.get_array("Normals", "points")
+        base_vecs = est_base - poi
+        base_angles = angle_between(
+            surf_normals[ioi], base_vecs, check_orientation=False)
+        ioi = ioi[np.where(base_angles <= np.radians(ba))[0]]
+        # filter by endo
+        ioi = ioi[np.where(endo_epi[ioi] != LV_SURFS.ENDO)]
+
+        # re-estimate base info
+        center_pts = pts[ioi]
+        est_base = centroid(center_pts)
+        est_radius = radius(center_pts)
+        self.add_virtual_node(LV_VIRTUAL_NODES.MITRAL, est_base)
+
+        # identify final surfaces
+        endo_epi_base = np.copy(endo_epi)
+        endo_epi_base[ioi] = LV_SURFS.BASE
+        # map to 'global' mesh ids
+        id_map = self.get_surface_id_map_from_mesh()
+        endo_epi_base_mesh = np.zeros(self.mesh.n_points)
+        endo_epi_base_mesh[id_map] = endo_epi_base
+        # add data to mesh
+        self.set_surface_point_data(LV_MESH_DATA.SURFS, endo_epi_base)
+        self.set_mesh_point_data(LV_MESH_DATA.SURFS, endo_epi_base_mesh)
+
+    # ----------------------------------------------------------------
+    # Geometries of 'type B' -> With both mitral and aortic valve.
 
     def identify_mitral_and_aortic_regions(self,
                                            a1=0.4,
@@ -145,6 +270,10 @@ class LV_RegionIdentifier(LV_Base):
                                            m3=0.0666,
                                            m4=0.333
                                            ):
+
+        if not self.check_geo_type_typeB():
+            raise RuntimeError(
+                "LV Geometry type must be set as 'typeB' to run this function.")
 
         # -------------------------------
         # get surface mesh
@@ -439,13 +568,12 @@ class LV_RegionIdentifier(LV_Base):
 
         return clustered.astype(np.int64), mesh_clustered.astype(np.int64)
 
-    def identify_regions(self,
-                         endo_epi_args={},
-                         apex_base_args={},
-                         aortic_mitral_args={},
-                         create_nodesets=True,
-
-                         ):
+    def _identify_typeB_regions(self,
+                                endo_epi_args={},
+                                apex_base_args={},
+                                aortic_mitral_args={},
+                                create_nodesets=True,
+                                ):
 
         endo_epi, mesh_endo_epi = self.identify_epi_endo_regions(
             **endo_epi_args)
@@ -545,21 +673,137 @@ class LV_RegionIdentifier(LV_Base):
         self.mesh.point_data[LV_MESH_DATA.SURFS.value] = mesh_layers.astype(
             np.int64)
 
-        # create nodesets
-        if create_nodesets:
-            self.create_nodesets_from_regions(
-                mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
-            self.create_nodesets_from_regions(
-                mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
-            self.create_nodesets_from_regions(
-                mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
-            self.create_nodesets_from_regions(
-                mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=False)
-            self.create_nodesets_from_regions(
-                mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=False)
-
         # set flag to indicate surfaces were identified from this method:
         self._surfaces_identified_with_class_method = True
+
+    # ----------------------------------------------------------------
+    # Compiled function
+
+    def identify_regions(self,
+                         geo_type=None,
+                         apex_base_args={},
+                         endo_epi_args={},
+                         base_args={},
+                         aortic_mitral_args={},
+                         create_nodesets=True,
+                         ):
+
+        if geo_type is None:
+            geo_type = self.geo_type
+        else:
+            geo_type = self.check_enum(geo_type)
+            self.geo_type = geo_type
+
+        if self.check_no_geo_type():
+            raise ValueError(
+                "Must specify a geo_type either at object initialization, or with 'geo_type' argument.")
+
+        if geo_type == LV_GEO_TYPES.IDEAL:
+            self.identify_base_and_apex_regions(**apex_base_args)
+            self.identify_epi_endo_regions(**endo_epi_args)
+            self.identify_base_region_ideal(**base_args)
+            if create_nodesets:
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+        elif geo_type == LV_GEO_TYPES.TYPE_A:
+            self.identify_base_and_apex_regions(**apex_base_args)
+            self.identify_epi_endo_regions(**endo_epi_args)
+            self.identify_base_region_nonideal(**base_args)
+            if create_nodesets:
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+        elif geo_type == LV_GEO_TYPES.TYPE_B:
+            self._identify_typeB_regions(
+                apex_base_args=apex_base_args,
+                endo_epi_args=endo_epi_args,
+                aortic_mitral_args=aortic_mitral_args)
+            # create nodesets
+            if create_nodesets:
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=False)
+                self.create_nodesets_from_regions(
+                    mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=False)
+        else:
+            raise ValueError(
+                "Invalid geo type: %s. Check LV_GEO_TYPES enums for valid types." % geo_type)
+
+    # =========================================================================
+    # FACET DATA REGION TRANSFORMATION
+
+    # ----------------------------------------------------------------
+    # Region to facet data
+
+    def transform_region_to_facet_data(self, region, method="max",
+                                       epi_endo_correction=True,
+                                       **kwargs):
+
+        # if self.check_geo_type_typeB() and not self.check_tri3_surfmesh():
+        #     print("WARNING: This method is not properly working with this configuration. Please, consider using a mesh with triangular surface.")
+
+        if not epi_endo_correction or method != "max":
+            self.transform_surface_point_data_to_facet_data(
+                region, method, **kwargs)
+        else:
+            # to account to shar edges (mostly for ideal cases), we need to prevent
+            # that base region expands beyond its limits. To fo so, we can simply
+            # adjust numerical values at endo and epi regions in such a way that
+            # if we take the maximum value, they will be selected correctly.
+            # Therefore, we must raise their respective values.
+            # Set temporary endo and epi values
+            tmp_epi = LV_SURFS.EPI.value * 100
+            tmp_endo = LV_SURFS.ENDO.value * 100
+            tmp = np.copy(self.get(GEO_DATA.SURF_POINT_DATA, region))
+            # modify tmp content
+            tmp[np.where(tmp == LV_SURFS.EPI.value)[0]] = tmp_epi
+            tmp[np.where(tmp == LV_SURFS.ENDO.value)[0]] = tmp_endo
+            # apply transformation on temporary data
+            self.set_surface_point_data("TMP-REGION", tmp)
+            facet_data = self.transform_surface_point_data_to_facet_data(
+                "TMP-REGION", method, **kwargs)
+            # return original values for endo and epi
+            facet_data[np.where(facet_data == tmp_epi)[0]] = LV_SURFS.EPI.value
+            facet_data[np.where(facet_data == tmp_endo)[
+                0]] = LV_SURFS.ENDO.value
+            # set new data
+            self.set_facet_data(region, facet_data)
+            # remove temporary data
+            self.surface_mesh.point_data.pop("TMP-REGION")
+            self.surface_mesh.cell_data.pop("TMP-REGION")
+
+    # =========================================================================
+    # Others
+
+    # ----------------------------------------------------------------
+    # Check methods
+
+    def check_no_geo_type(self):
+        return self.geo_type is None
+
+    def check_geo_type_ideal(self):
+        return self.geo_type == LV_GEO_TYPES.IDEAL
+
+    def check_geo_type_typeA(self):
+        return self.geo_type == LV_GEO_TYPES.TYPE_A
+
+    def check_geo_type_typeB(self):
+        return self.geo_type == LV_GEO_TYPES.TYPE_B
+
+    # ----------------------------------------------------------------
+    # Others
 
     def peek_unique_values_in_region(self, surface_name: str, enum_like: Enum = None) -> list:
         """Returns a list of unique values in the given surface. If Enum is specified, \

@@ -2,6 +2,7 @@ import os
 from os import path
 
 import pathlib
+from re import L
 from turtle import st
 
 import pyvista as pv
@@ -662,6 +663,20 @@ class BaseContainerHandler():
         self.mesh = self.mesh.threshold(threshold, **kwargs)
         self.surface_mesh = self.mesh.extract_surface()
 
+    def set_mesh_point_data(self, key, data, **kwargs):
+        key = self.check_enum(key)
+        if len(data) != self.mesh.n_points:
+            raise ValueError(
+                "Number of data points must match number of points [nodes] at mesh.")
+        self.mesh.point_data[key] = data
+
+    def set_mesh_cell_data(self, key, data, **kwargs):
+        key = self.check_enum(key)
+        if len(data) != self.mesh.n_cells:
+            raise ValueError(
+                "Number of data points must match number of cells [elements] at mesh.")
+        self.mesh.cell_data[key] = data
+
     # -------------------------------
     # Surface mesh related functions
 
@@ -708,8 +723,22 @@ class BaseContainerHandler():
         mesh = mesh.merge(self.get_surface_mesh().copy())
         return mesh
 
+    def set_surface_point_data(self, key, data, **kwargs):
+        key = self.check_enum(key)
+        surf = self.get_surface_mesh(**kwargs)
+        if len(data) != surf.n_points:
+            raise ValueError(
+                "Number of data points must match number of nodes at surface.")
+        key = self.check_enum(key)
+        surf.point_data[key] = data
+
     def set_facet_data(self, key, data, **kwargs):
-        self.get_surface_mesh(**kwargs).cell_data[key] = data
+        key = self.check_enum(key)
+        surf = self.get_surface_mesh(**kwargs)
+        if len(data) != surf.n_cells:
+            raise ValueError(
+                "Number of data points must match number of faces [cells] at surface.")
+        surf.cell_data[key] = data
 
     def get_facet_data(self, key, **kwargs):
         key = self.check_enum(key)
@@ -719,7 +748,7 @@ class BaseContainerHandler():
         else:
             raise KeyError("Was not able to find data in facet data.")
 
-    def transform_point_data_to_cell_data(self, data_key, method="max", **kwargs):
+    def transform_surface_point_data_to_facet_data(self, data_key, method="max", **kwargs):
         return self.transform_point_data_to_cell_data(data_key, method=method, surface=True, **kwargs)
     # -------------------------------
     # points to cell data related functions
@@ -732,7 +761,7 @@ class BaseContainerHandler():
                 return list(self.get_surface_mesh().cast_to_unstructured_grid().cells_dict.values())[0]
             if self._surf_cell_list is not None:
                 return self._surf_cell_list
-            mesh = self.get_surface_mesh().copy().cast_to_unstructured_grid()
+            mesh = self.get_surface_mesh().cast_to_unstructured_grid()
         else:
             if self.check_pure_mesh():
                 return list(self.cells())[0]
@@ -770,6 +799,9 @@ class BaseContainerHandler():
             if not in_surf_mesh:
                 raise ValueError(
                     "data key '{}' not found in surface mesh data.".format(data_key))
+            # if not self.check_tri3_surfmesh():
+            #     raise NotImplementedError(
+            #         "This method currently only works for triangular surfaces. There is an error with 'cells_dict' for PolyData objects in which the returning array does not match the order of cell_data and, consequently, the returned array does not match the cells order.")
             mesh = self.get_surface_mesh()
         else:
             if not in_mesh:
@@ -1050,58 +1082,73 @@ class BaseContainerHandler():
     def plot(self,
              mode="mesh",
              scalars=None,
+             container="points",
              re=False,
              vnodes=[],
              vcolor="red",
-             cat_exclude_zero=False,
              categorical=False,
-             preference="points",
+             pretty=True,
              **kwargs):
 
         scalars = self.check_enum(scalars)
 
-        plot_args = dict(cmap="Set2",
-                         opacity=1.0,
-                         show_edges=False,
-                         ambient=0.2,
-                         diffuse=0.5,
-                         specular=0.5,
-                         specular_power=90
-                         )
-
+        # set mesh render arguments:
+        if pretty:
+            plot_args = dict(cmap="Set2",
+                             opacity=1.0,
+                             show_edges=False,
+                             ambient=0.2,
+                             diffuse=0.5,
+                             specular=0.5,
+                             specular_power=90
+                             )
+        else:
+            plot_args = dict(cmap="Set2")
         plot_args.update(kwargs)
+
+        # set plotter
         plotter = pv.Plotter(lighting='three lights')
         plotter.background_color = 'w'
         plotter.enable_anti_aliasing()
         plotter.enable_shadows()
 
+        # set mesh
         if mode == "mesh":
             mesh = self.mesh
         elif mode == "surface":
             mesh = self.get_surface_mesh()
 
-        if cat_exclude_zero:
-            vals = np.copy(mesh.get_array(scalars, preference))
-            vals[vals == 0] = np.min(vals[vals > 0])-1
-            if len(vals) == mesh.n_points:
-                mesh.point_data["cat_exclude_zero_FOR_PLOT"] = vals
+        # add mesh
+        if scalars is not None:
+            if container == "points":
+                if scalars not in mesh.point_data:
+                    raise KeyError("Scalar value not found in point data at %s" % mode)
+                else:
+                    vals = np.copy(mesh.point_data[scalars])
+            elif container == "cells":
+                if scalars not in mesh.cell_data:
+                    raise KeyError("Scalar value not found in cell data at %s" % mode)
+                else:
+                    vals = np.copy(mesh.cell_data[scalars])
             else:
-                mesh.cell_data["cat_exclude_zero_FOR_PLOT"] = vals
-            scalars = "cat_exclude_zero_FOR_PLOT"
+                raise ValueError("Avaiable containers: 'points' and 'cells'")
+            
+            if categorical:
+                unique_vals = np.unique(vals)
+                for i, v in enumerate(unique_vals):
+                    vals[np.where(vals == v)[0]] = i
+                    
+                if container == "points":
+                    mesh.point_data["CATEGORICAL_FOR_PLOT"] = vals
+                elif container == "cells":
+                    mesh.cell_data["CATEGORICAL_FOR_PLOT"] = vals
+                    
+                scalars = "CATEGORICAL_FOR_PLOT"
 
-        if categorical:
-            vals = np.copy(mesh.get_array(scalars, preference))
-            unique_vals = np.unique(vals)
-            for i, v in enumerate(unique_vals):
-                vals[np.where(vals == v)[0]] = i
-            if len(vals) == mesh.n_points:
-                mesh.point_data["CATEGORICAL_FOR_PLOT"] = vals
-            else:
-                mesh.cell_data["CATEGORICAL_FOR_PLOT"] = vals
-            scalars = "CATEGORICAL_FOR_PLOT"
-
+        # add mesh
         plotter.add_mesh(mesh, scalars=scalars, **plot_args)
-
+        
+        # add mesh
         if len(vnodes) > 0:
             for i, vn in enumerate(vnodes):
                 if isinstance(vn, str) or isinstance(vn, Enum):
