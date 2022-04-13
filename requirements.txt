@@ -76,8 +76,6 @@ python-dateutil==2.8.2
 pythreejs==2.3.0
 pytools==2022.1
 pyvista==0.33.3
-pywin32==303
-pywinpty==2.0.3
 pyzmq==22.3.0
 rich==12.0.1
 scikit-learn==1.0.2
