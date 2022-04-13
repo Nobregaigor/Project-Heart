@@ -19,7 +19,7 @@ We currently do not have a released version of this project, however, you can cl
 
 - For Tetrahedralizer backends:
   - Reference: [Wildmeshing](https://wildmeshing.github.io/python/)
-  - Install: `conda install wildmeshing`
+  - Install: `conda install -c conda-forge wildmeshing`
   - Reference: [Tetgen](https://tetgen.pyvista.org/)
   - Install: `pip install tetgen`
 
