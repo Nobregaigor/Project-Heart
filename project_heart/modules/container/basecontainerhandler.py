@@ -1201,8 +1201,6 @@ class BaseContainerHandler():
              background_color='w',
              **kwargs):
 
-        scalars = self.check_enum(scalars)
-
         # set plotter
         plotter = pv.Plotter(lighting='three lights')
         plotter.background_color = background_color
@@ -1231,20 +1229,28 @@ class BaseContainerHandler():
 
         # add mesh
         if scalars is not None:
-            if container == "points":
-                if scalars not in mesh.point_data:
-                    raise KeyError(
-                        "Scalar value not found in point data at %s" % mode)
+            if isinstance(scalars, (str, int, Enum)):
+                scalars = self.check_enum(scalars)
+                if container == "points":
+                    if scalars not in mesh.point_data:
+                        raise KeyError(
+                            "Scalar value not found in point data at %s" % mode)
+                    else:
+                        vals = np.copy(mesh.point_data[scalars])
+                elif container == "cells":
+                    if scalars not in mesh.cell_data:
+                        raise KeyError(
+                            "Scalar value not found in cell data at %s" % mode)
+                    else:
+                        vals = np.copy(mesh.cell_data[scalars])
                 else:
-                    vals = np.copy(mesh.point_data[scalars])
-            elif container == "cells":
-                if scalars not in mesh.cell_data:
-                    raise KeyError(
-                        "Scalar value not found in cell data at %s" % mode)
-                else:
-                    vals = np.copy(mesh.cell_data[scalars])
+                    raise ValueError(
+                        "Avaiable containers: 'points' and 'cells'")
+            elif isinstance(scalars, (list, tuple, np.ndarray)):
+                vals = scalars
             else:
-                raise ValueError("Avaiable containers: 'points' and 'cells'")
+                raise ValueError(
+                    "Scalars must be either [str, int, Enum], or [list, tuple or np.ndarray].")
 
             if categorical:
                 unique_vals = np.unique(vals)
@@ -1259,7 +1265,7 @@ class BaseContainerHandler():
                 # scalars = "CATEGORICAL_FOR_PLOT"
 
         # add mesh
-        if scalars:
+        if scalars is not None:
             plotter.add_mesh(mesh, scalars=vals, **plot_args)
         else:
             plotter.add_mesh(mesh, **plot_args)

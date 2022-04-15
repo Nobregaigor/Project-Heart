@@ -27,6 +27,8 @@ class LV_Base(BaseContainerHandler):
 
         self._aligment_data = {}
 
+        self._long_line = None
+
         # self._centroid = self.est_centroid()
         # ------ Flags
         self._surfaces_identified_with_class_method = False
@@ -415,3 +417,30 @@ class LV_Base(BaseContainerHandler):
             except:
                 raise RuntimeError(
                     """Unable to compute normal. Are you explictly using LV_Base? Trye using a higher-level class instead (see docs), prooced with another method or manually set normal with: 'set_normal'.""")
+
+    def set_long_line(self, line, dtype=np.float64) -> None:
+        self._long_line = np.array(line, dtype=dtype)
+
+    def compute_long_line(self, apex=None, base=None, **kwargs) -> None:
+        if apex is not None and base is not None:
+            self.set_long_line([apex, base])
+        else:
+            try:
+                apex = self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
+                base = self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
+                self.set_long_line([apex, base])
+            except:
+                try:
+                    self.compute_normal(**kwargs)
+                    apex = self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
+                    base = self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
+                    self.set_long_line([apex, base])
+                except:
+                    raise RuntimeError(
+                        "Unable to compute longitudinal line. Please, try setting it manually.")
+
+    def get_long_line(self) -> np.ndarray:
+        if self._long_line is None:
+            self.compute_long_line()
+
+        return self._long_line

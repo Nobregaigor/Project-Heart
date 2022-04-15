@@ -66,3 +66,29 @@ def radius(points, center=None):
     if center is None:
         center = centroid(points)
     return np.mean(np.linalg.norm(points - center, axis=1))
+
+
+def get_p_along_line(k:float, line):
+    """
+      Returns a point (x,y,z) at a relative distance k from the
+      start of a line defined with two boundary points by interpolation. 
+
+      The default settings returns a point in a relative distance from the 
+      apex in the along the longitudinal axis.
+
+      Example: k=0.5 returns the midpoint of a given line.
+    """
+    if not isinstance(k, float):
+        raise TypeError('k must be a float')
+    if not isinstance(line, np.ndarray):
+        raise TypeError('line must be a numpy array')
+        
+    # allocate array data
+    data = np.zeros(3, dtype=np.float32)
+    # interpolate x, y and z in k from 0 to 1 between two boundaries
+    # for i in range(3):
+        # data[i] = np.interp(k, [0.0, 1.0], [line[0][i], line[1][i]])
+    data[0] = np.interp(k, [0.0, 1.0], [line[0][0], line[1][0]])
+    data[1] = np.interp(k, [0.0, 1.0], [line[0][1], line[1][1]])
+    data[2] = np.interp(k, [0.0, 1.0], [line[0][2], line[1][2]])
+    return data

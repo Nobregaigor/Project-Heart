@@ -31,8 +31,12 @@ def check_angle_orientation(angle, a, b, zaxis=[0., 0., 1.]):
 def angle_between(a, b, assume_unit_vector=False, check_orientation=True, zaxis=[0., 0., 1.]):
 
     if a.shape != b.shape:
-        raise ValueError(
-            "a and b must be of same size -> will compute the row-wise angle in between the two vector arrays.")
+        if b.shape == (3,):
+            b = np.repeat(np.expand_dims(b, 1), len(a), axis=1).T
+        # if a.shape[1] != b.shape[1]:
+        else:
+            raise ValueError(
+                "a and b must be of same size at second dimension -> will compute the row-wise angle in between the two vector arrays.")
 
     single_element = False
     if len(a.shape) == 1:
@@ -102,3 +106,36 @@ def generate_circle_by_vectors(t: np.ndarray, C: np.ndarray, r: float, n: np.nda
     P_circle = r*np.cos(t)[:, np.newaxis]*u + r * \
         np.sin(t)[:, np.newaxis]*np.cross(n, u) + C
     return P_circle.astype(dtype)
+
+
+def calc_plane_d(normal, v):
+    """
+      Returns the "d" constant of the equation of the plane
+      with a reference point 'v' by using dot product.
+    """
+    # # get point 'v' if not defined
+    # if v is None:
+    #   v = get_p_along_line(k, line)
+    d = -np.dot(normal[:3], v)
+    return d
+
+
+def dist_from_plane(pts, normal, d):
+    """ Returns the perpendicular distance from point p and plane"""
+    # print(p)
+    a = np.dot(pts, normal)
+    return np.abs(a + d) / np.linalg.norm(normal)
+
+
+def get_pts_close_to_plane(points, maxd, normal, v, return_mask=False):
+    """
+      Returns points close to a distance 'maxd' along a plane defined
+      by a 'normal' vector and a point 'v' on plane
+    """
+    # compute constant 'd' of a plane
+    d = calc_plane_d(normal, v)
+
+    # compute dist
+    dists = dist_from_plane(points, normal, d)
+
+    return np.where(dists <= maxd)[0]

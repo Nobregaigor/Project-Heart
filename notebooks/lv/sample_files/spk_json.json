@@ -1,0 +1,1814 @@
+[
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "subapex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.15,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "apex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.2375,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "superapex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.32499999999999996,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "submid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.4125,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "mid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.5,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "supermid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.5875,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "subbase",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.6749999999999999,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "base",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.7625,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "endo",
+    "name": "superbase",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.85,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "subapex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.15,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "apex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.2375,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "superapex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.32499999999999996,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "submid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.4125,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "mid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.5,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "supermid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.5875,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "subbase",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.6749999999999999,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "base",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.7625,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-1",
+    "group": "epi",
+    "name": "superbase",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.85,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "subapex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.15,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "apex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.2375,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "superapex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.32499999999999996,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "submid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.4125,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "mid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.5,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "supermid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.5875,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "subbase",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.6749999999999999,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "base",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.7625,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "endo",
+    "name": "superbase",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.85,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "subapex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.15,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "apex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.2375,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "superapex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.32499999999999996,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "submid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.4125,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "mid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.5,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "supermid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.5875,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "subbase",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.6749999999999999,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "base",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.7625,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-6",
+    "group": "epi",
+    "name": "superbase",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.85,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "subapex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.15,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "apex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.2375,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "superapex",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.32499999999999996,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "submid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.4125,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "mid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.5,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "supermid",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.5875,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "subbase",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.6749999999999999,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "base",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.7625,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "endo",
+    "name": "superbase",
+    "from_nodeset": "endo",
+    "d": 2.0,
+    "k": 0.85,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "subapex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.15,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "apex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.2375,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "superapex",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.32499999999999996,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "submid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.4125,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "mid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.5,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "supermid",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.5875,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "subbase",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.6749999999999999,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "base",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.7625,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "circ-8",
+    "group": "epi",
+    "name": "superbase",
+    "from_nodeset": "epi",
+    "d": 2.0,
+    "k": 0.85,
+    "normal_to": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "angles",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "endo",
+    "name": 0,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.035,
+    "kmax": 0.88,
+    "normal_to": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "endo",
+    "name": 1,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.035,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650898,
+      0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "endo",
+    "name": 2,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.035,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865475,
+      0.7071067811865476,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "endo",
+    "name": 3,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.035,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      0.38268343236508984,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "endo",
+    "name": 4,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.035,
+    "kmax": 0.88,
+    "normal_to": [
+      1.0,
+      6.123233995736766e-17,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "endo",
+    "name": 5,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.035,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      -0.3826834323650897,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "endo",
+    "name": 6,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.035,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865476,
+      -0.7071067811865475,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "endo",
+    "name": 7,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.035,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650899,
+      -0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "epi",
+    "name": 0,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.01,
+    "kmax": 0.88,
+    "normal_to": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "epi",
+    "name": 1,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.01,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650898,
+      0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "epi",
+    "name": 2,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.01,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865475,
+      0.7071067811865476,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "epi",
+    "name": 3,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.01,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      0.38268343236508984,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "epi",
+    "name": 4,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.01,
+    "kmax": 0.88,
+    "normal_to": [
+      1.0,
+      6.123233995736766e-17,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "epi",
+    "name": 5,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.01,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      -0.3826834323650897,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "epi",
+    "name": 6,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.01,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865476,
+      -0.7071067811865475,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-2",
+    "group": "epi",
+    "name": 7,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.01,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650899,
+      -0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 2,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "endo",
+    "name": 0,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "endo",
+    "name": 1,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650898,
+      0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "endo",
+    "name": 2,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865475,
+      0.7071067811865476,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "endo",
+    "name": 3,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      0.38268343236508984,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "endo",
+    "name": 4,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      1.0,
+      6.123233995736766e-17,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "endo",
+    "name": 5,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      -0.3826834323650897,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "endo",
+    "name": 6,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865476,
+      -0.7071067811865475,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "endo",
+    "name": 7,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650899,
+      -0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "epi",
+    "name": 0,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "epi",
+    "name": 1,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650898,
+      0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "epi",
+    "name": 2,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865475,
+      0.7071067811865476,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "epi",
+    "name": 3,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      0.38268343236508984,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "epi",
+    "name": 4,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      1.0,
+      6.123233995736766e-17,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "epi",
+    "name": 5,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      -0.3826834323650897,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "epi",
+    "name": 6,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865476,
+      -0.7071067811865475,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-6",
+    "group": "epi",
+    "name": 7,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650899,
+      -0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 6,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "endo",
+    "name": 0,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "endo",
+    "name": 1,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650898,
+      0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "endo",
+    "name": 2,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865475,
+      0.7071067811865476,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "endo",
+    "name": 3,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      0.38268343236508984,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "endo",
+    "name": 4,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      1.0,
+      6.123233995736766e-17,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "endo",
+    "name": 5,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      -0.3826834323650897,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "endo",
+    "name": 6,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865476,
+      -0.7071067811865475,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "endo",
+    "name": 7,
+    "from_nodeset": "endo",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650899,
+      -0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "epi",
+    "name": 0,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "epi",
+    "name": 1,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650898,
+      0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "epi",
+    "name": 2,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865475,
+      0.7071067811865476,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "epi",
+    "name": 3,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      0.38268343236508984,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "epi",
+    "name": 4,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      1.0,
+      6.123233995736766e-17,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "epi",
+    "name": 5,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.9238795325112867,
+      -0.3826834323650897,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "epi",
+    "name": 6,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.7071067811865476,
+      -0.7071067811865475,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  },
+  {
+    "collection": "long-8",
+    "group": "epi",
+    "name": 7,
+    "from_nodeset": "epi",
+    "d": 2,
+    "k": 0.5,
+    "kmin": 0.03,
+    "kmax": 0.88,
+    "normal_to": [
+      0.3826834323650899,
+      -0.9238795325112867,
+      0.0
+    ],
+    "n_subsets": 8,
+    "subsets_criteria": "z2",
+    "t": 0.0,
+    "_use_long_line": true
+  }
+]
