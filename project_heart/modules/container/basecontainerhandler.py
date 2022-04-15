@@ -19,6 +19,12 @@ import functools
 from pathlib import Path
 
 
+def check_min_version(pkg: str, ver: str):
+    from packaging import version as pa_v
+    from importlib_metadata import version as im_v
+    return pa_v.parse(im_v(pkg)) >= pa_v.parse(ver)
+
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
@@ -192,6 +198,46 @@ class BaseContainerHandler():
         return geo
 
     @classmethod
+    def from_feb(cls, feb_path, **kwargs):
+        if isinstance(feb_path, pathlib.Path) or isinstance(feb_path, str):
+            try:
+                from febio_python.feb import FEBio_feb
+            except ImportError:
+                raise ImportError(
+                    "febio_python.xplt is required to parse .feb data. Please, check https://github.com/Nobregaigor/febio-python for details.")
+            if not check_min_version('febio_python', '0.1.3'):
+                raise ImportError(
+                    "febio_python version must be at least '0.1.3'. Please update your version. Try using: `pip install febio-python==0.1.3`")
+            feb = FEBio_feb.from_file(feb_path)
+        else:
+            raise ValueError("feb_path must be a Path or a str.")
+        # get data from feb
+        nodes = list(feb.get_nodes().values())[0]
+        elems = list(feb.get_elements().values())[
+            0] - 1  # feb elements start at 1
+
+        surfaces = feb.get_surfaces()
+        # create object
+        obj = cls.from_nodes_elements(nodes=nodes, elements=elems)
+
+        # add nodesets
+        try:
+            nodesets = feb.get_nodesets()
+            for key, value in nodesets.items():
+                obj.add_nodeset(key, value)
+        except:
+            print("Could not add nodesets. Does your .feb content have 'NodeSet' tag under 'Geometry'? Try adding them manually. Check https://github.com/Nobregaigor/febio-python for details on how to extract nodeset data from feb.")
+
+        try:
+            surfaces = feb.get_surfaces()
+            for key, value in surfaces.items():
+                obj.add_surface_oi(key, value)
+        except:
+            print("Could not add surfaces. Does your .feb content have 'Surface' tag under 'Geometry'? Try adding them manually. Check https://github.com/Nobregaigor/febio-python for details on how to extract nodeset data from feb.")
+
+        return obj
+
+    @classmethod
     def from_file(cls, filepath, **kwargs):
         if isinstance(filepath, Path):
             filepath = str(filepath)
@@ -199,7 +245,7 @@ class BaseContainerHandler():
         if ext == '.xplt':
             return cls.from_xplt(filepath, **kwargs)
         elif ext == '.feb':
-            raise NotImplementedError("Feb extension not yet implemented.")
+            return cls.from_feb(filepath, **kwargs)
         else:
             try:
                 return cls.from_pyvista_read(filepath, **kwargs)
@@ -271,8 +317,10 @@ class BaseContainerHandler():
             mesh_point_data = self.mesh.point_data.keys()
             mesh_cell_data = self.mesh.cell_data.keys()
         for key in mesh_point_data:
+            key = self.check_enum(key)
             _d[GEO_DICT.MESH_POINT_DATA.value][key] = self.mesh.point_data[key].tolist()
         for key in mesh_cell_data:
+            key = self.check_enum(key)
             _d[GEO_DICT.MESH_CELL_DATA.value][key] = self.mesh.cell_data[key].tolist()
 
         return _d
@@ -571,6 +619,40 @@ class BaseContainerHandler():
 
     # ------------------------
     # Surface
+
+    def add_surface_oi(self, name: str, ids: np.ndarray, overwrite: bool = False, dtype: np.dtype = np.int64) -> None:
+        """Adds a surface of interest.
+
+        Args:
+            name (str): surface_oi name. 
+            ids (np.ndarray): list of indexes referencing the nodes of given surface_oi.
+            overwrite (bool, optional): _description_. Defaults to False.
+            dtype (np.dtype, optional): _description_. Defaults to np.int64.
+
+        Raises:
+            ValueError: if ids is not an ndarray
+            ValueError: if ids is not only composed of integers
+            ValueError: if max id is greater than number of nodes/points
+            KeyError: _description_
+        """
+        name = self.check_enum(name)
+        # check if ids is numpy array
+        if not isinstance(ids, np.ndarray):
+            raise ValueError("ids must be np.ndarray of integers")
+        # check if ids is a list of integers only
+        if not np.issubdtype(ids.dtype, np.integer):
+            raise ValueError("ids must be integers.")
+        # check if maximum id within n_nodes
+        if np.max(ids) > self.mesh.n_points:
+            raise ValueError(
+                "maximum reference id is greater than number of nodes. \
+                    Surfaces are list of integers referencing the indexes of nodes array.")
+        # check if key is already used (if overwrite is False)
+        if overwrite == False and name in self._surfaces_oi:
+            raise KeyError(
+                "Surface '%s' already exists. Please, set overwrite flag to True if you want to replace it." % name)
+        # add nodeset to the dictionary
+        self._surfaces_oi[name] = ids.astype(dtype)
 
     def get_surface_oi(self, name: str):
         if isinstance(name, Enum):

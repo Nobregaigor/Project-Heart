@@ -802,6 +802,51 @@ class LV_RegionIdentifier(LV_Base):
     # =========================================================================
     # Others
 
+    def set_region_from_mesh_ids(self, key: str, mesh_ids: list) -> np.ndarray:
+        """Sets mesh and surface mesh region from a list of ids based on mesh. \
+            Each index corresponds to node id, and each value should represent\
+            region id.
+
+        Args:
+            key: (str or enum): key identifier for region data
+            mesh_ids (list): List of region ids for each point in mesh.
+
+        Raises:
+            ValueError: If length of mesh ids is not equal to number of points in mesh.
+
+        Returns:
+            Pointer to added mesh_ids
+        """
+
+        if len(mesh_ids) != self.mesh.n_points:
+            raise ValueError(
+                "mesh_ids length must correspond to number of points in mesh. Each id should be an integer determining its region.")
+        key = self.check_enum(key)
+
+        # add data to mesh
+        self.set_mesh_point_data(key, mesh_ids)
+        # add data to surface mesh
+        id_map = self.get_surface_id_map_from_mesh()
+        self.set_surface_point_data(key, mesh_ids[id_map])
+
+        return self.get(GEO_DATA.MESH_POINT_DATA, key)
+
+    def set_region_from_nodesets(self, region_key: str, nodeset_keys: list):
+        region = np.zeros(self.mesh.n_points, dtype=np.int64)
+
+        for i, key in enumerate(nodeset_keys):
+            nodeids = self.get_nodeset(key)
+            key = self.check_enum(key)
+            try:
+                use_key = LV_SURFS[key].name
+                use_val = LV_SURFS[key].value
+            except KeyError:
+                use_key = key
+                use_val = i
+            region[nodeids] = use_val
+
+        return self.set_region_from_mesh_ids(region_key, region)
+
     # ----------------------------------------------------------------
     # Check methods
 
