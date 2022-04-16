@@ -13,6 +13,17 @@ We currently do not have a released version of this project, however, you can cl
 3. Go to the repo directory `cd ./Project-Heart` and install dependencies with `pip install -r requirements.txt`
 4. Install (locally) Project-Heart with `pip install .`
 
+### How to update:
+
+As we are still working on this library, it is a good pratice to check for a new version of the repo; we might correct or add new content. The functions at `notebooks` directory should be working, as we try to monitor them at every new update.
+
+To check and update your local repository with the lastest version you can do:
+
+1. Go to directory you cloned this repo with `cd path/to/project-heart`
+2. Fetch new content with `git fetch`
+3. Pull new content with `git pull`
+
+
 ## Additional dependencies:
 
 - To read/write .feb and read .xplt:
