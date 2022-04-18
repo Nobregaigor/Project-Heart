@@ -50,6 +50,9 @@ class Speckle():
         self.ids = ids
         self.normal = normal
 
+        self.str = "{}_{}_{}_{}".format(
+            self.subset, self.name, self.group, self.collection)
+
     def __repr__(self):
         return "<Speckle: .subset: {}, .name: {}, .group: {}, .collection: {}, .t: {}>".format(
             self.subset, self.name, self.group, self.collection, self.t)

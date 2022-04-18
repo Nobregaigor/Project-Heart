@@ -38,6 +38,7 @@ class BaseContainerHandler():
 
     def __init__(self,
                  mesh=None,
+                 enums={},
                  *args, **kwargs):
         if mesh is None:
             self.mesh = pv.UnstructuredGrid()
@@ -73,8 +74,32 @@ class BaseContainerHandler():
         self._cell_list = None
         self._surf_cell_list = None
 
+        if len(enums) > 0:
+            self.config_enums(enums)
+
     def __print__(self):
         return self.mesh
+
+    def config_enums(self, enums, check_keys=[]):
+        if not isinstance(enums, dict):
+            raise ValueError(
+                "enums must be a dictionary with keys as enum group and values as Enum-like class.")
+
+        if len(check_keys) > 0:
+            all_keys = [k.upper() for k in enums.keys()]
+            for key in check_keys:
+                if key.upper() not in all_keys:
+                    raise ValueError("Required enum key '{}' missing"
+                                     "during enum configuration.".format(key))
+        from enum import EnumMeta
+        for key, value in enums.items():
+            if not isinstance(value, EnumMeta):
+                raise ValueError(
+                    "Value for key '{}' is not an EnumMeta. "
+                    "All values must be EnumMeta objects when"
+                    "configuring enums.".format(key))
+            key = key.upper()
+            setattr(self, key, value)
 
     # ----------------------------------------------------------------
     # Build methods

@@ -1,29 +1,33 @@
-from project_heart.modules.speckles import Speckle, SpecklesDict
+import logging
+import os
+from pathlib import Path
+import numpy as np
+from collections import deque
 
+from project_heart.modules.speckles import SpecklesDict, SpeckleStates, Speckle
 from project_heart.utils.vector_utils import *
 from project_heart.utils.spatial_utils import *
 from project_heart.utils.spatial_points import *
 from project_heart.utils.cloud_ops import *
+from project_heart.enums import *
 from .lv_region_identifier import LV_RegionIdentifier
 
-from collections import deque
 
-from project_heart.enums import *
 from sklearn.cluster import KMeans
-
 from functools import reduce
 
-from pathlib import Path
-import os
 
-import logging
 logging.basicConfig()
 
 
-class LV_Speckles(LV_RegionIdentifier, SpecklesDict):
+class LV_Speckles(LV_RegionIdentifier):
+    """_summary_
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.speckles = SpecklesDict()
+        self.states = SpeckleStates()
 
     def create_speckles(self,
                         name=None,
@@ -45,6 +49,34 @@ class LV_Speckles(LV_RegionIdentifier, SpecklesDict):
                         log_level=logging.WARNING,
                         **kwargs
                         ):
+        """Creates Speckles
+
+        Args:
+            name (_type_, optional): _description_. Defaults to None.
+            group (_type_, optional): _description_. Defaults to None.
+            collection (_type_, optional): _description_. Defaults to None.
+            d (float, optional): _description_. Defaults to 3.0.
+            from_nodeset (_type_, optional): _description_. Defaults to None.
+            perpendicular_to (_type_, optional): _description_. Defaults to None.
+            normal_to (_type_, optional): _description_. Defaults to None.
+            k (float, optional): _description_. Defaults to 1.0.
+            kmin (float, optional): _description_. Defaults to 0.1.
+            kmax (float, optional): _description_. Defaults to 0.95.
+            n_subsets (int, optional): _description_. Defaults to 0.
+            subsets_criteria (str, optional): _description_. Defaults to "z".
+            subsets_names (list, optional): _description_. Defaults to [].
+            t (float, optional): _description_. Defaults to 0.0.
+            include_elmask (bool, optional): _description_. Defaults to False.
+            _use_long_line (bool, optional): _description_. Defaults to False.
+            log_level (_type_, optional): _description_. Defaults to logging.WARNING.
+
+        Raises:
+            RuntimeError: _description_
+            ValueError: _description_
+
+        Returns:
+            _type_: _description_
+        """
 
         # set logger
         logger = logging.getLogger('create_speckles')
@@ -145,7 +177,8 @@ class LV_Speckles(LV_RegionIdentifier, SpecklesDict):
             logger.debug("Adding multiple subsets: {}.".format(n_subsets))
             if n_subsets > 0 and len(subsets_names) > 0:
                 assert len(subsets_names) == n_subsets, AssertionError(
-                    "If list of prefixes was provided, its length must be equal to the number of subsets.")
+                    "If list of prefixes was provided, its length must be \
+                        equal to the number of subsets.")
             elif n_subsets > 0 and len(subsets_names) == 0:
                 subsets_names = list(range(n_subsets))
             logger.debug("subsets_names: {}.".format(subsets_names))
@@ -298,3 +331,6 @@ class LV_Speckles(LV_RegionIdentifier, SpecklesDict):
                 region[nodeids] = region_vals[i]
 
         return self.set_region_from_mesh_ids(region_key, region)
+
+    def check_spk(self, spk):
+        return isinstance(spk, Speckle)

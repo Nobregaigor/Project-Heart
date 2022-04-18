@@ -1,15 +1,18 @@
 import numpy as np
 from operator import xor
 from numbers import Number  # for type comparison
-from project_heart.enums import DATA_FORMAT, DATA_FIELDS
+from project_heart.enums import DATA_FORMAT, STATES
+from enum import Enum
 
 
 class States():
-    def __init__(self):
+    def __init__(self, enums={}):
         self.timesteps = []
         self.data = {}
         self.data_format = {}
         self.n = lambda: len(self.timesteps)
+        self.STATES = enums["STATES"] if "STATES" in enums else STATES
+        self.STATE_FORMATS = enums["STATE_FORMATS"] if "STATE_FORMATS" in enums else DATA_FORMAT
 
     def keys(self) -> set:
         """ Returns all avaiable keys in state """
@@ -19,17 +22,20 @@ class States():
 
         # try to make key as a standard DATA_FIELD enum.
         try:
-            key = DATA_FIELDS(key)
+            key = self.STATES(key).value
         except ValueError:
-            key = key
+            key = self.check_enum(key)
+            # key = key
         # add data and data format
         self.data[key] = data
         self.data_format[key] = data_format
 
     def get(self, key: str, mask=None, i=None, t=None):
 
+        # check if key is valid enum
+        key = self.check_enum(key)
         # check if key is string
-        if not (isinstance(key, str) or isinstance(key, DATA_FIELDS)):
+        if not (isinstance(key, str) or isinstance(key, self.STATES)):
             raise TypeError("key %s must be a string." % key)
         # if timesteps is requested, return timesteps
         if key == "timesteps":
@@ -90,3 +96,30 @@ class States():
         if t not in self.timesteps:
             return np.argmin(np.abs(np.asarray(self.timesteps, dtype=np.float32) - t))
         return self.timesteps.index(t)
+
+    def check_key(self, key: str) -> bool:
+        key = self.check_enum(key)
+        return key in self.data.keys()
+
+    def check_enum(self, name):
+        if isinstance(name, Enum):
+            name = name.value
+        return name
+
+    # ===============================
+    # speckle function
+    # def set_spk_state_key(self, spk:object, key:str):
+    #     try:
+    #         key = STATES(key).value
+    #     except ValueError:
+    #         key = self.check_enum(key)
+    #     return "{}_{}".format(key, spk.str)
+
+    # def add_spk_data(self, spk:object, key: str, data: np.ndarray):
+    #     state_key = self.set_spk_state_key(spk, key)
+    #     self.data[state_key] = data
+    #     self.data_format[state_key] = DATA_FORMAT.SPK
+
+    # def get_spk_data(self, spk:object, key: str, **kwargs):
+    #     state_key = self.set_spk_state_key(spk, key)
+    #     return self.get(key=state_key, **kwargs)

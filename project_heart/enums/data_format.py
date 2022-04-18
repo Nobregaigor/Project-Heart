@@ -15,5 +15,8 @@ class DATA_FORMAT(IntEnum):
     ELEMENT = 1
     CELLS = 1
     CELL = 1
-
+  
     OTHER = 3
+    
+    SPK = 100
+    SPECKLE = 100

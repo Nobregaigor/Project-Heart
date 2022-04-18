@@ -152,3 +152,53 @@ class LV_FIBERS(Enum):
     S0_ANGLES = LV_MESH_DATA.SHEET_ANGLES.value
     SHEET_NORMAL_ANGLES = LV_MESH_DATA.SHEET_NORMAL_ANGLES.value
     N0_ANGLES = LV_MESH_DATA.SHEET_NORMAL_ANGLES.value
+
+
+class LV_STATES(Enum):
+    DISP = "displacement"
+    DISPLACEMENT = "displacement"
+    STRESS = "stress"
+
+    XYZ = "xyz"
+    POS = "xyz"
+    POSITION = "xyz"
+
+    VOLUME = "volume"
+    VOL = "volume"
+
+    VOLUMETRIC_FRACTION = "volumetric_fraction"
+    VF = "volumetric_fraction"
+    
+    BASE_REF = "base_ref"
+    APEX_REF = "apex_ref"
+    
+
+    LONGITUDINAL_DISTANCES = "longitudinal_distances"
+    LONG_DISTS = "longitudinal_distances"
+
+    LONGITUDINAL_SHORTENING = "longitudinal_shortening"
+    LS = "longitudinal_shortening"
+
+    RADIUS = "radius"
+
+    RADIAL_SHORTENING = "radial_shortening"
+    RS = "radial_shortening"
+
+    THICKNESS = "thickness"
+
+    THICKENING = "thickening"
+
+    LONG_LENGTH = "longitudinal_length"
+    LONG_STRAIN = "longitudinal_strain"
+
+    CIRC_LENGTH = "circumferential_length"
+    CIRC_STRAIN = "circumferential_strain"
+
+    SPK_VECS = "spckle_vectors"
+
+    ROTATION = "angle_rotation"
+
+    TWIST = "twist"
+
+    TORSION = "torsion"
+    

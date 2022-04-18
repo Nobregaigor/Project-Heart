@@ -13,9 +13,17 @@ from functools import reduce
 from pathlib import Path
 import os
 
+from project_heart.enums import LV_STATES, LV_SURFS, LV_VIRTUAL_NODES
+
+default_lv_enums = {
+    "STATES": LV_STATES,
+    "REGIONS": LV_SURFS,
+    "VIRTUAL_NODES": LV_VIRTUAL_NODES
+}
+
 
 class LV_Base(BaseContainerHandler):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, enums={}, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self._rot_chain = deque()
@@ -28,6 +36,14 @@ class LV_Base(BaseContainerHandler):
         self._aligment_data = {}
 
         self._long_line = None
+
+        # ---- Enums
+        self.REGIONS = LV_SURFS
+        self.STATES = LV_STATES
+        self.VIRTUAL_NODES = LV_VIRTUAL_NODES
+        # overwrite enums if 'enums' dict is provided
+        if len(enums) > 0:
+            self.config_enums(enums, check_keys=default_lv_enums.keys())
 
         # self._centroid = self.est_centroid()
         # ------ Flags

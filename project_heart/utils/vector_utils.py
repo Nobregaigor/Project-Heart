@@ -30,8 +30,14 @@ def check_angle_orientation(angle, a, b, zaxis=[0., 0., 1.]):
 
 def angle_between(a, b, assume_unit_vector=False, check_orientation=True, zaxis=[0., 0., 1.]):
 
+    if isinstance(a, list):
+        a = np.asarray(a)
+
+    if isinstance(b, list):
+        b = np.asarray(b)
+
     if a.shape != b.shape:
-        if b.shape == (3,):
+        if b.shape == (3,) or b.shape == (2,):
             b = np.repeat(np.expand_dims(b, 1), len(a), axis=1).T
         # if a.shape[1] != b.shape[1]:
         else:
