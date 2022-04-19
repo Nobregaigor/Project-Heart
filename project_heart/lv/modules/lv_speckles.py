@@ -19,15 +19,23 @@ from functools import reduce
 
 logging.basicConfig()
 
+default_lvSpeckles_enums = {
+    "SPK_SETS": LV_SPK_SETS
+}
 
 class LV_Speckles(LV_RegionIdentifier):
     """_summary_
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, enums={}, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.speckles = SpecklesDict()
         self.states = SpeckleStates()
+
+        # ---- Enums
+        self.SPK_SETS = LV_SPK_SETS
+        if len(enums) > 0:
+            self.config_enums(enums, check_keys=default_lvSpeckles_enums.keys())
 
     def create_speckles(self,
                         name=None,

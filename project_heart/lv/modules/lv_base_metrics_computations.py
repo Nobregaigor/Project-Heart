@@ -12,6 +12,16 @@ class LVBaseMetricsComputations(LV_Speckles):
     def __init__(self, *args, **kwargs):
         super(LVBaseMetricsComputations, self).__init__(*args, **kwargs)
         self.EPSILON = 1e-10
+        self.metric_geochar_map = {
+            self.STATES.LONGITUDINAL_SHORTENING.value: self.STATES.LONGITUDINAL_DISTANCES.value,
+            self.STATES.RADIAL_SHORTENING.value: self.STATES.RADIUS.value,
+            self.STATES.WALL_THICKENING.value: self.STATES.THICKNESS.value,
+            self.STATES.LONG_STRAIN.value: self.STATES.LONG_LENGTH.value,
+            self.STATES.CIRC_STRAIN.value: self.STATES.CIRC_LENGTH.value,
+            self.STATES.TWIST.value: self.STATES.ROTATION.value,
+            self.STATES.TORSION.value: self.STATES.ROTATION.value,
+            self.STATES.ROTATION.value: self.STATES.ROTATION.value # required just for spk computation
+        }
 
     # =============================
     # Fundamental computations
@@ -83,7 +93,6 @@ class LVBaseMetricsComputations(LV_Speckles):
     # 'Simple' computations
     # =============================
 
-    # ---- Longitudinal shortening
     def compute_base_apex_ref_over_timesteps(self,
                                              nodeset: str = None,
                                              dtype: np.dtype = np.float64,
@@ -112,6 +121,8 @@ class LVBaseMetricsComputations(LV_Speckles):
 
         # return pointers
         return (self.states.get(self.STATES.BASE_REF), self.states.get(self.STATES.APEX_REF))
+
+    # ---- Longitudinal shortening
 
     def compute_longitudinal_distance(self,
                                       nodeset: str = None,
@@ -391,6 +402,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                              t_ed: float = 0.0,
                              dtype: np.dtype = np.float64,
                              check_orientation=False,
+                             degrees=True,
                              **kwargs):
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
         if not self.states.check_spk_key(spk, self.STATES.SPK_VECS):
@@ -410,6 +422,8 @@ class LVBaseMetricsComputations(LV_Speckles):
         for i, (xyz1, xyz2) in enumerate(zip(d1, d2)):
             rot[i] = np.mean(angle_between(
                 xyz2, xyz1, check_orientation=check_orientation))
+        if degrees:
+            rot = np.degrees(rot)
         self.states.add_spk_data(
             spk, self.STATES.ROTATION, rot)  # save to states
         # return pointer
@@ -528,11 +542,26 @@ class LVBaseMetricsComputations(LV_Speckles):
                             "of the following types: 'list', 'tuple', 'np.ndarray'.")
         return spks
     
+    def _reduce_geochar(self, spk_args, key, **kwargs):
+        from collections import deque
+        spks = self._resolve_spk_args(spk_args)
+        key = self.check_enum(key)
+
+        if key in self.metric_geochar_map:
+            geo_key = self.metric_geochar_map[key]
+            res = deque()
+            for spk in spks:
+                res.append(self.states.get_spk_data(spk, geo_key))
+            # save for reduced for each group
+            res = self._reduce_metric(res, **kwargs)
+            return self._save_metric(res, geo_key)
+
     def _compute_metric_from_spks(self, 
                                   spk_args, 
                                   fun, 
                                   key,
                                   reduce:str="mean",
+                                  geochar=True,
                                   dtype:np.dtype=np.float64,
                                   **kwargs):
         spks = self._resolve_spk_args(spk_args)
@@ -545,7 +574,10 @@ class LVBaseMetricsComputations(LV_Speckles):
                 raise RuntimeError("Unable to compute metric '{}' for spk '{}'"
                                    .format(fun, spk.str))
         res = self._reduce_metric(res, method=reduce, axis=0)
-        return self._save_metric(res, key)
+        self._save_metric(res, key)
+        if geochar:
+            self._reduce_geochar(spk_args, key, method=reduce, axis=0)
+        return self.states.get(key)  # return pointer
     
     def _compute_metric_from_coupled_spks(self, 
                                           spk_args_1, 
@@ -553,6 +585,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                                           fun, 
                                           key,
                                           reduce:str="mean",
+                                          geochar=True,
                                           dtype:np.dtype=np.float64,
                                           **kwargs):
         spks_1 = self._resolve_spk_args(spk_args_1)
@@ -571,6 +604,59 @@ class LVBaseMetricsComputations(LV_Speckles):
                 raise RuntimeError("Unable to compute metric '{}' for spk '{}'"
                                    .format(fun, spk.str))
         res = self._reduce_metric(res, method=reduce, axis=0)
-        return self._save_metric(res, key)
+        self._save_metric(res, key)
+        if geochar:
+            spks_1.extend(spks_2)
+            self._reduce_geochar(spks_1, key, method=reduce, axis=0)
+        return self.states.get(key)  # return pointer
+    
+    def _reduce_metric_from_spks(self, spk_args, key, by, geochar=True, **kwargs):
+        from collections import deque
+        
+        spks = self._resolve_spk_args(spk_args)
+        key = self.check_enum(key)
+        by = self.check_enum(by)
+        grouped = {}
+        if by == self.SPK_SETS.GROUP.value:
+            # Group spks
+            for spk in spks:
+                if spk.group not in grouped:
+                    grouped[spk.group] = deque([spk])
+                else:
+                    grouped[spk.group].append(spk)
+        elif by == self.SPK_SETS.NAME.value:
+            # Group spks
+            for spk in spks:
+                if spk.name not in grouped:
+                    grouped[spk.name] = deque([spk])
+                else:
+                    grouped[spk.name].append(spk)
+        elif by == self.SPK_SETS.GROUP_NAME.value:
+            # Group spks
+            for spk in spks:
+                if (spk.group, spk.name) not in grouped:
+                    grouped[(spk.group, spk.name)] = deque([spk])
+                else:
+                    grouped[(spk.group, spk.name)].append(spk)
+        else:
+            raise ValueError("Reduce by options are: name, group, group_name.")
+        
+        # Retrieve data
+        for group_key, group_spks in grouped.items():
+            res = deque()
+            for spk in grouped[group_key]:
+                res.append(self.states.get_spk_data(spk, key))
+            # save for reduced for each group
+            res = self._reduce_metric(res, **kwargs)
+            self.states.add_spk_data(spk, key, res, by)
+
+            if geochar and key in self.metric_geochar_map:
+                geo_key = self.metric_geochar_map[key]
+                res = deque()
+                for spk in grouped[group_key]:
+                    res.append(self.states.get_spk_data(spk, geo_key))
+                # save for reduced for each group
+                res = self._reduce_metric(res, **kwargs)
+                self.states.add_spk_data(spk, geo_key, res, by)
     
     

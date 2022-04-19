@@ -66,3 +66,5 @@ target/
 ./cenv
 
 /pyvenv.cfg
+
+*.ipynb_checkpoints

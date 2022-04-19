@@ -8,7 +8,7 @@ from enum import Enum
 class States():
     def __init__(self, enums={}):
         self.timesteps = []
-        self.data = {}
+        self.data = {} # this is the default data container. will be used to export saved data.
         self.data_format = {}
         self.n = lambda: len(self.timesteps)
         self.STATES = enums["STATES"] if "STATES" in enums else STATES
@@ -106,20 +106,3 @@ class States():
             name = name.value
         return name
 
-    # ===============================
-    # speckle function
-    # def set_spk_state_key(self, spk:object, key:str):
-    #     try:
-    #         key = STATES(key).value
-    #     except ValueError:
-    #         key = self.check_enum(key)
-    #     return "{}_{}".format(key, spk.str)
-
-    # def add_spk_data(self, spk:object, key: str, data: np.ndarray):
-    #     state_key = self.set_spk_state_key(spk, key)
-    #     self.data[state_key] = data
-    #     self.data_format[state_key] = DATA_FORMAT.SPK
-
-    # def get_spk_data(self, spk:object, key: str, **kwargs):
-    #     state_key = self.set_spk_state_key(spk, key)
-    #     return self.get(key=state_key, **kwargs)

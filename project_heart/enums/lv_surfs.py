@@ -210,4 +210,12 @@ class LV_STATES(Enum):
 
     TORSION = "torsion"
     TO = "torsion"
+
+
+class LV_SPK_SETS(Enum):
     
+    GROUP = "group"
+    NAME = "name"
+
+    GROUP_NAME = "group_name"
+    NAME_GROUP = "group_name"

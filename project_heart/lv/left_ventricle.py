@@ -75,6 +75,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                           spks,
                           t_es: float = None,
                           t_ed: float = 0.0,
+                          reduce_additional_info=True,
                           recompute=False,
                           **kwargs) -> float:
 
@@ -85,6 +86,17 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                                            self.STATES.RS,
                                            t_ed=t_ed,
                                            **kwargs)
+            # compute additional info 
+            if reduce_additional_info:
+                # reduce metric
+                self._reduce_metric_from_spks(spks, self.STATES.RS, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(spks, self.STATES.RS, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(spks, self.STATES.RS, self.SPK_SETS.GROUP_NAME)
+            
+            # save spks used to compute this metric
+            self.states.set_data_spk_rel(spks, self.STATES.RS)
+            self.states.set_data_spk_rel(spks, self.metric_geochar_map[self.STATES.RS.value])
+
         return self.states.get(self.STATES.RS, t=t_es)
 
     def wall_thickening(self,
@@ -92,6 +104,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                         epi_spks,
                         t_es: float = None,
                         t_ed: float = 0.0,
+                        reduce_additional_info=True,
                         recompute=False,
                         **kwargs) -> float:
         # check if wt was computed
@@ -103,12 +116,29 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                 self.STATES.WT,
                 t_ed=t_ed,
                 **kwargs)
+            # compute additional info 
+            if reduce_additional_info:
+                self._reduce_metric_from_spks(endo_spks, self.STATES.WT, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(endo_spks, self.STATES.WT, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(endo_spks, self.STATES.WT, self.SPK_SETS.GROUP_NAME)
+                self._reduce_metric_from_spks(epi_spks, self.STATES.WT, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(epi_spks, self.STATES.WT, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(epi_spks, self.STATES.WT, self.SPK_SETS.GROUP_NAME)
+            
+            # save spks used to compute this metric
+            endo_spks = self._resolve_spk_args(endo_spks)
+            epi_spks = self._resolve_spk_args(epi_spks)
+            endo_spks.extend(epi_spks)
+            self.states.set_data_spk_rel(endo_spks, self.STATES.WT)
+            self.states.set_data_spk_rel(endo_spks, self.metric_geochar_map[self.STATES.WT.value])
+        
         return self.states.get(self.STATES.WT, t=t_es)
 
     def longitudinal_strain(self,
                             spks,
                             t_es: float = None,
                             t_ed: float = 0.0,
+                            reduce_additional_info=True,
                             recompute=False,
                             **kwargs) -> float:
         # check if SL was computed
@@ -118,12 +148,22 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                                            self.STATES.SL,
                                            t_ed=t_ed,
                                            **kwargs)
+            if reduce_additional_info:
+                self._reduce_metric_from_spks(spks, self.STATES.SL, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(spks, self.STATES.SL, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(spks, self.STATES.SL, self.SPK_SETS.GROUP_NAME)
+            
+            # save spks used to compute this metric
+            self.states.set_data_spk_rel(spks, self.STATES.SL)
+            self.states.set_data_spk_rel(spks, self.metric_geochar_map[self.STATES.SL.value])
+
         return self.states.get(self.STATES.SL, t=t_es)
 
     def circumferential_strain(self,
                                spks,
                                t_es: float = None,
                                t_ed: float = 0.0,
+                               reduce_additional_info=True,
                                recompute=False,
                                **kwargs) -> float:
         # check if SC was computed
@@ -133,21 +173,41 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                                            self.STATES.SC,
                                            t_ed=t_ed,
                                            **kwargs)
+
+            if reduce_additional_info:
+                self._reduce_metric_from_spks(spks, self.STATES.SC, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(spks, self.STATES.SC, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(spks, self.STATES.SC, self.SPK_SETS.GROUP_NAME)
+            
+            # save spks used to compute this metric
+            self.states.set_data_spk_rel(spks, self.STATES.SC)
+            self.states.set_data_spk_rel(spks, self.metric_geochar_map[self.STATES.SC.value])
+
         return self.states.get(self.STATES.SC, t=t_es)
 
     def rotation(self,
                  spks,
                  t_es: float = None,
                  t_ed: float = 0.0,
+                 reduce_additional_info=True,
                  recompute=False,
                  **kwargs) -> float:
         # check if RO was computed
         if not self.states.check_key(self.STATES.RO) or recompute:
             self._compute_metric_from_spks(spks,
-                                           self.compute_spk_radial_shortening,
+                                           self.compute_spk_rotation,
                                            self.STATES.RO,
                                            t_ed=t_ed,
                                            **kwargs)
+
+            if reduce_additional_info:
+                self._reduce_metric_from_spks(spks, self.STATES.RO, self.SPK_SETS.GROUP, geochar=True)
+                self._reduce_metric_from_spks(spks, self.STATES.RO, self.SPK_SETS.NAME, geochar=True)
+                self._reduce_metric_from_spks(spks, self.STATES.RO, self.SPK_SETS.GROUP_NAME, geochar=True)
+            
+            # save spks used to compute this metric
+            self.states.set_data_spk_rel(spks, self.STATES.RO)
+
         return self.states.get(self.STATES.RO, t=t_es)
 
     def twist(self,
@@ -155,6 +215,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
               base_spks,
               t_es: float = None,
               t_ed: float = 0.0,
+              reduce_additional_info=True,
               recompute=False,
               **kwargs) -> float:
         # check if tw was computed
@@ -166,6 +227,22 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                 self.STATES.TW,
                 t_ed=t_ed,
                 **kwargs)
+
+            if reduce_additional_info:
+                self._reduce_metric_from_spks(apex_spks, self.STATES.TW, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(apex_spks, self.STATES.TW, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(apex_spks, self.STATES.TW, self.SPK_SETS.GROUP_NAME)
+                self._reduce_metric_from_spks(base_spks, self.STATES.TW, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(base_spks, self.STATES.TW, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(base_spks, self.STATES.TW, self.SPK_SETS.GROUP_NAME)
+            
+            # save spks used to compute this metric
+            apex_spks = self._resolve_spk_args(apex_spks)
+            base_spks = self._resolve_spk_args(base_spks)
+            apex_spks.extend(base_spks)
+            self.states.set_data_spk_rel(apex_spks, self.STATES.TW)
+            self.states.set_data_spk_rel(apex_spks, self.metric_geochar_map[self.STATES.TW.value])
+
         return self.states.get(self.STATES.TW, t=t_es)
 
     def torsion(self,
@@ -173,6 +250,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                 base_spks,
                 t_es: float = None,
                 t_ed: float = 0.0,
+                reduce_additional_info=True,
                 recompute=False,
                 **kwargs) -> float:
         # check if TO was computed
@@ -184,24 +262,87 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                 self.STATES.TO,
                 t_ed=t_ed,
                 **kwargs)
+
+            if reduce_additional_info:
+                self._reduce_metric_from_spks(apex_spks, self.STATES.TO, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(apex_spks, self.STATES.TO, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(apex_spks, self.STATES.TO, self.SPK_SETS.GROUP_NAME)
+                self._reduce_metric_from_spks(base_spks, self.STATES.TO, self.SPK_SETS.GROUP)
+                self._reduce_metric_from_spks(base_spks, self.STATES.TO, self.SPK_SETS.NAME)
+                self._reduce_metric_from_spks(base_spks, self.STATES.TO, self.SPK_SETS.GROUP_NAME)
+        
+            # save spks used to compute this metric
+            apex_spks = self._resolve_spk_args(apex_spks)
+            base_spks = self._resolve_spk_args(base_spks)
+            apex_spks.extend(base_spks)
+            self.states.set_data_spk_rel(apex_spks, self.STATES.TO)
+            self.states.set_data_spk_rel(apex_spks, self.metric_geochar_map[self.STATES.TO.value])
+
         return self.states.get(self.STATES.TO, t=t_es)
 
     # ===============================
     # Plots
-    # ===============================
+    # ===============================       
 
-    def plot_metric(self, metric: str, kind="scatter", **kwargs):
+    def get_metric_as_df(self, metric, search_info=True):
+        import pandas as pd
         metric = self.check_enum(metric)
         if not self.states.check_key(metric):
             raise ValueError(
                 "Metric '{}' not found in states." \
                 "Did you compute it?".format(metric))
-        data = self.states.get(metric)
-        import pandas as pd
-        import matplotlib.pyplot as plt
 
-        df = pd.DataFrame({metric: data, "timesteps": self.states.timesteps})
+        ts = self.states.timesteps
+        re = self.states.get(metric) # get main metric
+        df = pd.DataFrame({"timesteps": ts, metric: re})
+        info = None
+        if search_info:
+            try:
+                spks = self.states.get_spks_from_data(metric)
+                info = dict(group=df.copy(), name=df.copy(), group_name=df.copy())
+                info_cats = dict(name=set(), group=set(), group_name=set())
+                for spk in spks:
+                    info_cats[self.SPK_SETS.NAME.value].add(spk.name)
+                    info_cats[self.SPK_SETS.GROUP.value].add(spk.group)
+                    info_cats[self.SPK_SETS.GROUP_NAME.value].add("{}_{}".format(spk.group, spk.name))
+                for cat, values in info_cats.items():
+                    for suffix in values:
+                        try:
+                            check_val = "{}_{}".format(metric, suffix)
+                            data = self.states.get(check_val)
+                            info[cat][check_val] = data
+                        except KeyError:
+                            print("suffix '{}' not found for metric '{}': {}".format(suffix, metric, check_val))
+            except:
+                print("Spks-data relationship not found for metric {}. "
+                "Check 'set_data_spk_rel' or 'add_spk_data'.".format(metric))
+        return df, info
+
+    def plot_metric(self, 
+        metric: str, 
+        kind="line", 
+        from_ts=0.0, 
+        to_ts=-1,
+        plot_infos:list=[],
+        **kwargs):
+        metric = self.check_enum(metric)
+        df, info = self.get_metric_as_df(metric, search_info=True)
+        if from_ts > 0:
+            df = df.loc[df["timesteps"] >= from_ts]
+        if to_ts > 0:
+            df = df.loc[df["timesteps"] <= to_ts]
         df.plot(x="timesteps", y=metric, kind=kind, **kwargs)
-        plt.show()
-
-        
+        if info is not None and len(plot_infos) > 0:
+            for key in plot_infos:
+                if key in info:
+                    df = info[key]
+                    y = list(df.columns)
+                    y.remove("timesteps")
+                    if from_ts > 0:
+                        df = df.loc[df["timesteps"] >= from_ts]
+                    if to_ts > 0:
+                        df = df.loc[df["timesteps"] <= to_ts]
+                    df.plot(x="timesteps", y=y, kind=kind, **kwargs)
+                else:
+                    raise ValueError("info '{}' not found. "
+                    "Options are: {}".format(key, list(info.keys())))
