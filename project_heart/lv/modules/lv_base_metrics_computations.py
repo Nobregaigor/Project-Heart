@@ -659,4 +659,61 @@ class LVBaseMetricsComputations(LV_Speckles):
                 res = self._reduce_metric(res, **kwargs)
                 self.states.add_spk_data(spk, geo_key, res, by)
     
-    
+    def _apply_generic_spk_metric_schematics(self, 
+        spks_1, 
+        key,
+        fun,
+        t_ed=0.0,
+        spks_2=None,
+        reduce_additional_info=True,
+        reduce="mean",
+        geochar=True,
+        recompute=False,
+        **kwargs
+        ):
+        
+        if spks_2 is None:
+            # check if metric 'key' was computed
+            if not self.states.check_key(key) or recompute:
+                if t_ed is not None:
+                    self._compute_metric_from_spks(spks_1,fun,key,t_ed=t_ed, geochar=geochar, **kwargs)
+                else:
+                    self._compute_metric_from_spks(spks_1,fun,key, geochar=geochar, **kwargs)
+                # compute additional info 
+                if reduce_additional_info:
+                    # reduce metric
+                    self._reduce_metric_from_spks(spks_1, key, self.SPK_SETS.GROUP, reduce=reduce, geochar=geochar)
+                    self._reduce_metric_from_spks(spks_1, key, self.SPK_SETS.NAME, reduce=reduce, geochar=geochar)
+                    self._reduce_metric_from_spks(spks_1, key, self.SPK_SETS.GROUP_NAME, reduce=reduce, geochar=geochar)
+                
+                # save spks used to compute this metric
+                self.states.set_data_spk_rel(spks_1, key)
+                if geochar:
+                    key = self.check_enum(key)
+                    self.states.set_data_spk_rel(spks_1, self.metric_geochar_map[key])
+        else:
+            # check if metric 'key' was computed
+            if not self.states.check_key(key) or recompute:
+                if t_ed is not None:
+                    self._compute_metric_from_coupled_spks(spks_1,spks_2,fun,key,t_ed=t_ed,geochar=geochar,**kwargs)
+                else:
+                    self._compute_metric_from_coupled_spks(spks_1,spks_2,fun,key,geochar=geochar,**kwargs)
+                # compute additional info 
+                if reduce_additional_info:
+                    # reduce metric
+                    self._reduce_metric_from_spks(spks_1, key, self.SPK_SETS.GROUP, reduce=reduce, geochar=geochar)
+                    self._reduce_metric_from_spks(spks_1, key, self.SPK_SETS.NAME, reduce=reduce, geochar=geochar)
+                    self._reduce_metric_from_spks(spks_1, key, self.SPK_SETS.GROUP_NAME, reduce=reduce, geochar=geochar)
+                    self._reduce_metric_from_spks(spks_2, key, self.SPK_SETS.GROUP, reduce=reduce, geochar=geochar)
+                    self._reduce_metric_from_spks(spks_2, key, self.SPK_SETS.NAME, reduce=reduce, geochar=geochar)
+                    self._reduce_metric_from_spks(spks_2, key, self.SPK_SETS.GROUP_NAME, reduce=reduce, geochar=geochar)
+                
+                # save spks used to compute this metric
+                spks_1 = self._resolve_spk_args(spks_1)
+                spks_2 = self._resolve_spk_args(spks_2)
+                spks_1.extend(spks_2)
+                self.states.set_data_spk_rel(spks_1, key)
+                if geochar:
+                    key = self.check_enum(key)
+                    self.states.set_data_spk_rel(spks_1, self.metric_geochar_map[key])
+ 
