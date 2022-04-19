@@ -256,11 +256,11 @@ class LVBaseMetricsComputations(LV_Speckles):
         # compute % thickening
         th = (d1 - d2) / (d1 + self.EPSILON) * 100.0
         self.states.add_spk_data(
-            endo_spk, self.STATES.THICKENING, th)  # save to states
+            endo_spk, self.STATES.WT, th)  # save to states
         self.states.add_spk_data(
-            epi_spk, self.STATES.THICKENING, th)  # save to states
+            epi_spk, self.STATES.WT, th)  # save to states
         # return pointer
-        return self.states.get_spk_data(endo_spk, self.STATES.THICKENING)
+        return self.states.get_spk_data(endo_spk, self.STATES.WT)
 
     # ---- Longitudinal Strain
 
@@ -386,7 +386,8 @@ class LVBaseMetricsComputations(LV_Speckles):
         # return pointer
         return self.states.get_spk_data(spk, self.STATES.SPK_VECS)
 
-    def compute_spk_rotation(self, spk,
+    def compute_spk_rotation(self, 
+                             spk,
                              t_ed: float = 0.0,
                              dtype: np.dtype = np.float64,
                              check_orientation=False,
@@ -492,3 +493,84 @@ class LVBaseMetricsComputations(LV_Speckles):
         self.states.add_spk_data(
             base_spk, self.STATES.TORSION, torsion)  # save to states
         return self.states.get_spk_data(base_spk, self.STATES.TORSION)
+
+    # ===============================
+    # Generic spk compilation
+    # ===============================
+    
+    def _reduce_metric(self, res, method="mean", axis=0, **kwargs):
+        if method == "mean":
+            return np.mean(res, axis=axis)
+        elif method == "max":
+            return np.max(res, axis=axis)
+        elif method == "min":
+            return np.min(res, axis=axis)
+        elif method == "median":
+            return np.median(res, axis=axis)
+        else:
+            raise ValueError("Invalid method. Options are: 'mean', 'max', 'min', 'median'.")
+    
+    def _save_metric(self, res, key):
+        self.states.add(key, res)  # save to states
+        return self.states.get(key)  # return pointer
+    
+    def _resolve_spk_args(self, spk_args):
+        if isinstance(spk_args, dict):
+            spks = self.get_speckles(**spk_args)
+            if len(spks) == 0:
+                raise ValueError("No spks found for given spk_args: {}".format(spk_args))
+        elif isinstance(spk_args, (list, tuple, np.ndarray)):
+            spks = spk_args
+        else:
+            raise TypeError("'spks' must be a list (interable) of spk objects."\
+                            "The respective function argument can be either a "\
+                            "dictionary containing 'get_speckles' args or one "\
+                            "of the following types: 'list', 'tuple', 'np.ndarray'.")
+        return spks
+    
+    def _compute_metric_from_spks(self, 
+                                  spk_args, 
+                                  fun, 
+                                  key,
+                                  reduce:str="mean",
+                                  dtype:np.dtype=np.float64,
+                                  **kwargs):
+        spks = self._resolve_spk_args(spk_args)
+        res = np.zeros((len(spks), self.states.n()), dtype=dtype)
+        for i, spk in enumerate(spks):
+            try:
+                res[i] = fun(spk, dtype=dtype, **kwargs)
+            except:
+                assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+                raise RuntimeError("Unable to compute metric '{}' for spk '{}'"
+                                   .format(fun, spk.str))
+        res = self._reduce_metric(res, method=reduce, axis=0)
+        return self._save_metric(res, key)
+    
+    def _compute_metric_from_coupled_spks(self, 
+                                          spk_args_1, 
+                                          spk_args_2, 
+                                          fun, 
+                                          key,
+                                          reduce:str="mean",
+                                          dtype:np.dtype=np.float64,
+                                          **kwargs):
+        spks_1 = self._resolve_spk_args(spk_args_1)
+        spks_2 = self._resolve_spk_args(spk_args_2)  
+              
+        if len(spks_1) != len(spks_2):
+            raise ValueError("Number of speckles must match for coupled computation: "
+                             "{}, {}".format(len(spks_1), len(spks_2)))
+
+        res = np.zeros((len(spks_1), self.states.n()), dtype=dtype)
+        for i, (spk1, spk2) in enumerate(zip(spks_1, spks_2)):
+            try:
+                res[i] = fun(spk1, spk2, dtype=dtype, **kwargs)
+            except:
+                assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+                raise RuntimeError("Unable to compute metric '{}' for spk '{}'"
+                                   .format(fun, spk.str))
+        res = self._reduce_metric(res, method=reduce, axis=0)
+        return self._save_metric(res, key)
+    
+    

@@ -168,6 +168,8 @@ class LV_STATES(Enum):
 
     VOLUMETRIC_FRACTION = "volumetric_fraction"
     VF = "volumetric_fraction"
+    EF = "volumetric_fraction"
+    
     
     BASE_REF = "base_ref"
     APEX_REF = "apex_ref"
@@ -186,19 +188,26 @@ class LV_STATES(Enum):
 
     THICKNESS = "thickness"
 
-    THICKENING = "thickening"
+    WALL_THICKENING = "wall_thickening"
+    THICKENING = "wall_thickening"
+    WT = "wall_thickening"
 
     LONG_LENGTH = "longitudinal_length"
     LONG_STRAIN = "longitudinal_strain"
+    SL = "longitudinal_strain"
 
     CIRC_LENGTH = "circumferential_length"
     CIRC_STRAIN = "circumferential_strain"
-
+    SC = "circumferential_strain"
+    
     SPK_VECS = "spckle_vectors"
 
     ROTATION = "angle_rotation"
+    RO = "angle_rotation"
 
     TWIST = "twist"
+    TW = "twist"
 
     TORSION = "torsion"
+    TO = "torsion"
     
