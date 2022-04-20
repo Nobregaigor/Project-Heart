@@ -588,8 +588,9 @@ class LVBaseMetricsComputations(LV_Speckles):
                                           geochar=True,
                                           dtype:np.dtype=np.float64,
                                           **kwargs):
-        spks_1 = self._resolve_spk_args(spk_args_1)
-        spks_2 = self._resolve_spk_args(spk_args_2)  
+        from copy import copy 
+        spks_1 = copy(self._resolve_spk_args(spk_args_1))
+        spks_2 = copy(self._resolve_spk_args(spk_args_2))
               
         if len(spks_1) != len(spks_2):
             raise ValueError("Number of speckles must match for coupled computation: "
@@ -671,7 +672,8 @@ class LVBaseMetricsComputations(LV_Speckles):
         recompute=False,
         **kwargs
         ):
-        
+        from copy import copy
+
         if spks_2 is None:
             # check if metric 'key' was computed
             if not self.states.check_key(key) or recompute:
@@ -709,8 +711,8 @@ class LVBaseMetricsComputations(LV_Speckles):
                     self._reduce_metric_from_spks(spks_2, key, self.SPK_SETS.GROUP_NAME, reduce=reduce, geochar=geochar)
                 
                 # save spks used to compute this metric
-                spks_1 = self._resolve_spk_args(spks_1)
-                spks_2 = self._resolve_spk_args(spks_2)
+                spks_1 = copy(self._resolve_spk_args(spks_1))
+                spks_2 = copy(self._resolve_spk_args(spks_2))
                 spks_1.extend(spks_2)
                 self.states.set_data_spk_rel(spks_1, key)
                 if geochar:
