@@ -274,6 +274,8 @@ class BaseContainerHandler():
         else:
             try:
                 return cls.from_pyvista_read(filepath, **kwargs)
+            except FileNotFoundError:
+                raise FileNotFoundError("Could not find file: {}. Check if file exists and is readable.".format(filepath))
             except:
                 raise RuntimeError(
                     "Could not read input file. We currentl support '.xplt', and pyvista read methods: https://bit.ly/3uByq1P")
