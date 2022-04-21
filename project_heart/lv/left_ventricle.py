@@ -241,7 +241,11 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             df = df.loc[df["timesteps"] >= from_ts]
         if to_ts > 0:
             df = df.loc[df["timesteps"] <= to_ts]
-        df.plot(x="timesteps", y=metric, kind=kind, **kwargs)
+        
+        default_args = dict(grid=True, figsize=(15,7))
+        default_args.update(kwargs)
+
+        df.plot(x="timesteps", y=metric, kind=kind, **default_args)
         if info is not None and len(plot_infos) > 0:
             for key in plot_infos:
                 if key in info:
@@ -252,7 +256,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                         df = df.loc[df["timesteps"] >= from_ts]
                     if to_ts > 0:
                         df = df.loc[df["timesteps"] <= to_ts]
-                    df.plot(x="timesteps", y=y, kind=kind, **kwargs)
+                    df.plot(x="timesteps", y=y, kind=kind, **default_args)
                 else:
                     raise ValueError("info '{}' not found. "
                     "Options are: {}".format(key, list(info.keys())))
