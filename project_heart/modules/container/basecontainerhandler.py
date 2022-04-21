@@ -74,6 +74,8 @@ class BaseContainerHandler():
         self._cell_list = None
         self._surf_cell_list = None
 
+        self._surfmap = None
+
         if len(enums) > 0:
             self.config_enums(enums)
 
@@ -803,8 +805,14 @@ class BaseContainerHandler():
                 return self.surface_mesh
 
     def get_surface_id_map_from_mesh(self):
-        lvsurf = self.get_surface_mesh()
-        return lvsurf.point_data["vtkOriginalPointIds"]
+        # lvsurf = self.get_surface_mesh()
+        # return lvsurf.point_data["vtkOriginalPointIds"]
+        if self._surfmap is None:
+            from project_heart.utils.cloud_ops import map_A_to_B
+            A = self.get_surface_mesh().points
+            B = self.mesh.points           
+            self._surfmap = map_A_to_B(A,B)
+        return self._surfmap
 
     def map_surf_ids_to_global_ids(self, surf_ids, dtype=np.int64):
         surf_to_global = self.get_surface_id_map_from_mesh()

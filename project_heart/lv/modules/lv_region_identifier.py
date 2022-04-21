@@ -478,9 +478,9 @@ class LV_RegionIdentifier(LV_Base):
         clustered[epi_am_its] = LV_SURFS.EPI_AM_INTERCECTION
         clustered[endo_am_its] = LV_SURFS.ENDO_AM_INTERCECTION
 
-        surf_to_global = np.array(
-            lvsurf.point_data["vtkOriginalPointIds"], dtype=np.int64)
-
+        # surf_to_global = np.array(
+        #     lvsurf.point_data["vtkOriginalPointIds"], dtype=np.int64)
+        surf_to_global = self.get_surface_id_map_from_mesh()
         # -------------------------------
         # transform ids from local surf values to global mesh ids
         mesh_clustered = np.zeros(self.mesh.n_points)
@@ -586,7 +586,9 @@ class LV_RegionIdentifier(LV_Base):
         # update endo-epi based on detailed info from aortic_mitral surfs
         # now that we have all surface IDs, we can adjust endo_epi based on detailed
         # information from aortic and mitral data.
-        surf_to_global = self.surface_mesh.point_data["vtkOriginalPointIds"]
+        
+        # surf_to_global = self.surface_mesh.point_data["vtkOriginalPointIds"]
+        surf_to_global = self.get_surface_id_map_from_mesh()
 
         # set copy of values (do not modify them directly)
         updated_endo_epi = np.copy(endo_epi)

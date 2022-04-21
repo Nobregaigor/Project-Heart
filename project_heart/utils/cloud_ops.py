@@ -31,3 +31,8 @@ def relate_closest(A: np.ndarray, B: np.ndarray) -> tuple:
     dists, to_nodes = query_kdtree(B, A)
     to_nodes = to_nodes.reshape(-1, 1)
     return np.hstack((from_nodes, to_nodes)), dists
+
+def map_A_to_B(A: np.ndarray, B: np.ndarray) -> np.ndarray:
+    idmap, _ = relate_closest(A,B)
+    idmap = idmap[:, 1]
+    return idmap
