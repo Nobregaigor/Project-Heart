@@ -4,7 +4,7 @@ from .lv_speckles import LV_Speckles
 # from project_heart.enums import CONTAINER, STATES, LV_SURFS
 from project_heart.utils.spatial_utils import radius
 from project_heart.modules.speckles.speckle import Speckle
-from project_heart.utils.spatial_utils import compute_longitudinal_length, compute_circumferential_length
+from project_heart.utils.spatial_utils import compute_longitudinal_length, compute_circumferential_length, compute_length
 from project_heart.utils.vector_utils import angle_between
 
 
@@ -180,7 +180,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
         rvec = np.zeros(len(xyz), dtype=dtype)
         for i, pts in enumerate(xyz):
-            rvec[i] = radius(pts)
+            rvec[i] = radius(pts, center=spk_center)
         self.states.add_spk_data(
             spk, self.STATES.RADIUS, rvec)  # save to states
         # return pointer
@@ -292,7 +292,8 @@ class LVBaseMetricsComputations(LV_Speckles):
         # compute longitudinal length for each timestep
         ll = np.zeros(len(xyz), dtype=dtype)
         for i, pts in enumerate(xyz):
-            ll[i] = compute_longitudinal_length(pts, **kwargs)
+            # ll[i] = compute_longitudinal_length(pts, **kwargs)
+            ll[i] = compute_length(pts, **kwargs)
         # reduce noise with filters
         if mfilter_ws > 0 and len(ll) > mfilter_ws:
             from scipy import signal
@@ -345,7 +346,8 @@ class LVBaseMetricsComputations(LV_Speckles):
         ll = np.zeros(len(xyz), dtype=dtype)
         # compute circumferential length for each timestep
         for i, pts in enumerate(xyz):
-            ll[i] = compute_circumferential_length(pts, **kwargs)
+            # ll[i] = compute_circumferential_length(pts, **kwargs)
+            ll[i] = compute_length(pts, **kwargs)
         # reduce noise with filters
         if mfilter_ws > 0 and len(ll) > mfilter_ws:
             from scipy import signal

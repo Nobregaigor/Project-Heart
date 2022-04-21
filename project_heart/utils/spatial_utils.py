@@ -147,7 +147,7 @@ def sort_by_polar(xy):
 
 def sort_circumferential_2D(xy, vec=np.asarray([1.0, 0.0])):
     xy_mean = np.mean(xy)
-    angles = angle_between(xy - xy_mean, vec, check_orientation=False)
+    angles = angle_between(xy - xy_mean, vec, check_orientation=True)
     # angles = np.asarray([angle_between_2D(p[:2] - xy_mean, vec) for p in xy])
     idx = np.lexsort([angles, xy[:, 1], xy[:, 0]])
     return xy[idx]
@@ -450,3 +450,26 @@ def compute_longitudinal_length(xyz, nps=0.075, nps2=0.33, w=3.0, decay=0.95, **
     xyz = grouping_by_distance(
         xyz, w, decay=decay, min_g=min_g, sort_mode="vertical")
     return line_sum(xyz)
+
+
+def compute_length(xyz, n_clusters=6, random_state=0, **kwargs):
+  
+    # divide into clusters
+    from sklearn.cluster import KMeans
+    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, **kwargs).fit(xyz)
+
+    # get centers
+    centers = kmeans.cluster_centers_
+
+    # transform to spherical coordinates
+    rs = np.linalg.norm(centers, axis=1)
+    thetas = np.arccos(centers[:, 2]/rs)
+    phis = np.arctan2(centers[:, 1],centers[:, 0])
+
+    # sort by columns
+    ids = np.lexsort((phis, thetas,rs))
+    centers = centers[ids]
+    
+    #compute length
+    return line_sum(centers)
+    
