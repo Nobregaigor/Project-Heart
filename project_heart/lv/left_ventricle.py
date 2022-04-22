@@ -66,29 +66,21 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         if not self.states.check_key(self.STATES.RADIUS) or recompute:
             self.compute_radius(spks, **kwargs)
         return self.states.get(self.STATES.RADIUS, t=t) 
-    
-    
-    def thickness(self, endo_spks, epi_spks, t=None, **kwargs):
+ 
+    def thickness(self, endo_spks, epi_spks, t=None, recompute=False, **kwargs):
         if not self.states.check_key(self.STATES.THICKNESS) or recompute:
             self.compute_thickness(endo_spks, epi_spks, **kwargs)
         return self.states.get(self.STATES.THICKNESS, t=t) 
-        return self.states.get(self.STATES.THICKNESS, t=t) 
     
-    def longitudinal_length(self, spks, t=None, **kwargs):
-        key = self.STATES.LONG_LENGTH
-        self._apply_generic_spk_metric_schematics(
-            spks, key,
-            self.compute_spk_longitudinal_length,
-            t_ed=None, geochar=False, **kwargs)
-        return self.states.get(key, t=t) 
+    def longitudinal_length(self, spks, t=None, recompute=False, **kwargs):
+        if not self.states.check_key(self.STATES.LONG_LENGTH) or recompute:
+            self.compute_longitudinal_length(spks, **kwargs)
+        return self.states.get(self.STATES.LONG_LENGTH, t=t) 
 
-    def circumferential_length(self, spks, t=None, **kwargs):
-        key = self.STATES.CIRC_LENGTH
-        self._apply_generic_spk_metric_schematics(
-            spks, key,
-            self.compute_spk_circumferential_length,
-            t_ed=None, geochar=False, **kwargs)
-        return self.states.get(key, t=t) 
+    def circumferential_length(self, spks, t=None, recompute=False, **kwargs):
+        if not self.states.check_key(self.STATES.CIRC_LENGTH) or recompute:
+            self.compute_circumferential_length(spks, **kwargs)
+        return self.states.get(self.STATES.CIRC_LENGTH, t=t)
     
     def rotation(self, spks, t=None, **kwargs):
         key = self.STATES.ROTATION

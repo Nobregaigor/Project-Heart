@@ -147,7 +147,7 @@ def sort_by_polar(xy):
 
 def sort_circumferential_2D(xy, vec=np.asarray([1.0, 0.0])):
     xy_mean = np.mean(xy)
-    angles = angle_between(xy - xy_mean, vec, check_orientation=True)
+    angles = angle_between(xy - xy_mean, vec, check_orientation=False)
     # angles = np.asarray([angle_between_2D(p[:2] - xy_mean, vec) for p in xy])
     idx = np.lexsort([angles, xy[:, 1], xy[:, 0]])
     return xy[idx]
