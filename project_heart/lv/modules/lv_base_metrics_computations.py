@@ -626,14 +626,11 @@ class LVBaseMetricsComputations(LV_Speckles):
         # check if xyz was computed, otherwise try to automatically compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
-        # get speckle center and node ids from speckle
-        spk_center = spk.center
-        nodeids = spk.ids
         # get nodal position for all timesteps for given spk
-        xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
-        vecs = xyz - spk_center
-        self.states.add_spk_data(
-            spk, self.STATES.SPK_VECS, vecs)  # save to states
+        xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
+        vecs = np.array(xyz - spk.center, dtype=dtype)
+        # save to states
+        self.states.add_spk_data(spk, self.STATES.SPK_VECS, vecs)  
         # return pointer
         return self.states.get_spk_data(spk, self.STATES.SPK_VECS)
 
@@ -654,20 +651,50 @@ class LVBaseMetricsComputations(LV_Speckles):
                     "Please, either verify required data or add"
                     "state data for 'SPK_VECS' manually."
                     .format(spk.str))
-
-        d2 = self.states.get_spk_data(spk, self.STATES.SPK_VECS)
-        d1 = self.states.get_spk_data(spk, self.STATES.SPK_VECS, t=t_ed)
-        # compute rotation length for each timestep
-        rot = np.zeros(len(d2), dtype=dtype)
-        for i, (xyz1, xyz2) in enumerate(zip(d1, d2)):
-            rot[i] = np.mean(angle_between(
-                xyz2, xyz1, check_orientation=check_orientation))
+        # get reference position vector
+        p_ref = self.states.get_spk_data(spk, self.STATES.SPK_VECS, t=t_ed)
+        # get vecs for each state
+        p_vec = self.states.get_spk_data(spk, self.STATES.SPK_VECS)
+        logger.debug("rot:' p_ref.shape {}'".format(p_ref.shape))
+        logger.debug("rot:' p_vec.shape {}'".format(p_vec.shape))
+        # compute rotation for each timestep
+        rot = [angle_between(xyz_vec, p_ref, check_orientation=check_orientation) for xyz_vec in p_vec]
+        rot = np.mean(rot, axis=1)
+        logger.debug("rot: rot_vec.shape '{}'".format(rot.shape))
+        # convert to degrees
         if degrees:
             rot = np.degrees(rot)
-        self.states.add_spk_data(
-            spk, self.STATES.ROTATION, rot)  # save to states
+        # save to states
+        self.states.add_spk_data(spk, self.STATES.ROTATION, rot)  
         # return pointer
         return self.states.get_spk_data(spk, self.STATES.ROTATION)
+
+    def compute_rotation(self, spks, reduce_by={"group"}, **kwargs):
+        # set key for this function
+        key = self.STATES.ROTATION
+        logger.info("Computing metric '{}'".format(key))
+        # resolve spks (make sure you have a SpeckeDeque)
+        spks = self._resolve_spk_args(spks)
+        # compute metric
+        res = [self.compute_spk_rotation(spk, **kwargs) for spk in spks]
+        # reduce metric (here we compute the mean radius across entire LV)
+        self._reduce_metric_and_save(res, key, **kwargs)
+        # set metric relationship with spks 
+        # so that we can reference which spks were used to compute this metric
+        self.states.set_data_spk_rel(spks, key)
+        # Break down computation by each 'set of spks'
+        if "group" in reduce_by:
+            logger.debug("Reducing metric by group for '{}'".format(key))
+            self._reduce_metric_by_group(spks, key, **kwargs)
+            logger.info("Metric '{}' has reduced values by group.".format(key))
+        if "name" in reduce_by:
+            logger.debug("Reducing metric by name for '{}'".format(key))
+            self._reduce_metric_by_name(spks, key, **kwargs)
+            logger.info("Metric '{}' has reduced values by names.".format(key))
+        if "group_name" in reduce_by:
+            logger.debug("Reducing metric by group and name for '{}'".format(key))
+            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
+            logger.info("Metric '{}' has reduced values by group and name.".format(key))
 
     # ----- Twist and torsion ---- 
 

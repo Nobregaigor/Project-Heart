@@ -82,13 +82,16 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             self.compute_circumferential_length(spks, **kwargs)
         return self.states.get(self.STATES.CIRC_LENGTH, t=t)
     
-    def rotation(self, spks, t=None, **kwargs):
-        key = self.STATES.ROTATION
-        self._apply_generic_spk_metric_schematics(
-            spks, key,
-            self.compute_spk_rotation,
-            t_ed=None, geochar=False, **kwargs)
-        return self.states.get(key, t=t) 
+    def rotation(self, spks, t=None,  recompute=False, **kwargs):
+        if not self.states.check_key(self.STATES.ROTATION) or recompute:
+            self.compute_rotation(spks, **kwargs)
+        return self.states.get(self.STATES.ROTATION, t=t)
+        # key = self.STATES.ROTATION
+        # self._apply_generic_spk_metric_schematics(
+        #     spks, key,
+        #     self.compute_spk_rotation,
+        #     t_ed=None, geochar=False, **kwargs)
+        # return self.states.get(key, t=t) 
 
     # ===============================
     # Clinical Metrics
