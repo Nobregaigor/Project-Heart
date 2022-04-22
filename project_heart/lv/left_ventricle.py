@@ -2,6 +2,10 @@ from .modules import LV_FiberEstimator, LV_Speckles, LVBaseMetricsComputations
 import numpy as np
 # from project_heart.enums import CONTAINER, STATES, LV_SURFS
 
+import logging
+logging.basicConfig()
+logger = logging.getLogger('LV')
+
 
 class LV(LV_FiberEstimator, LVBaseMetricsComputations):
     def __init__(self, *args, **kwargs):
@@ -58,21 +62,17 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
 
     # --- Metrics that do require spks
 
-    def radius(self, spks, t=None, **kwargs):
-        key = self.STATES.RADIUS
-        self._apply_generic_spk_metric_schematics(
-            spks, key,
-            self.compute_spk_radius_for_each_timestep,
-            t_ed=None, geochar=False, **kwargs)
-        return self.states.get(key, t=t) 
+    def radius(self, spks, t=None, recompute=False, **kwargs):
+        if not self.states.check_key(self.STATES.RADIUS) or recompute:
+            self.compute_radius(spks, **kwargs)
+        return self.states.get(self.STATES.RADIUS, t=t) 
+    
     
     def thickness(self, endo_spks, epi_spks, t=None, **kwargs):
-        key = self.STATES.THICKNESS
-        self._apply_generic_spk_metric_schematics(
-            endo_spks, key,
-            self.compute_spk_thickness,
-            t_ed=None, geochar=False, spks_2=epi_spks,**kwargs)
-        return self.states.get(key, t=t) 
+        if not self.states.check_key(self.STATES.THICKNESS) or recompute:
+            self.compute_thickness(endo_spks, epi_spks, **kwargs)
+        return self.states.get(self.STATES.THICKNESS, t=t) 
+        return self.states.get(self.STATES.THICKNESS, t=t) 
     
     def longitudinal_length(self, spks, t=None, **kwargs):
         key = self.STATES.LONG_LENGTH

@@ -61,7 +61,8 @@ class SpeckleStates(States):
 
     def check_spk(self, spk: object):
         if not issubclass(spk.__class__, Speckle):
-            raise ValueError("spk must be derived from Speckle class.")
+            raise ValueError("spk must be derived from Speckle class."
+                            "Received: {}".format(spk.__class__))
 
     def check_spk_key(self, spk: object, key: str, join="all"):
         state_key = self.set_spk_state_key(spk, key, join=join)

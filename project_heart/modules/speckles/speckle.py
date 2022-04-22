@@ -10,6 +10,9 @@ DEFAULT_T_KEY = 0.0
 
 DEFAULT_REF_KEY = 0.0
 
+from collections import deque
+from enum import Enum
+from project_heart.enums import SPK_SETS
 
 class Speckle():
     def __init__(self,
@@ -63,6 +66,42 @@ class Speckle():
 
     def update_group(self, ref):
         self.group = ref
+    
+    def key(self):
+        return hash((self.t, self.subset, self.name, self.group, self.collection))
+
+class SpeckeDeque(deque):
+    def __init__(self, *args, **kwargs):
+        super(SpeckeDeque, self).__init__(*args, **kwargs)
+    
+    def by(self, option):
+
+        if isinstance(option, Enum):
+            option = option.value
+
+        grouped = {}
+        if option == SPK_SETS.GROUP.value:
+            for spk in list(self):
+                if spk.group not in grouped:
+                    grouped[spk.group] = SpeckeDeque([spk])
+                else:
+                    grouped[spk.group].append(spk)
+        elif option == SPK_SETS.NAME.value:
+            for spk in list(self):
+                if spk.name not in grouped:
+                    grouped[spk.name] = SpeckeDeque([spk])
+                else:
+                    grouped[spk.name].append(spk)
+        elif option == SPK_SETS.GROUP_NAME.value:
+            for spk in list(self):
+                if (spk.group, spk.name) not in grouped:
+                    grouped[(spk.group, spk.name)] = SpeckeDeque([spk])
+                else:
+                    grouped[(spk.group, spk.name)].append(spk)
+        else:
+            raise ValueError("Options are: name, group, group_name. Check SPK_SETS for details.")
+
+        return grouped
 
 
 class SpecklesDict():
@@ -117,7 +156,7 @@ class SpecklesDict():
             spk_collection is not None, \
             warnings.warn("No selection criteria was specified")
 
-        selection = []
+        selection = deque()
         # start with broad selection and narrow down
         if spk_collection is not None:
             selection = [spk for spk in self._speckles.values(
@@ -145,7 +184,7 @@ class SpecklesDict():
 
         if i is not None and len(selection) > 0:
             return selection[i]
-        return selection
+        return SpeckeDeque(selection)
 
     def remove(self, **kwargs):
         selected = self.get(**kwargs)

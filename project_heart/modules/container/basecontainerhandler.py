@@ -1289,8 +1289,12 @@ class BaseContainerHandler():
 
             if categorical:
                 unique_vals = np.unique(vals)
+                new_vals = np.zeros(len(vals), dtype=np.int32)
                 for i, v in enumerate(unique_vals):
-                    vals[np.where(vals == v)[0]] = i
+                    if v != 0:
+                        new_vals[np.where(vals == v)[0]] = i
+                
+                vals = new_vals
 
                 # if container == "points":
                 #     mesh.point_data["CATEGORICAL_FOR_PLOT"] = vals

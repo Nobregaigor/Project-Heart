@@ -21,6 +21,10 @@ default_lv_enums = {
     "VIRTUAL_NODES": LV_VIRTUAL_NODES
 }
 
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger('LV')
 
 class LV_Base(BaseContainerHandler):
     def __init__(self, enums={}, *args, **kwargs):

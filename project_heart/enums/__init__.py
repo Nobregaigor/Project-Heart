@@ -15,3 +15,5 @@ from .tetrahedralize_backends import *
 from .container_data import *
 
 from .script_data import *
+
+from .speckles import *

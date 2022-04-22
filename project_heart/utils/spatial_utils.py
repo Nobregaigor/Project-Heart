@@ -452,11 +452,13 @@ def compute_longitudinal_length(xyz, nps=0.075, nps2=0.33, w=3.0, decay=0.95, **
     return line_sum(xyz)
 
 
-def compute_length(xyz, n_clusters=6, random_state=0, **kwargs):
+def compute_length_by_clustering(xyz, n_clusters=6, random_state=0, batch_size=5120, **kwargs):
   
     # divide into clusters
-    from sklearn.cluster import KMeans
-    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, **kwargs).fit(xyz)
+    from sklearn.cluster import MiniBatchKMeans
+    kmeans = MiniBatchKMeans(n_clusters=n_clusters, 
+                                batch_size = batch_size,
+                                random_state=random_state, **kwargs).fit(xyz)
 
     # get centers
     centers = kmeans.cluster_centers_
