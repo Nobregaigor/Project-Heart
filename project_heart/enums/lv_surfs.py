@@ -186,17 +186,22 @@ class LV_STATES(Enum):
     RADIAL_SHORTENING = "radial_shortening"
     RS = "radial_shortening"
 
-    THICKNESS = "thickness"
+    WALL_THICKNESS = "wall_thickness"
+    THICKNESS = "wall_thickness"
 
     WALL_THICKENING = "wall_thickening"
     THICKENING = "wall_thickening"
     WT = "wall_thickening"
-
+    
     LONG_LENGTH = "longitudinal_length"
+
+    LONGITUDINAL_STRAIN = "longitudinal_strain"
     LONG_STRAIN = "longitudinal_strain"
     SL = "longitudinal_strain"
 
     CIRC_LENGTH = "circumferential_length"
+
+    CIRCUMFERENTIAL_STRAIN = "circumferential_strain"
     CIRC_STRAIN = "circumferential_strain"
     SC = "circumferential_strain"
     

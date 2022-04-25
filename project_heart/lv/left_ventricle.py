@@ -133,53 +133,53 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
 
     # --- Metrics that do require spks
     
-    def radial_shortening(self,spks,t_es: float = None, t_ed: float = 0.0,**kwargs) -> float:
-        key = self.STATES.RADIAL_SHORTENING
-        self._apply_generic_spk_metric_schematics(
-            spks, key,
-            self.compute_spk_radial_shortening,
-            t_ed=t_ed, geochar=True, **kwargs)
-        return self.states.get(key, t=t_es)
+    def radial_shortening(self,spks, t_es: float = None, t_ed: float = 0.0, recompute=False, **kwargs) -> float:
+        # make sure we have computed required geometric data for all spks
+        self.radius(spks, t=None, recompute=recompute, **kwargs)
+        # check if metric needs to be computed
+        if not self.states.check_key(self.STATES.RADIAL_SHORTENING) or recompute:
+            return self.compute_radial_shortening(spks, t_ed=t_ed, **kwargs)
+        return self.states.get(self.STATES.RADIAL_SHORTENING, t=t_es)
     
-    def wall_thickening(self, endo_spks, epi_spks, t_es: float = None, t_ed: float = 0.0,**kwargs) -> float:
-        key = self.STATES.WALL_THICKENING
-        self._apply_generic_spk_metric_schematics(
-            endo_spks, key,
-            self.compute_spk_thickening,
-            t_ed=t_ed, geochar=True, spks_2=epi_spks,**kwargs)
-        return self.states.get(key, t=t_es) 
+    def wall_thickening(self, endo_spks, epi_spks, t_es: float = None, t_ed: float = 0.0, recompute=False, **kwargs) -> float:
+        # make sure we have computed required geometric data for all spks
+        self.thickness(endo_spks, epi_spks, t=None, recompute=recompute, **kwargs)
+        # check if metric needs to be computed
+        if not self.states.check_key(self.STATES.THICKENING) or recompute:
+            return self.compute_thicknening(endo_spks, epi_spks, t_ed=t_ed, **kwargs)
+        return self.states.get(self.STATES.THICKENING, t=t_es)
 
-    def longitudinal_strain(self,spks,t_es: float = None, t_ed: float = 0.0,**kwargs) -> float:
-        key = self.STATES.LONG_STRAIN
-        self._apply_generic_spk_metric_schematics(
-            spks, key,
-            self.compute_spk_longitudinal_strain,
-            t_ed=t_ed, geochar=True, **kwargs)
-        return self.states.get(key, t=t_es)
+    def longitudinal_strain(self, spks, t_es: float = None, t_ed: float = 0.0, recompute=False, **kwargs) -> float:
+        # make sure we have computed required geometric data for all spks
+        self.longitudinal_length(spks, t=None, recompute=recompute, **kwargs)
+        # check if metric needs to be computed
+        if not self.states.check_key(self.STATES.LONGITUDINAL_STRAIN) or recompute:
+            return self.compute_longitudinal_strain(spks, t_ed=t_ed, **kwargs)
+        return self.states.get(self.STATES.LONGITUDINAL_STRAIN, t=t_es)
     
-    def circumferential_strain(self,spks,t_es: float = None, t_ed: float = 0.0,**kwargs) -> float:
-        key = self.STATES.CIRC_STRAIN
-        self._apply_generic_spk_metric_schematics(
-            spks, key,
-            self.compute_spk_circumferential_strain,
-            t_ed=t_ed, geochar=True, **kwargs)
-        return self.states.get(key, t=t_es)
+    def circumferential_strain(self, spks, t_es: float = None, t_ed: float = 0.0, recompute=False, **kwargs) -> float:
+        # make sure we have computed required geometric data for all spks
+        self.circumferential_length(spks, t=None, recompute=recompute, **kwargs)
+        # check if metric needs to be computed
+        if not self.states.check_key(self.STATES.CIRCUMFERENTIAL_STRAIN) or recompute:
+            return self.compute_circumferential_strain(spks, t_ed=t_ed, **kwargs)
+        return self.states.get(self.STATES.CIRCUMFERENTIAL_STRAIN, t=t_es)
 
-    def twist(self, apex_spks, base_spks, t_es: float = None, t_ed: float = 0.0,**kwargs) -> float:
-        key = self.STATES.TWIST
-        self._apply_generic_spk_metric_schematics(
-            apex_spks, key,
-            self.compute_spk_twist,
-            t_ed=t_ed, geochar=True, spks_2=base_spks,**kwargs)
-        return self.states.get(key, t=t_es)
+    def twist(self, apex_spks, base_spks, t_es: float = None, t_ed: float = 0.0, recompute=False, **kwargs) -> float:
+        # make sure we have computed required geometric data for all spks
+        self.rotation(apex_spks, t=None, recompute=recompute, **kwargs)
+        self.rotation(base_spks, t=None, recompute=recompute, **kwargs)
+        if not self.states.check_key(self.STATES.TWIST) or recompute:
+            self.compute_twist(apex_spks, base_spks, t_ed=t_ed, **kwargs)
+        return self.states.get(self.STATES.TWIST, t=t_es)
 
-    def torsion(self, apex_spks, base_spks, t_es: float = None, t_ed: float = 0.0,**kwargs) -> float:
-        key = self.STATES.TORSION
-        self._apply_generic_spk_metric_schematics(
-            apex_spks, key,
-            self.compute_spk_torsion,
-            t_ed=t_ed, geochar=True, spks_2=base_spks,**kwargs)
-        return self.states.get(key, t=t_es) 
+    def torsion(self, apex_spks, base_spks, t_es: float = None, t_ed: float = 0.0, recompute=False, **kwargs) -> float:
+        # make sure we have computed required geometric data for all spks
+        self.rotation(apex_spks, t=None, recompute=recompute, **kwargs)
+        self.rotation(base_spks, t=None, recompute=recompute, **kwargs)
+        if not self.states.check_key(self.STATES.TORSION) or recompute:
+            self.compute_torsion(apex_spks, base_spks, t_ed=t_ed, **kwargs)
+        return self.states.get(self.STATES.TORSION, t=t_es)
 
     # ===============================
     # Utils
