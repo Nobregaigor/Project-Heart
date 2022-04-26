@@ -6,7 +6,7 @@ from pathlib import Path
 
 logger = logging.getLogger(name="ScriptHandler")
 logging.basicConfig()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class ScriptHandler():
     

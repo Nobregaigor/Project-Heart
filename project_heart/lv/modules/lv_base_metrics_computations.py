@@ -14,7 +14,7 @@ logger = logging.getLogger('LV.BaseMetricsComputations')
 from collections import deque
 
 class LVBaseMetricsComputations(LV_Speckles):
-    def __init__(self, log_level=logging.DEBUG, *args, **kwargs):
+    def __init__(self, log_level=logging.INFO, *args, **kwargs):
         super(LVBaseMetricsComputations, self).__init__(*args, **kwargs)
         self.EPSILON = 1e-10
         self.metric_geochar_map = {
