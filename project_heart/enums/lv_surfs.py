@@ -175,8 +175,8 @@ class LV_STATES(Enum):
     APEX_REF = "apex_ref"
     
 
-    LONGITUDINAL_DISTANCES = "longitudinal_distances"
-    LONG_DISTS = "longitudinal_distances"
+    LONGITUDINAL_DISTANCE = "longitudinal_distance"
+    LONG_DISTS = "longitudinal_distance"
 
     LONGITUDINAL_SHORTENING = "longitudinal_shortening"
     LS = "longitudinal_shortening"
