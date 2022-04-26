@@ -49,8 +49,8 @@ class LV_SURFS(IntEnum):
     EPI_APEX_REGION = 21
 
     # BASE BORDER
-    BASE_BORDER = 23
     BASE = 23
+    BASE_BORDER = 23
 
 
 class LV_MESH_DATA(Enum):

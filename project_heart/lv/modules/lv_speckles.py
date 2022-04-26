@@ -49,6 +49,7 @@ class LV_Speckles(LV_RegionIdentifier):
                         collection=None,
                         d=3.0,
                         from_nodeset=None,
+                        exclude_nodeset=None,
                         perpendicular_to=None,
                         normal_to=None,
                         k=1.0,
@@ -96,25 +97,28 @@ class LV_Speckles(LV_RegionIdentifier):
         logger = logging.getLogger('create_speckles')
         logger.setLevel(log_level)
 
-        logger.info("Adding spk subset.")
-        logger.info("name: {}".format(name))
-        logger.info("group: {}".format(group))
-        logger.info("collection: {}".format(collection))
-        logger.info("Subname(s): {}".format(subsets_names))
-        logger.info("t (timestep): {}".format(t))  # timestep
+        logger.info("Speckle: name: {}, group: {}, collection: {}"
+                    .format(name, group, collection))
 
         # determine nodes to use
         if from_nodeset is None:
-            logger.debug("Using nodes from nodeset %s" % from_nodeset)
+            logger.debug("Using all avaiable nodes.")
             # keep track of nodes data
             nodes = self.nodes()
             # keep track of nodes ids
             ids = np.arange(1, len(nodes) + 1, dtype=np.int32)
         else:
-            logger.debug("Using all avaiable nodes.")
+            logger.debug("Using nodes from nodeset %s" % from_nodeset)
             ids = self.get_nodeset(from_nodeset)
             nodes = self.nodes(mask=ids)
+        
+        if exclude_nodeset is not None:
+            logger.debug("Excluding nodes from nodeset %s" % exclude_nodeset)
+            ids_to_exclude = self.get_nodeset(exclude_nodeset)
+            ids = np.setdiff1d(ids, ids_to_exclude)
+            nodes = self.nodes(mask=ids)
 
+        
         # Determine which normal to use
         if perpendicular_to is not None:
             assert len(perpendicular_to) == 3, ValueError(
