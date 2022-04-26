@@ -144,6 +144,7 @@ class ScriptHandler():
                 use_args.pop("index")
             else:
                 use_args = kwargs
+            df = df.reset_index()
             df.to_feather(outpath, **use_args)
         elif outpath.endswith('.xml'):
             df.to_xml(outpath, **kwargs)
