@@ -9,7 +9,7 @@ logger = logging.getLogger('extract_geometrics')
 # logging.basicConfig()
 
 def extract_geometrics(**kwargs):
-    print(kwargs)
+
     log_level = kwargs.get(SCRIPT_TAGS.LOG_LEVEL.value, 10)
     logger.setLevel(log_level)
     logger.info("Starting execution of 'extract_geometrics'")
