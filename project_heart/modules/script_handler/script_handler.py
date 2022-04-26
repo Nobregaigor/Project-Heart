@@ -139,8 +139,12 @@ class ScriptHandler():
             df.to_csv(outpath, **kwargs)
         elif outpath.endswith('.ftr'):
             if "index" in kwargs:
-                kwargs["index"] = True # feather require index
-            df.to_feather(outpath, **kwargs)
+                from copy import copy
+                use_args = copy(kwargs)
+                use_args.pop("index")
+            else:
+                use_args = kwargs
+            df.to_feather(outpath, **use_args)
         elif outpath.endswith('.xml'):
             df.to_xml(outpath, **kwargs)
         else:
