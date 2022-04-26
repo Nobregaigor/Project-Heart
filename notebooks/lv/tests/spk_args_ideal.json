@@ -1,0 +1,542 @@
+[
+    {
+        "collection": "long-6",
+        "group": "endo",
+        "name": "0",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.5,
+        "normal_to": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "epi",
+        "name": "0",
+        "from_nodeset": 2,
+        "d": 2.4,
+        "k": 0.5,
+        "normal_to": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "endo",
+        "name": "1",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.5,
+        "normal_to": [
+            0.8660254037844387,
+            0.49999999999999994,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "epi",
+        "name": "1",
+        "from_nodeset": 2,
+        "d": 2.4,
+        "k": 0.5,
+        "normal_to": [
+            0.8660254037844387,
+            0.49999999999999994,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "endo",
+        "name": "2",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.5,
+        "normal_to": [
+            0.5000000000000001,
+            0.8660254037844386,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "epi",
+        "name": "2",
+        "from_nodeset": 2,
+        "d": 2.4,
+        "k": 0.5,
+        "normal_to": [
+            0.5000000000000001,
+            0.8660254037844386,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "endo",
+        "name": "3",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.5,
+        "normal_to": [
+            6.123233995736766e-17,
+            1.0,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "epi",
+        "name": "3",
+        "from_nodeset": 2,
+        "d": 2.4,
+        "k": 0.5,
+        "normal_to": [
+            6.123233995736766e-17,
+            1.0,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "endo",
+        "name": "4",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.5,
+        "normal_to": [
+            -0.4999999999999998,
+            0.8660254037844387,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "epi",
+        "name": "4",
+        "from_nodeset": 2,
+        "d": 2.4,
+        "k": 0.5,
+        "normal_to": [
+            -0.4999999999999998,
+            0.8660254037844387,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "endo",
+        "name": "5",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.5,
+        "normal_to": [
+            -0.8660254037844385,
+            0.5000000000000003,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "long-6",
+        "group": "epi",
+        "name": "5",
+        "from_nodeset": 2,
+        "d": 2.4,
+        "k": 0.5,
+        "normal_to": [
+            -0.8660254037844385,
+            0.5000000000000003,
+            0.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "z2",
+        "t": 0.0,
+        "kmin": 0.125,
+        "kmax": 0.95
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "subapex",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.1,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "subapex",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.1,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "apex",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.2,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "apex",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.2,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "superapex",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.30000000000000004,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "superapex",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.30000000000000004,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "submid",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.4,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "submid",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.4,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "mid",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.5,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "mid",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.5,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "supermid",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.6,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "supermid",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.6,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "subbase",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.7000000000000001,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "subbase",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.7000000000000001,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "base",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.8,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "base",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.8,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "endo",
+        "name": "superbase",
+        "from_nodeset": 1,
+        "d": 1.75,
+        "k": 0.9,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    },
+    {
+        "collection": "circ-6",
+        "group": "epi",
+        "name": "superbase",
+        "from_nodeset": 2,
+        "d": 1.75,
+        "k": 0.9,
+        "normal_to": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "n_subsets": 6,
+        "subsets_criteria": "angles",
+        "t": 0.0,
+        "kmin": -1.0,
+        "kmax": -1.0
+    }
+]

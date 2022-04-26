@@ -1,0 +1,44 @@
+{
+    "log_level": 20,
+
+    "input_directory": "C:/Users/igorp/Downloads/DS_TEST",
+    "input_ext": ".xplt",
+
+    "output_file": "C:/Users/igorp/Downloads/extract_geometrics_test.csv",
+
+    "filename_map": ["gamma", "neg_float_epi", "endo", "", "", "", ""],
+
+    "identify_regions": {
+        "geo_type": 0, 
+        "apex_base_args":{"ab_ql":0.03, "ab_qh":0.90},
+        "endo_epi_args":{"threshold":85}
+    },
+
+    "speckles": "C:/Users/igorp/OneDrive/Documents/GitHub/Project-Heart/notebooks/lv/tests/spk_args_ideal.json",
+
+    "metrics": {
+        "volume":{},
+        "longitudinal_distance": {},
+        "radius": {
+            "spks": {"spk_collection":"circ-6"},
+            "reduce_by":["group", "name"]
+            },
+        "wall_thickness": {
+            "endo_spks": {"spk_group":"endo", "spk_collection":"circ-6"},
+            "epi_spks": {"spk_group":"epi", "spk_collection":"circ-6"},
+            "reduce_by":["name"]
+            },
+        "longitudinal_length": {
+            "spks": {"spk_collection":"long-6"},
+            "reduce_by":["group", "name"]
+            },
+        "circumferential_length": {
+            "spks": {"spk_collection":"circ-6"},
+            "reduce_by":["group", "name"]
+            },
+        "angle_rotation": {
+            "spks": {"spk_collection":"circ-6"},
+            "reduce_by":["group", "name"]
+            }
+    }
+}

@@ -12,12 +12,15 @@ from project_heart.utils.cloud_ops import *
 from project_heart.enums import *
 from .lv_region_identifier import LV_RegionIdentifier
 
+from project_heart.utils.assertions import assert_iterable
 
 from sklearn.cluster import KMeans
 from functools import reduce
 
 
-logging.basicConfig()
+# logging.basicConfig()
+logger = logging.getLogger('LV.Speckles')
+
 
 default_lvSpeckles_enums = {
     "SPK_SETS": LV_SPK_SETS,
@@ -318,6 +321,16 @@ class LV_Speckles(LV_RegionIdentifier):
             spk_collection=collection,
             t=t
         )
+
+    def create_speckles_from_iterable(self, items):
+        assert_iterable(items, False)
+        for i, spk_args in enumerate(items):
+            try:
+                self.create_speckles(**spk_args)
+            except:
+                logger.error("Failed to create Speckles at id '{}'."
+                "with the following arguments: \n{}.".format(i, spk_args))
+
 
     def get_speckles(self, **kwargs):
         """ Returns a specified datatype of speckles """

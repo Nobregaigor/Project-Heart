@@ -17,9 +17,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    # entry_points = {
-    #     'console_scripts': ['project-heart=febio_python.cli.main:main'],
-    # },
+    entry_points = {
+        'console_scripts': ['project-heart=project_heart.cli.main:main'],
+    },
     # include_package_data=True
     package_data={'': ['*.json']}
 )

@@ -8,6 +8,10 @@ import logging
 logging.basicConfig()
 logger = logging.getLogger('LV')
 
+from copy import copy
+
+import pandas as pd
+
 
 class LV(LV_FiberEstimator, LVBaseMetricsComputations):
     def __init__(self, *args, **kwargs):
@@ -51,17 +55,12 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                 raise RuntimeError(
                     "Could not retrieve 'xyz' data from states. Did you compute it? Check if states has 'displacement' data.")
 
-    def longitudinal_distances(self,
-                                nodesets:set=None,
-                                t_es: float = None,
-                                t_ed: float = 0.0,
-                                **kwargs) -> float:
-
+    def longitudinal_distances(self, nodesets:set=None, t: float = None, recompute=False, **kwargs) -> float:
         # check if ls was computed
-        if not self.states.check_key(self.STATES.LONG_DISTS):
+        if not self.states.check_key(self.STATES.LONG_DISTS) or recompute:
             self.compute_longitudinal_distance(nodesets=nodesets, **kwargs)
 
-        return self.states.get(self.STATES.LONG_DISTS, t=t_es)
+        return self.states.get(self.STATES.LONG_DISTS, t=t)
 
     # --- Metrics that do require spks
 
@@ -95,6 +94,98 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         #     self.compute_spk_rotation,
         #     t_ed=None, geochar=False, **kwargs)
         # return self.states.get(key, t=t) 
+
+    def extract_geometrics(self, metrics, dtype=np.float64, **kwargs):
+        
+        import pandas as pd
+        from collections import deque
+        
+        def assert_spks_arg(key):
+            assert "spks" in metrics[key], "Metric '{}' requires 'spks' argument.".format(key)
+        def assert_endo_epi_spks_arg(key):
+            assert "endo_spks" in metrics[key], "Metric '{}' requires 'endo_spks' argument.".format(key)
+            assert "epi_spks" in metrics[key], "Metric '{}' requires 'epi_spks' argument.".format(key)
+        def execute_w_spks(fun, key):
+            assert_spks_arg(key)
+            args = copy(metrics[key])
+            spks = args["spks"]
+            args.pop("spks")
+            fun(spks, **args)
+        def execute_w_endo_epi_spks(fun, key):
+            assert_endo_epi_spks_arg(key)
+            args = copy(metrics[key])
+            endo_spks = args["endo_spks"]
+            epi_spks = args["epi_spks"]
+            args.pop("endo_spks")
+            args.pop("epi_spks")
+            fun(endo_spks, epi_spks, **args)
+        def resolve_add_info(df,info,all_dfs):
+            if info is not None:
+                all_dfs.append(info)
+            else:
+                all_dfs.append(df)
+
+        valkeys = self.STATES
+        
+        all_dfs = deque([])
+
+        # volume
+        key = valkeys.VOLUME.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            self.volume(**metrics[key])
+            df, _ = self.get_metric_as_df(key, search_spk_info=False)
+            all_dfs.append(df)
+        # longitudinal distances
+        key = valkeys.LONG_DISTS.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            self.longitudinal_distances(**metrics[key])
+            df, info = self.get_metric_as_df(key, 
+                search_spk_info=False, 
+                search_suffix={self.REGIONS.ENDO, self.REGIONS.EPI},
+                merged_info=True)
+            resolve_add_info(df, info, all_dfs)
+        # radius
+        key = valkeys.RADIUS.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            execute_w_spks(self.radius, key)
+            df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
+            resolve_add_info(df, info, all_dfs)
+        # thickness
+        key = valkeys.WALL_THICKNESS.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            execute_w_endo_epi_spks(self.thickness, key)
+            df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
+            resolve_add_info(df, info, all_dfs)
+        # longitudinal length
+        key = valkeys.LONG_LENGTH.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            execute_w_spks(self.longitudinal_length, key)
+            df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
+            resolve_add_info(df, info, all_dfs)
+        # circumferential length
+        key = valkeys.CIRC_LENGTH.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            execute_w_spks(self.circumferential_length, key)
+            df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
+            resolve_add_info(df, info, all_dfs)
+        # rotation
+        key = valkeys.ROTATION.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            execute_w_spks(self.rotation, key)
+            df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
+            resolve_add_info(df, info, all_dfs)
+        
+        merged = pd.concat(all_dfs, axis=1)
+        merged = merged.loc[:,~merged.columns.duplicated()]
+        return merged.astype(dtype)
+
 
     # ===============================
     # Clinical Metrics
@@ -190,7 +281,9 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
 
     def get_metric_as_df(self, metric, 
             search_spk_info=True, 
-            search_suffix:set=None):
+            search_suffix:set=None,
+            merged_info=False
+            ):
         # check for arguments
         assert_iterable(search_suffix)
         
@@ -244,7 +337,14 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                     info["suffix"][save_val] = data
                 except KeyError:
                     logger.debug("Suffix '{}' not found for metric '{}': {}".format(suffix, metric, check_val))     
-        return df, info
+        
+        if not merged_info or info is None:
+            return df, info
+        else:
+            merged = pd.concat(info.values(), axis=1)
+            merged = merged.loc[:,~merged.columns.duplicated()]
+            return df, merged
+    
 
     # ===============================
     # Plots
@@ -280,10 +380,8 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         # resolve info plots
         if plot_infos is None and search_suffix is not None:
             plot_infos = ["suffix"]
-        elif search_suffix is not None:
+        elif plot_infos is not None and search_suffix is not None:
             plot_infos.append("suffix")
-        else:
-            plot_infos = []
         # plot additional data if requested
         if info is not None and len(plot_infos) > 0:
             for key in plot_infos:
