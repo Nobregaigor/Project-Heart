@@ -156,8 +156,6 @@ class ScriptHandler():
             "Check https://pandas.pydata.org/docs/user_guide/io.html"
             )
 
-
-
     @staticmethod
     def assert_input_file(input_file, ext=None):
         assert input_file is not None, "Input file must be specified. Received: {}".format(input_file)

@@ -216,15 +216,15 @@ class LVBaseMetricsComputations(LV_Speckles):
         if "group" in reduce_by:
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
     # ---------- Clinical metric
 
@@ -247,15 +247,15 @@ class LVBaseMetricsComputations(LV_Speckles):
         if "group" in reduce_by:
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
         return self.states.get(key, t=t_ed)
 
     # ---------------------------
@@ -318,17 +318,17 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(endo_spks, key, **kwargs)
             self._reduce_metric_by_group(epi_spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(endo_spks, key, **kwargs)
             self._reduce_metric_by_name(epi_spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(endo_spks, key, **kwargs)
             self._reduce_metric_by_group_and_name(epi_spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
     # ---------- Clinical metric
 
@@ -359,17 +359,17 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(endo_spks, key, **kwargs)
             self._reduce_metric_by_group(epi_spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(endo_spks, key, **kwargs)
             self._reduce_metric_by_name(epi_spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(endo_spks, key, **kwargs)
             self._reduce_metric_by_group_and_name(epi_spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
         return self.states.get(key, t=t_ed)
 
     # ---------------------------
@@ -468,7 +468,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                     self.states.set_data_spk_rel(sel_spks, statekey)
                     # reduce subgroup
                     self._reduce_metric_and_save(res, statekey, **kwargs)
-                logger.info("Metric '{}' has reduced values by names.".format(key))
+                logger.debug("Metric '{}' has reduced values by names.".format(key))
             # if user requested to compute length 'groupwise'
             if "group" in reduce_by:
                 logger.debug("Reducing metric by group and name for '{}'".format(key))
@@ -483,7 +483,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                     self.states.set_data_spk_rel(sel_spks, statekey)
                     # reduce subgroup
                     self._reduce_metric_and_save(res, statekey, **kwargs)
-                logger.info("Metric '{}' has reduced values by group and name.".format(key))
+                logger.debug("Metric '{}' has reduced values by group and name.".format(key))
         return self.states.get(key)  # return pointer
 
     # ---------- Clinical metric
@@ -507,15 +507,15 @@ class LVBaseMetricsComputations(LV_Speckles):
         if "group" in reduce_by:
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
         return self.states.get(key, t=t_ed)
 
     # ---------------------------
@@ -612,7 +612,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                     self.states.set_data_spk_rel(sel_spks, statekey)
                     # reduce subgroup
                     self._reduce_metric_and_save(res, statekey, **kwargs)
-                logger.info("Metric '{}' has reduced values by names.".format(key))
+                logger.debug("Metric '{}' has reduced values by names.".format(key))
             # if user requested to compute length 'groupwise'
             if "group" in reduce_by:
                 logger.debug("Reducing metric by group and name for '{}'".format(key))
@@ -627,7 +627,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                     self.states.set_data_spk_rel(sel_spks, statekey)
                     # reduce subgroup
                     self._reduce_metric_and_save(res, statekey, **kwargs)
-                logger.info("Metric '{}' has reduced values by group and name.".format(key))
+                logger.debug("Metric '{}' has reduced values by group and name.".format(key))
         return self.states.get(key)  # return pointer
 
     # ---------- Clinical metric
@@ -651,15 +651,15 @@ class LVBaseMetricsComputations(LV_Speckles):
         if "group" in reduce_by:
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
         return self.states.get(key, t=t_ed)
 
     # ---------------------------
@@ -730,15 +730,15 @@ class LVBaseMetricsComputations(LV_Speckles):
         if "group" in reduce_by:
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
     # ---------------------------
     # ----- Twist and torsion ---- 
@@ -798,17 +798,17 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(apex_spk, key, **kwargs)
             self._reduce_metric_by_group(base_spk, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(apex_spk, key, **kwargs)
             self._reduce_metric_by_name(base_spk, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(apex_spk, key, **kwargs)
             self._reduce_metric_by_group_and_name(base_spk, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
     def compute_spk_torsion(self, apex_spk, base_spk, t_ed: float = 0.0, relative=False, **kwargs):
         assert self.check_spk(
@@ -861,17 +861,17 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by group for '{}'".format(key))
             self._reduce_metric_by_group(apex_spk, key, **kwargs)
             self._reduce_metric_by_group(base_spk, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group.".format(key))
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
         if "name" in reduce_by:
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(apex_spk, key, **kwargs)
             self._reduce_metric_by_name(base_spk, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by names.".format(key))
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(apex_spk, key, **kwargs)
             self._reduce_metric_by_group_and_name(base_spk, key, **kwargs)
-            logger.info("Metric '{}' has reduced values by group and name.".format(key))
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
     # ===============================
     # Other
