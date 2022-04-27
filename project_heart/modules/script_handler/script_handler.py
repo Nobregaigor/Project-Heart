@@ -84,7 +84,7 @@ class ScriptHandler():
             # Ensure SCRIPT_TAGS.INPUT_DIR is None (so function do not repeat itself)
             input_data[SCRIPT_TAGS.INPUT_DIR.value] = None
             for i, file in enumerate(all_files):
-                logger.info("Resolving file '{}/{}' --> '{}'".format(i, n_files, str(file)))
+                logger.info("Resolving file '{}/{}' --> '{}'".format(i+1, n_files, str(file)))
                 input_data[SCRIPT_TAGS.INPUT_FILE.value] = file
                 logger.debug("Input args for file: {}".format(input_data))
                 fun(**input_data)
