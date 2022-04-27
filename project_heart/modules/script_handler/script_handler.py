@@ -49,7 +49,7 @@ class ScriptHandler():
                 fun(**data)
         
     @staticmethod
-    def resolve_multiple_input_files(input_data, fun):
+    def resolve_multiple_input_files(input_data, fun, sort_files=True):
 
         # check if provided function is valid
         if not callable(fun):
@@ -79,6 +79,8 @@ class ScriptHandler():
                     raise ValueError("Invalid extension. Must be a string. Example: '.txt'")
 
                 all_files = [in_dir/f for f in os.listdir(str(in_dir)) if f.endswith(ext)]
+            if sort_files:
+                all_files = sorted(all_files)
             n_files = len(all_files)
             logger.info("Total number of files: {}".format(n_files))
             # Ensure SCRIPT_TAGS.INPUT_DIR is None (so function do not repeat itself)
