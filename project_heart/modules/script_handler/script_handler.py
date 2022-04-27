@@ -79,11 +79,12 @@ class ScriptHandler():
                     raise ValueError("Invalid extension. Must be a string. Example: '.txt'")
 
                 all_files = [in_dir/f for f in os.listdir(str(in_dir)) if f.endswith(ext)]
-
-            logger.info("Total number of files: {}".format(len(all_files)))
+            n_files = len(all_files)
+            logger.info("Total number of files: {}".format(n_files))
             # Ensure SCRIPT_TAGS.INPUT_DIR is None (so function do not repeat itself)
             input_data[SCRIPT_TAGS.INPUT_DIR.value] = None
-            for file in all_files:
+            for i, file in enumerate(all_files):
+                logger.info("Resolving file '{}/{}' --> '{}'".format(i, n_files, str(file)))
                 input_data[SCRIPT_TAGS.INPUT_FILE.value] = file
                 logger.debug("Input args for file: {}".format(input_data))
                 fun(**input_data)
