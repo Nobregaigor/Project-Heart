@@ -18,6 +18,7 @@ class SCRIPT_TAGS(Enum):
 
 
 class LV_SCRIPT_TAGS(Enum):
+    LOG_LEVEL = "lv_log_level"
     IDENTIFY_REGIONS = "identify_regions"
     SPECKLES = "speckles"
     METRICS = "metrics"

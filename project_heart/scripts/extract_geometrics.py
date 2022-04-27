@@ -45,9 +45,9 @@ def extract_geometrics(**kwargs):
 
     # optional arguments
     dtype = input_data.get(SCRIPT_TAGS.DTYPE.value, np.float32)
-    log_level = input_data.get(SCRIPT_TAGS.LOG_LEVEL.value, logging.DEBUG)
     filename_map = input_data.get(SCRIPT_TAGS.FILENAME_MAP.value, None)
     merge_with_existing_file = input_data.get(SCRIPT_TAGS.MERGE_WITH_EXISTING_FILE.value, True)
+    lv_log_level = kwargs.get(LV_SCRIPT_TAGS.LOG_LEVEL.value, logging.INFO)
 
     if filename_map is not None:
         sh.assert_filename_data(input_file, filename_map)
@@ -62,7 +62,7 @@ def extract_geometrics(**kwargs):
     logger.info("Number of spks to create: {}".format(len(spks)))
     # start LV creation
     logger.debug("Loading LV data...")
-    lv = LV.from_file(input_file, log_level=log_level)
+    lv = LV.from_file(input_file, log_level=lv_log_level)
     logger.debug("Identifying LV regions...")
     lv.identify_regions(**region_args)
     logger.debug("Creating spks...")
@@ -75,5 +75,6 @@ def extract_geometrics(**kwargs):
     if merge_with_existing_file is True:
         logger.debug("Merging with existing file...")
         df = sh.merge_df_with_existing_at_file(df, output_file)
+    logger.debug("Exporting to df...")
     sh.export_df(df, output_file, index=False)
 
