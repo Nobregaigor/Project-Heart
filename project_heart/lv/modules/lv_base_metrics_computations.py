@@ -980,7 +980,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         return all_res
 
     def _compute_relative_error(self, d1, d2):
-        return (d1 - d2) / (d1 + self.EPSILON) * 100.0
+        return (d2 - d1) / (d1 + self.EPSILON) * 100.0
 
     def _compute_spk_relative_error(self, spk, geo_key, cm_key, t_ed=0.0, switch_es=False, **kwargs):
         # check for valid arguments

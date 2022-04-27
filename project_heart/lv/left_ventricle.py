@@ -59,7 +59,6 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         # check if ls was computed
         if not self.states.check_key(self.STATES.LONG_DISTS) or recompute:
             self.compute_longitudinal_distance(nodesets=nodesets, **kwargs)
-
         return self.states.get(self.STATES.LONG_DISTS, t=t)
 
     # --- Metrics that do require spks
