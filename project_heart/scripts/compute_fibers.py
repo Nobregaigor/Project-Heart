@@ -81,6 +81,8 @@ def compute_fibers(**kwargs):
     lv_log_level = kwargs.get(LV_SCRIPT_TAGS.LOG_LEVEL.value, logging.INFO)
 
     boundary_conditions = kwargs.get(LV_SCRIPT_TAGS.BOUNDARY_CONDITIONS.value, [])
+    surfaces = kwargs.get(LV_SCRIPT_TAGS.SURFACES.value, [])
+
    
     # -------------------------------
     # resolve prefix data
@@ -129,6 +131,10 @@ def compute_fibers(**kwargs):
     if len(boundary_conditions) > 0:
         for bcargs in boundary_conditions:
             lv.create_spring_rim_bc(**bcargs)
+    
+    if len(surfaces) > 0:
+        for surf in surfaces:
+            lv.create_surface_oi_from_surface(surf)
 
     # saving file
     if str(output_file).endswith(".feb"):

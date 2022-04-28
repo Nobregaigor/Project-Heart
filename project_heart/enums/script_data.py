@@ -46,6 +46,8 @@ class LV_SCRIPT_TAGS(Enum):
     FEB_TEMPLATE = "feb_template"
 
     BOUNDARY_CONDITIONS = "boundary_conditions"
+    SURFACES = "surfaces"
+
     
 
 

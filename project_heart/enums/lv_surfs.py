@@ -71,7 +71,7 @@ class LV_MESH_DATA(Enum):
     AM_EPI_ENDO = "LV_AM_EPI_ENDO"  # aortic and mitral region with endo-epi layers
 
     SURFS = "LV_SURFS"  # EPI_ENDO + AM_SURFS
-    SURFS_DETAILED = "SURFS_DETAILED"  # EPI_ENDO + AM_DETAILED
+    SURFS_DETAILED = "LV_SURFS_DETAILED"  # EPI_ENDO + AM_DETAILED
 
     LDRB_1 = "LV_FIBERS_LDRB_1"
     LDRB_2 = "LV_FIBERS_LDRB_2"
