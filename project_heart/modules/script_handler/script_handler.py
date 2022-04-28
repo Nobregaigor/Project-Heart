@@ -102,9 +102,13 @@ class ScriptHandler():
     # filename manipulation
     @staticmethod
     def add_prefix(filename, prefix_values): 
-        template = "".join("{}_" for _ in range(len(prefix_values) + 1))
+        # get original basename
         old_basename = os.path.basename(filename)
-        new_basename = template.format(*prefix_values, old_basename)
+        # apply prefix
+        template = "".join("{}_" for _ in range(len(prefix_values)))
+        new_basename = template.format(*prefix_values)[:-1]
+        new_basename = "{}_{}".format(new_basename, old_basename)
+        # switch old basename to new basename
         return Path(str(filename).replace(old_basename, new_basename))
     
     @staticmethod
