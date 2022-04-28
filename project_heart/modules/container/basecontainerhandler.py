@@ -240,9 +240,9 @@ class BaseContainerHandler():
             except ImportError:
                 raise ImportError(
                     "febio_python.xplt is required to parse .feb data. Please, check https://github.com/Nobregaigor/febio-python for details.")
-            if not check_min_version('febio_python', '0.1.3'):
+            if not check_min_version('febio_python', '0.1.4'):
                 raise ImportError(
-                    "febio_python version must be at least '0.1.3'. Please update your version. Try using: `pip install febio-python==0.1.3`")
+                    "febio_python version must be at least '0.1.4'. Please update your version. Try using: `pip install febio-python==0.1.4`")
             feb = FEBio_feb.from_file(feb_path)
         else:
             raise ValueError("feb_path must be a Path or a str.")

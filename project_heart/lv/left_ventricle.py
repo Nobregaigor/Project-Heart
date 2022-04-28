@@ -396,4 +396,54 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                 else:
                     raise ValueError("info '{}' not found. "
                     "Options are: {}".format(key, list(info.keys())))
+    
+    # ===============================
+    # exports to FEA solvers
+    # ===============================   
+
+    def to_feb_template(self, template_path, filepath, mat=1):
+        logger.warn("This method is not yet finalized.")
+        from febio_python.feb import FEBio_feb
+
+        # ----------------------
+        # Read template file
+        feb_template_path = Path(template_path)
+        feb = FEBio_feb.from_file(feb_template_path)
+
+        # ----------------------
+        # add nodes and elements
+        nodes = feb.geometry().find("Nodes")
+        if nodes is None:
+            feb.add_nodes([
+                {
+                    "name": "LV", 
+                    "nodes": np.round(self.nodes(), 5),
+                }
+            ])
+            for elements in enumerate(self.cells()):
+                feb.add_elements([
+                    {
+                    "name": "LV", 
+                    "mat": str(mat),
+                    "elems": elements + 1
+                    }
+                ])
+        else:
+            if nodes.find("LV") is None:
+                feb.add_nodes([
+                    {
+                        "name": "LV", 
+                        "nodes": np.round(self.nodes(), 5),
+                    }
+                ])
+            for i, elements in enumerate(self.cells()):
+                feb.add_elements([
+                    {
+                    "name": "LV", 
+                    "mat": str(mat),
+                    "elems": elements + 1
+                    }
+                ])
         
+        # ----------------------
+        # bcs
