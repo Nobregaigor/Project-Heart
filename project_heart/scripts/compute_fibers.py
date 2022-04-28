@@ -65,10 +65,16 @@ def compute_fibers(**kwargs):
 
     # optional arguments
     prefix_map = input_data.get(SCRIPT_TAGS.PREFIX_MAP.value, None)
+    save_vtk = input_data.get(SCRIPT_TAGS.SAVE_VTK.value, True)
+
     fiber_args = input_data.get(LV_SCRIPT_TAGS.FIBERS.value, {})
     tetrahedralize_args = input_data.get(LV_SCRIPT_TAGS.TETRAHEDRALIZE.value, {})
     regress_args = input_data.get(LV_SCRIPT_TAGS.REGRESS.value, {})
     lv_log_level = kwargs.get(LV_SCRIPT_TAGS.LOG_LEVEL.value, logging.INFO)
+
+    boundary_conditions = kwargs.get(LV_SCRIPT_TAGS.BOUNDARY_CONDITIONS.value, [])
+
+    
 
     # -------------------------------
     # resolve prefix data
@@ -109,9 +115,21 @@ def compute_fibers(**kwargs):
         lv_hex.regress_fibers(lv_tet, **regress_args)
         lv = lv_hex
 
+    # create boundary conditions (if requested)
+    if len(boundary_conditions) > 0:
+        for bcargs in boundary_conditions:
+            lv.create_spring_rim_bc(**bcargs)
+
     # saving file
-    if str(output_file).endswith(".vtk"):
+    if str(output_file).endswith(".feb"):
+        lv.to_feb_template(feb_template, output_file)
+        if save_vtk:
+            lv.mesh.save(output_file.replace(".feb", ".vtk"))
+    elif str(output_file).endswith(".vtk"):
         lv.mesh.save(output_file)
     else:
         import pyvista as pv
         pv.save_meshio(output_file, lv.mesh)
+        if save_vtk:
+            ext = Path(output_file).suffix
+            lv.mesh.save(output_file.replace(ext, ".vtk"))

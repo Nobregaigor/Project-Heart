@@ -1207,6 +1207,99 @@ class BaseContainerHandler():
         return reg_data
 
     # -------------------------------
+    # Interpolate
+    @staticmethod
+    def interpolate(X, y, XI, method="linear", fill_with_nearest=True, **kwargs):
+        if method == "linear":
+            from scipy.interpolate import LinearNDInterpolator
+            interp = LinearNDInterpolator(X, y, **kwargs)
+            vals = interp(XI)
+            if fill_with_nearest:
+                from scipy.interpolate import NearestNDInterpolator
+                interp = NearestNDInterpolator(X, y, **kwargs)
+                vals2 = interp(XI)
+                vals = np.where(np.isnan(vals), vals2, vals)
+        elif method == "nearest":
+            from scipy.interpolate import NearestNDInterpolator
+            interp = NearestNDInterpolator(X, y, **kwargs)
+            vals = interp(XI)
+        else:
+            raise ValueError("Unknown interpolation method. "
+                    "Avaiable options are: 'linear', 'nearest'.")
+        return vals
+
+    def interpolate_from_array(self,
+                           arr: np.ndarray,
+                           new_xyz_domain: np.ndarray,
+                           **kwargs):
+
+        # try to match xyz with given arr size
+        if len(arr) == self.mesh.n_points:
+            xyz = self.points()
+        elif len(arr) == self.get_surface_mesh().n_points:
+            xyz = self.get_surface_mesh().points
+        else:
+            raise ValueError(
+                "Could not match arr length with mesh points, or surface mesh points. "
+                "Interpolation is only supported for point arr")
+
+        return BaseContainerHandler.interpolate(xyz, arr, new_xyz_domain, **kwargs)
+
+    def interpolate_from_data(self,
+                          data_key: str,
+                          new_xyz_domain: np.ndarray,
+                          container_loc: int = GEO_DATA.MESH_POINT_DATA,
+                          **kwargs):
+
+        if container_loc != GEO_DATA.MESH_POINT_DATA and container_loc != GEO_DATA.SURF_POINT_DATA:
+            raise ValueError("Interpolation is only supported for point data.")
+
+        # get data -> will raise error if could not retrieve data
+        data = self.get(container_loc, data_key)
+        return self.interpolate_from_array(data, new_xyz_domain, **kwargs)
+    
+    def interpolate_from_other(self,
+                           other: object,
+                           data_key: str,
+                           container_loc: int = GEO_DATA.MESH_POINT_DATA,
+                           **kwargs):
+        if not issubclass(other.__class__, BaseContainerHandler):
+            raise ValueError(
+                "other object must be derived from BaseContainerHandler class.")
+
+        data_key = self.check_enum(data_key)
+
+        if container_loc == GEO_DATA.MESH_POINT_DATA:
+            xyz = self.points()
+            container = self.mesh.point_data
+        elif container_loc == GEO_DATA.SURF_POINT_DATA:
+            xyz = self.get_surface_mesh().points
+            container = self.get_surface_mesh().point_data
+        else:
+            raise ValueError(
+                "We only support MESH_POINT_DATA or SURF_POINT_DATA. "
+                "Interpolation is only supported for point data. "
+                "If data is avaiable as point data, you can perform interpolation over "
+                "point data and then transform the result to cell data. "
+                "See documentation for further details. "
+                )
+
+        # apply regression
+        reg_data = other.interpolate_from_data(
+            data_key, xyz, container_loc=container_loc, **kwargs)
+
+        if isinstance(data_key, (list, tuple, np.ndarray)):
+            for i, key in enumerate(data_key):
+                offset = 0
+                shape = other.get(container_loc, key).shape
+                d = reg_data[:, offset:offset+shape[-1]]
+                container[self.check_enum(key)] = d
+        else:
+            container[data_key] = reg_data
+
+        return reg_data
+
+    # -------------------------------
     # Other functions
 
     def prep_for_gmsh(self,

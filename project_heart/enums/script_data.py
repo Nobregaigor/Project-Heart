@@ -20,6 +20,8 @@ class SCRIPT_TAGS(Enum):
 
     PREFIX_MAP = "prefix_map" # adds prefix to the filename (must be list)
 
+    SAVE_VTK = "save_vtk"
+
 
 class LV_SCRIPT_TAGS(Enum):
     LOG_LEVEL = "lv_log_level"
@@ -35,6 +37,8 @@ class LV_SCRIPT_TAGS(Enum):
     REGRESS = "regress" #kwargs for regression (from tetra to non-tetra mesh)
 
     FEB_TEMPLATE = "feb_template"
+
+    BOUNDARY_CONDITIONS = "boundary_conditions"
     
 
 
