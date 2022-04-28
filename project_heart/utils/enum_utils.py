@@ -21,3 +21,19 @@ def add_to_enum(enum_holder, *args):
     v = "_".join([str(check_enum_value(v)) for v in args ])
     enumdict[n] = v
     return Enum(enum_holder.__name__,enumdict), (n, v)
+
+def enum_to_dict(enum_holder):
+    return {name: value.value for (name, value) in enum_holder.__members__.items()}
+
+
+def assert_member(enum_holder, member):
+    assert member in enum_holder.__members__, (
+        "Invalid Enum member. Member must be a valid enum for '{}'. \n"
+        "Received: '{}'. Options are (member, value):\n"
+        "{}".format(member, enum_holder.__name__, enum_to_dict(enum_holder)))
+
+def assert_value(enum_holder, value):
+    assert value in enum_holder.__members__.values(), (
+        "Invalid Enum value. Value must be a valid enum for '{}'. \n"
+        "Received: '{}'. Options are (member, value):\n"
+        "{}".format(value, enum_holder.__name__, enum_to_dict(enum_holder)))

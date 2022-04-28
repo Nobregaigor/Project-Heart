@@ -15,6 +15,9 @@ class ScriptHandler():
         assert filepath.endswith(".json"), "File path must end with .json to be correctly parsed as JSON"
         return read_json(filepath)
 
+    # =================================================================
+    # resolves
+
     @staticmethod
     def resolve_json_input_format(**kwargs):
         logger.debug("resolving input format.")
@@ -91,11 +94,35 @@ class ScriptHandler():
                 logger.debug("Input args for file: {}".format(input_data))
                 fun(**input_data)
             
-    
     @staticmethod
     def resolve_multiple_input_arguments(input_data, fun):
         pass
     
+    # =================================================================
+    # filename manipulation
+    @staticmethod
+    def add_prefix(filename, prefix_values): 
+        template = "".join("{}_" for _ in range(len(prefix_values) + 1))
+        old_basename = os.path.basename(filename)
+        new_basename = template.format(*prefix_values, old_basename)
+        return Path(str(filename).replace(old_basename, new_basename))
+    
+    @staticmethod
+    def resolve_prefix(filename, prefix_dict, prefix_map=None):
+        if prefix_map is not None:
+            ScriptHandler.assert_prefix_map(prefix_map, list(prefix_dict.keys()))
+        else:
+            prefix_map = list(prefix_dict.keys())
+        # set prefix values
+        prefix_values = []
+        for value in prefix_map:
+            prefix_values.append(prefix_dict[value])
+        # set new filename
+        return ScriptHandler.add_prefix(filename, prefix_values)
+
+    # =================================================================
+    # df manipulation
+
     @staticmethod
     def add_filename_data_to_df(df, filename, namemap):
         # add data from filename is requested
@@ -159,6 +186,9 @@ class ScriptHandler():
             "Check https://pandas.pydata.org/docs/user_guide/io.html"
             )
 
+    # =================================================================
+    # Assertions
+
     @staticmethod
     def assert_input_file(input_file, ext=None):
         assert input_file is not None, "Input file must be specified. Received: {}".format(input_file)
@@ -172,7 +202,6 @@ class ScriptHandler():
         if match_type is not None:
             assert isinstance(arg, match_type), "{} argument must be of type: {}".format(arg, match_type)
     
-    
     @staticmethod
     def assert_filename_data(filename, namemap):
         contents = os.path.basename(filename).split("_") #split filename based on "_"
@@ -184,3 +213,26 @@ class ScriptHandler():
             "For example: test_1_irrelevant_may.csv -> ['run', 'id', '', 'month']. \n"
             "Expected: {}. Received: {}".format(len(contents), len(namemap))
         )
+
+    @staticmethod
+    def assert_prefix_map(prefix, required_data):
+        assert isinstance(prefix, (list, tuple)), (
+            "Prefix map must be a list or tuple."
+            "This map indicates how output filename will be written "
+            "with additional information from the executed function. "
+            "In this case, it should contain: '{}' in the desired order "
+            "for new filename.".format(required_data)
+        )
+        assert len(prefix) == len(required_data), (
+            "Prefix map must contain exactly the same number of "
+            "required data. In this case, values should be: '{}' "
+            "in the desired order for new filename.".format(required_data)
+        )
+        for req in required_data:
+            assert req in prefix, (
+                "Value for '{}' not found in prefix map."
+                "This map indicates how output filename will be written "
+                "with additional information from the executed function. "
+                "In this case, it should contain: '{}' in the desired order "
+                "for new filename.".format(req, required_data)
+            )

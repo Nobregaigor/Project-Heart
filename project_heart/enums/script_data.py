@@ -16,6 +16,10 @@ class SCRIPT_TAGS(Enum):
 
     MERGE_WITH_EXISTING_FILE = "merge_with_existing_file"
 
+    MESH_TYPE = "mesh_type"
+
+    PREFIX_MAP = "prefix_map" # adds prefix to the filename (must be list)
+
 
 class LV_SCRIPT_TAGS(Enum):
     LOG_LEVEL = "lv_log_level"
@@ -23,4 +27,16 @@ class LV_SCRIPT_TAGS(Enum):
     SPECKLES = "speckles"
     METRICS = "metrics"
     
+    # params used for fiber computation
+    ALPHA_ENDO = "alpha_endo" # endo angle (must be positive)
+    ALPHA_EPI = "alpha_epi" # epi angle (must be negative)
+    FIBERS = "fibers" # kwargs for fiber ldrb
+    TETRAHEDRALIZE = "tetrahedralize" #kwargs for tetrahedralization of non-tetra meshes
+    REGRESS = "regress" #kwargs for regression (from tetra to non-tetra mesh)
+
+    FEB_TEMPLATE = "feb_template"
+    
+
+
+
     

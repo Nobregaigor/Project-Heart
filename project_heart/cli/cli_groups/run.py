@@ -23,3 +23,12 @@ def run():
     help="")
 def extract_geometrics(**kargs):
   return scripts.extract_geometrics(**kargs)
+
+
+# extract features data
+@run.command(short_help="hello", help="hello")
+@click.option("--json_file", '-i', 
+    type=click.Path(dir_okay=False, file_okay=True), 
+    help="")
+def compute_fibers(**kargs):
+  return scripts.compute_fibers(**kargs)

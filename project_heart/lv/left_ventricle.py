@@ -14,8 +14,8 @@ import pandas as pd
 
 
 class LV(LV_FiberEstimator, LVBaseMetricsComputations):
-    def __init__(self, *args, **kwargs):
-        super(LV, self).__init__(*args, **kwargs)
+    def __init__(self, log_level=logging.INFO, *args, **kwargs):
+        super(LV, self).__init__(log_level=log_level, *args, **kwargs)
 
     # ===============================
     # Basic Metrics

@@ -32,6 +32,9 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
+import logging
+logger = logging.getLogger('BaseContainerHandler')
+
 class BaseContainerHandler():
     """Data storage obj.
     """
@@ -39,7 +42,11 @@ class BaseContainerHandler():
     def __init__(self,
                  mesh=None,
                  enums={},
+                 log_level=logging.INFO,
                  *args, **kwargs):
+        
+        logger.setLevel(log_level)
+
         if mesh is None:
             self.mesh = pv.UnstructuredGrid()
         else:
@@ -111,8 +118,9 @@ class BaseContainerHandler():
         return cls(mesh=dataset)
 
     @classmethod
-    def from_pyvista_read(cls, filename, identifier=None, threshold=None, **kwargs):
-        geo = cls(mesh=pv.read(filename, **kwargs))
+    def from_pyvista_read(cls, filename, identifier=None, threshold=None, 
+                            log_level=logging.INFO, **kwargs):
+        geo = cls(mesh=pv.read(filename, **kwargs), log_level=log_level)
         if identifier is not None:
             geo.filter_mesh_by_scalar(identifier, threshold)
         # save reference file info
@@ -265,7 +273,7 @@ class BaseContainerHandler():
         return obj
 
     @classmethod
-    def from_file(cls, filepath, **kwargs):
+    def from_file(cls, filepath, log_level=logging.INFO, **kwargs):
         if isinstance(filepath, Path):
             filepath = str(filepath)
         ext = os.path.splitext(filepath)[-1]

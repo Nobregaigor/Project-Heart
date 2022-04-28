@@ -1,0 +1,58 @@
+{
+    "log_level": 10,
+
+    "input_file": "C:/Users/igorp/Downloads/lv_4_coarse.vtk",
+
+    "output_file": "C:/Users/igorp/Downloads/lv_4_coarse_withfibers.vtk",
+
+    "prefix_map": ["endo", "epi"],
+
+    "mesh_type": "HEXAHEDRON",
+
+    "identify_regions": {
+        "geo_type": 2,
+        "apex_base_args":{"ab_ql":0.04, "ab_qh":0.69},
+        "endo_epi_args": {"threshold":90.0},
+        "aortic_mitral_args": {
+            "a1":0.4,
+            "a2":0.5,
+            "a3":0.3,
+            "a4":75,
+            "a5":130, 
+            "m1":0.17,
+            "m2":0.02,
+            "m3":0.07,
+            "m4":0.333
+        }
+    },
+
+    "alpha_endo": 50,
+    "alpha_epi": -70,
+
+    "fibers": {
+        "surf_region_key":"LV_FIBERS_LDRB_2",
+        "fiber_space":"P_1",
+        "save_xdmfs":false,
+        "del_generated_files":true
+    },
+
+    "tetrahedralize": {
+        "backend": 0, 
+        "order":1, 
+        "mindihedral":10.0, 
+        "minratio":1.5, 
+        "nobisect":true
+    },
+
+    "regress": {
+        "apply_QuantileTransformer":true,
+        "hidden_layer_sizes":[70, 70, 70], 
+        "verbose":false, 
+        "validation_fraction":0.2,
+        "solver":"adam", 
+        "early_stopping":false,
+        "max_iter":400,
+        "n_iter_no_change":20,
+        "tol":1e-4
+    }
+}

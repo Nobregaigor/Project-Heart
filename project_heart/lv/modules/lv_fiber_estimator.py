@@ -15,10 +15,12 @@ from functools import reduce
 from pathlib import Path
 import os
 
+import logging
+logger = logging.getLogger('LV.FiberEstimator')
 
 class LV_FiberEstimator(LV_RegionIdentifier):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, log_level=logging.INFO, *args, **kwargs):
+        super(LV_FiberEstimator, self).__init__(log_level=log_level, *args, **kwargs)
 
         # ------ default values
         self._default_fiber_markers = {
@@ -26,6 +28,7 @@ class LV_FiberEstimator(LV_RegionIdentifier):
             "lv": LV_SURFS.ENDO.value,
             "base": LV_SURFS.BASE.value
         }
+        logger.setLevel(log_level)
 
     def identify_fibers_regions_ldrb_1(self) -> tuple:
         """Identifies mesh surface regions for fiber computation based on nodesets. \
@@ -287,16 +290,16 @@ class LV_FiberEstimator(LV_RegionIdentifier):
                 self.identify_fibers_regions_ldrb(surf_region_key)
                 found_ids = True
             except NotImplementedError:
-                raise ValueError("Surface regions ids '{}' not found in mesh data. \
-                    Tried to compute using 'identify_fibers_regions_ldrb', but method \
-                    was not implemented. Please, check surf_region_key mesh data key.")
-            if not found_ids:
+                raise ValueError("Surface regions ids '{}' not found in mesh data. "
+                    "Tried to compute using 'identify_fibers_regions_ldrb', but method "
+                    "was not implemented. Please, check surf_region_key mesh data key.")
+            if not found_ids: # check what type of error message to return
                 if self.check_surf_initialization():
-                    raise ValueError("Surface regions ids '{}' is not initialized within internal algorithm. \
-                        Did you add to surface mesh data?".format(surf_region_key))
+                    raise ValueError("Surface regions ids '{}' is not initialized within internal algorithm. "
+                        "Did you add to surface mesh data?".format(surf_region_key))
                 else:
-                    raise ValueError("Surface regions ids '{}' not found in mesh data. \
-                        Did you identify surfaces? See 'LV.identify_surfaces'.")
+                    raise ValueError("Surface regions ids '{}' not found in mesh data. "
+                        "Did you identify surfaces? See 'LV.identify_surfaces'.")
         # check markers
         if len(markers) == 0:  # empty
             markers = self._default_fiber_markers
