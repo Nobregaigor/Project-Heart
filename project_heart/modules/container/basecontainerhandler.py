@@ -82,7 +82,8 @@ class BaseContainerHandler():
         self._surf_cell_list = None
 
         self._surfmap = None
-
+        self.CONTAINERS = GEO_DATA
+        
         if len(enums) > 0:
             self.config_enums(enums)
 

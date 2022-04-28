@@ -17,6 +17,8 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
     def __init__(self, log_level=logging.INFO, *args, **kwargs):
         super(LV, self).__init__(log_level=log_level, *args, **kwargs)
 
+        logger.setLevel(log_level)
+
     # ===============================
     # Basic Metrics
     # ===============================
@@ -401,26 +403,32 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
     # exports to FEA solvers
     # ===============================   
 
-    def to_feb_template(self, template_path, filepath, mat=1):
+    def to_feb_template(self, template_path, filepath, 
+            mat=1, bcmat=2, log_level=logging.INFO):
+        logger.setLevel(log_level)
         logger.warn("This method is not yet finalized.")
         from febio_python.feb import FEBio_feb
+        from project_heart.enums import LV_RIM
 
         # ----------------------
         # Read template file
-        feb_template_path = Path(template_path)
-        feb = FEBio_feb.from_file(feb_template_path)
+        logger.debug("Loading template: {}".format(template_path))
+        feb = FEBio_feb.from_file(template_path)
 
         # ----------------------
         # add nodes and elements
+        logger.debug("Checking for Nodes and Elements...")
         nodes = feb.geometry().find("Nodes")
         if nodes is None:
+            logger.debug("No nodes found. Adding 'LV' nodes.")
             feb.add_nodes([
                 {
                     "name": "LV", 
                     "nodes": np.round(self.nodes(), 5),
                 }
             ])
-            for elements in enumerate(self.cells()):
+            logger.debug("No nodes found. Adding 'LV' elements.")
+            for elements in self.cells().values():
                 feb.add_elements([
                     {
                     "name": "LV", 
@@ -429,6 +437,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                     }
                 ])
         else:
+            logger.debug("Some nodes found. Appending 'LV' nodes.")
             if nodes.find("LV") is None:
                 feb.add_nodes([
                     {
@@ -436,7 +445,8 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                         "nodes": np.round(self.nodes(), 5),
                     }
                 ])
-            for i, elements in enumerate(self.cells()):
+            logger.debug("Some nodes found. Appending 'LV' elements.")
+            for elements in self.cells().values():
                 feb.add_elements([
                     {
                     "name": "LV", 
@@ -446,4 +456,87 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                 ])
         
         # ----------------------
+        # add nodesets
+        logger.debug("Checking for Nodesets...")
+        feb.add_nodesets(self.get_nodesets_from_enum(self.REGIONS))
+        
+        # ----------------------
+        # Add Surfaces
+        logger.debug("Checking for Surfaces...")
+        surfs_to_add = {}
+        for sname, surfoi in self._surfaces_oi.items():
+            try:
+                sname = self.REGIONS(sname).name
+            except:
+                logger.debug("Could not determine name for surface "
+                " of interest. Will use surface id (int) as string value")
+                sname = str(sname)
+            logger.debug("Adding surface_oi  '{}'".format(sname))
+            surfs_to_add[sname] = np.vstack(surfoi) + 1
+        if len(surfs_to_add) > 0:
+            feb.add_surfaces(surfs_to_add)
+
+        # ----------------------
         # bcs
+        logger.debug("Checking for Boundary conditions...")
+        node_offset = self.mesh.n_points
+        for bcname, vcvals in self._bcs.items():
+            logger.debug("Adding BC  '{}'".format(bcname))
+            bcnodes = np.round(vcvals[1]["RIM_NODES"], 5)
+            feb.add_nodes([
+                {"name": bcname, 
+                "nodes": bcnodes
+                },
+            ], initial_el_id=node_offset+1)
+            feb.add_elements([
+                {
+                    "name": bcname, 
+                    "type": "quad4",
+                    "mat": str(bcmat),
+                    "elems": vcvals[1][LV_RIM.ELEMENTS.value] + node_offset + 1 # adjust element ids
+                }
+            ], initial_el_id=node_offset+1)
+            node_offset += len(bcnodes)
+        
+        # ----------------------
+        # Add Discrete sets
+        logger.debug("Checking for dicrete sets...")
+        adjusted_discrete_sets = {}
+        to_adj = self.mesh.n_points
+        for key, values in self._discrete_sets.items():
+            logger.debug("Discrete set to add: '{}'".format(key))
+            adj_vals = np.copy(values) + 1
+            adj_vals[:, 1] += to_adj
+            adjusted_discrete_sets[key] = adj_vals
+            to_adj += len(self.get_bc(key)[1]["RIM_NODES"]) # account for nodes
+            
+        if len(adjusted_discrete_sets) > 0:
+            feb.add_discretesets(adjusted_discrete_sets)
+            import xml.etree.ElementTree as ET
+            discrete = feb.discrete()
+            for key in adjusted_discrete_sets.keys():
+                subel = ET.SubElement(discrete, "discrete")
+                subel.set("discrete_set", key)
+                subel.set("dmat","1")
+
+        # ----------------------
+        # Add fibers
+        try:
+            logger.debug("Checking for fibers...")
+            feb.add_meshdata([
+            {
+                "elem_set": "LV", 
+                "var": "mat_axis",
+                "elems": {
+                "a": self.get(self.CONTAINERS.MESH_CELL_DATA, self.FIBERS.F0),
+                "d": self.get(self.CONTAINERS.MESH_CELL_DATA, self.FIBERS.S0),
+                }
+                }
+            ])
+            logger.debug("Fiber data successfully added.")
+        except KeyError:
+            logger.info("No Fiber data found. Add mesh data will be ignored.")
+        
+        logger.debug("Writing file...")
+        feb.write(filepath)
+        logger.debug("File written successfully.")

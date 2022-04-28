@@ -76,7 +76,6 @@
     <discrete_material id="1" name="springs" type="linear spring">
       <E>100</E>
     </discrete_material>
-    <discrete discrete_set="base_rim_springs" dmat="1" />
   </Discrete>
   <LoadData>
     <loadcurve id="1" type="linear">

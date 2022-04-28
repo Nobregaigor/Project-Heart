@@ -18,17 +18,31 @@ import os
 import logging
 logger = logging.getLogger('LV.FiberEstimator')
 
+from project_heart.enums import LV_FIBER_MODES, LV_FIBERS
+
+default_lv_enums = {
+    "FIBER_MODES": LV_FIBER_MODES,
+    "FIBERS": LV_FIBERS,
+}
+
 class LV_FiberEstimator(LV_RegionIdentifier):
-    def __init__(self, log_level=logging.INFO, *args, **kwargs):
+    def __init__(self, log_level=logging.INFO, enums={}, *args, **kwargs):
         super(LV_FiberEstimator, self).__init__(log_level=log_level, *args, **kwargs)
 
+        logger.setLevel(log_level)
         # ------ default values
         self._default_fiber_markers = {
             "epi": LV_SURFS.EPI.value,
             "lv": LV_SURFS.ENDO.value,
             "base": LV_SURFS.BASE.value
         }
-        logger.setLevel(log_level)
+        
+        self.FIBER_MODES = LV_FIBER_MODES
+        self.FIBERS = LV_FIBERS
+        # overwrite enums if 'enums' dict is provided
+        if len(enums) > 0:
+            self.config_enums(enums, check_keys=default_lv_enums.keys())
+
 
     def identify_fibers_regions_ldrb_1(self) -> tuple:
         """Identifies mesh surface regions for fiber computation based on nodesets. \
