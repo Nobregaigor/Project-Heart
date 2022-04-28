@@ -539,3 +539,49 @@ class LV_FiberEstimator(LV_RegionIdentifier):
                     LV_FIBERS.N0_ANGLES, "mean", axis=0)
 
         return reg_data
+
+    def interpolate_fibers(self, other_LV,
+                       container_loc=GEO_DATA.MESH_POINT_DATA,
+                       compute_angles=True,
+                       convert_to_cell_data=True,
+                       **kwargs):
+        if not issubclass(other_LV.__class__, BaseContainerHandler):
+            raise ValueError(
+                "Other LV object must be subclass of BaseContainerHandler.")
+
+        # get list of fibers to regress
+        to_regress = [LV_FIBERS.F0, LV_FIBERS.S0, LV_FIBERS.N0]
+        # check if other LV contains such information
+        try:
+            for key in to_regress:
+                _ = other_LV.get(container_loc, key)
+        except:
+            container_loc = self.check_enum(container_loc)
+            key = self.check_enum(key)
+            raise ValueError("Could not find '{}' in other LV object within '{}' container".format(
+                key, container_loc))
+        # apply regression
+        reg_data = self.interpolate_from_other(
+            other_LV, to_regress, container_loc=container_loc, **kwargs)
+
+        if convert_to_cell_data:
+            # Convert nodal data to cell data
+            self.transform_point_data_to_cell_data(
+                LV_FIBERS.F0, "mean", axis=0)
+            self.transform_point_data_to_cell_data(
+                LV_FIBERS.S0, "mean", axis=0)
+            self.transform_point_data_to_cell_data(
+                LV_FIBERS.N0, "mean", axis=0)
+
+        if compute_angles:
+            self.compute_fiber_angles()
+            if convert_to_cell_data:
+                # Convert nodal data to cell data
+                self.transform_point_data_to_cell_data(
+                    LV_FIBERS.F0_ANGLES, "mean", axis=0)
+                self.transform_point_data_to_cell_data(
+                    LV_FIBERS.S0_ANGLES, "mean", axis=0)
+                self.transform_point_data_to_cell_data(
+                    LV_FIBERS.N0_ANGLES, "mean", axis=0)
+
+        return reg_data

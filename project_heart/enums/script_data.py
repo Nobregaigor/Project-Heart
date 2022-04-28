@@ -34,7 +34,9 @@ class LV_SCRIPT_TAGS(Enum):
     ALPHA_EPI = "alpha_epi" # epi angle (must be negative)
     FIBERS = "fibers" # kwargs for fiber ldrb
     TETRAHEDRALIZE = "tetrahedralize" #kwargs for tetrahedralization of non-tetra meshes
+    
     REGRESS = "regress" #kwargs for regression (from tetra to non-tetra mesh)
+    INTERPOLATE = "interpolate" #kwargs for interpolation (from tetra to non-tetra mesh)
 
     FEB_TEMPLATE = "feb_template"
 

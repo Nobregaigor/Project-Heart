@@ -69,7 +69,15 @@ def compute_fibers(**kwargs):
 
     fiber_args = input_data.get(LV_SCRIPT_TAGS.FIBERS.value, {})
     tetrahedralize_args = input_data.get(LV_SCRIPT_TAGS.TETRAHEDRALIZE.value, {})
+
+    interpolate_args = input_data.get(LV_SCRIPT_TAGS.INTERPOLATE.value, {})
     regress_args = input_data.get(LV_SCRIPT_TAGS.REGRESS.value, {})
+    if len(interpolate_args) > 0 and len(regress_args) > 0:
+        raise AssertionError(
+            "One method for transfering data from a tetrahedral to non-tetrahedral "
+            "mesh is allowed. Please specify either 'interpolate' or 'regress' "
+            "but not both.")
+
     lv_log_level = kwargs.get(LV_SCRIPT_TAGS.LOG_LEVEL.value, logging.INFO)
 
     boundary_conditions = kwargs.get(LV_SCRIPT_TAGS.BOUNDARY_CONDITIONS.value, [])
@@ -106,13 +114,17 @@ def compute_fibers(**kwargs):
         lv_tet.identify_regions(**region_args)
         logger.debug("Computing fibers...")
         lv_tet.compute_fibers(alpha_endo_lv=alpha_endo, alpha_epi_lv=alpha_epi, **fiber_args)
-        logger.debug("Regressing fibers...")
-        logger.debug("-Loading LV data (hex)...")
+        logger.debug("Transfering fiber data to non-tet LV...")
+        logger.debug("Loading LV data (hex)...")
         lv_hex = LV.from_pyvista_read(input_file, log_level=lv_log_level) # reload hex mesh
-        logger.debug("-Identifying LV regions (hex)...")
+        logger.debug("Identifying LV regions (hex)...")
         lv_hex.identify_regions(**region_args)
-        logger.debug("-Applying regression...")
-        lv_hex.regress_fibers(lv_tet, **regress_args)
+        if len(regress_args) > 0:
+            logger.debug("Applying regression...")
+            lv_hex.regress_fibers(lv_tet, **regress_args)
+        else:
+            logger.debug("Applying interpolation (default)...")
+            lv_hex.interpolate_fibers(lv_tet, **interpolate_args)
         lv = lv_hex
 
     # create boundary conditions (if requested)
