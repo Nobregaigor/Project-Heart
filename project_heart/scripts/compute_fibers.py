@@ -72,7 +72,7 @@ def compute_fibers(**kwargs):
 
     # -------------------------------
     # resolve prefix data
-    prefix_dict = {"endo": 40, "epi": 60}
+    prefix_dict = {"endo": alpha_endo, "epi": alpha_epi}
     output_file = sh.resolve_prefix(output_file, prefix_dict, prefix_map)
 
 
