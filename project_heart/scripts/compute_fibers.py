@@ -134,12 +134,11 @@ def compute_fibers(**kwargs):
     if str(output_file).endswith(".feb"):
         lv.to_feb_template(feb_template, output_file)
         if save_vtk:
-            lv.mesh.save(output_file.replace(".feb", ".vtk"))
+            lv.mesh.save(sh.change_ext(output_file, ".vtk"))
     elif str(output_file).endswith(".vtk"):
         lv.mesh.save(output_file)
     else:
         import pyvista as pv
         pv.save_meshio(output_file, lv.mesh)
         if save_vtk:
-            ext = Path(output_file).suffix
-            lv.mesh.save(output_file.replace(ext, ".vtk"))
+            lv.mesh.save(sh.change_ext(output_file, ".vtk"))
