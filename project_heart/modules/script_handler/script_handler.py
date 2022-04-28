@@ -124,6 +124,40 @@ class ScriptHandler():
         # set new filename
         return ScriptHandler.add_prefix(filename, prefix_values)
 
+    @staticmethod
+    def add_suffix(filename, suffix):
+        p = Path(filename)
+        return "{0}_{2}{1}".format(Path.joinpath(p.parent, p.stem), p.suffix, suffix)
+    
+    @staticmethod
+    def change_ext(filename, ext):
+        p = Path(filename)
+        return "{0}{1}".format(Path.joinpath(p.parent, p.stem), ext)
+    
+    @staticmethod
+    def resolve_output_filename(input_data, suffix="", ext=".vtk"):
+        input_file = Path(input_data.get(SCRIPT_TAGS.INPUT_FILE.value, None))
+
+        output_file = input_data.get(SCRIPT_TAGS.OUTPUT_FILE.value, None)
+        output_directory = input_data.get(SCRIPT_TAGS.OUTPUT_DIR.value, None)   
+        output_ext = input_data.get(SCRIPT_TAGS.OUTPUT_EXT.value, ext)
+        output_suf = input_data.get(SCRIPT_TAGS.OUTPUT_SUFFIX.value, suffix)
+
+        # resolve filename based on directory
+        old_basename = os.path.basename(input_file)
+        if output_file is None and output_directory is not None:
+            output_file = Path(output_directory)/old_basename
+        elif output_file is None and output_directory is None:
+            output_file = input_file
+        
+        # resolve suffix
+        if len(output_suf) > 0:
+            output_file = ScriptHandler.add_suffix(output_file, output_suf)
+        # resolve extension
+        if not str(output_file).endswith(output_ext):
+            output_file = ScriptHandler.change_ext(output_file, output_ext)
+        return Path(output_file)
+    
     # =================================================================
     # df manipulation
 

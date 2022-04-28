@@ -9,6 +9,11 @@ class SCRIPT_TAGS(Enum):
     INPUT_DIR = "input_directory"
     INPUT_EXT = "input_ext"
 
+    OUTPUT_DIR = "output_directory"
+    OUTPUT_EXT = "output_ext"
+    OUTPUT_SUFFIX = "output_suffix"
+
+
     LOG_LEVEL = "log_level"
     DTYPE = "dtype"
 

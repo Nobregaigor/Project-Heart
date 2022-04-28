@@ -38,8 +38,8 @@ def compute_fibers(**kwargs):
     # required arguments
     input_file = input_data.get(SCRIPT_TAGS.INPUT_FILE.value, None)
     sh.assert_input_file(input_file)
-    output_file = input_data.get(SCRIPT_TAGS.OUTPUT_FILE.value, None)
-    sh.assert_input_exists(output_file, (str))
+    output_file = sh.resolve_output_filename(input_data, "with_fibers", ".vtk")
+    sh.assert_input_exists(output_file, (str, Path))
     region_args = input_data.get(LV_SCRIPT_TAGS.IDENTIFY_REGIONS.value, None)
     sh.assert_input_exists(region_args, dict)
     # this indicates what type of compute-fibers schematics we should use.
@@ -81,9 +81,7 @@ def compute_fibers(**kwargs):
     lv_log_level = kwargs.get(LV_SCRIPT_TAGS.LOG_LEVEL.value, logging.INFO)
 
     boundary_conditions = kwargs.get(LV_SCRIPT_TAGS.BOUNDARY_CONDITIONS.value, [])
-
-    
-
+   
     # -------------------------------
     # resolve prefix data
     prefix_dict = {"endo": alpha_endo, "epi": alpha_epi}
