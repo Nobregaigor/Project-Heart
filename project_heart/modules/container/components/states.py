@@ -80,8 +80,8 @@ class States():
         else:
             return data
 
-    def set_timesteps(self, timesteps: list):
-        self.timesteps = list(timesteps)
+    def set_timesteps(self, timesteps: list, dtype=np.float64):
+        self.timesteps = np.array(timesteps, dtype=dtype)
 
     def get_timestep_index(self, t: float) -> int:
         """Matches a given timestep to index of state in the timestep array.

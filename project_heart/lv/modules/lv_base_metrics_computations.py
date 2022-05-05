@@ -17,16 +17,16 @@ class LVBaseMetricsComputations(LV_Speckles):
     def __init__(self, log_level=logging.INFO, *args, **kwargs):
         super(LVBaseMetricsComputations, self).__init__(log_level=log_level, *args, **kwargs)
         self.EPSILON = 1e-10
-        self.metric_geochar_map = {
-            self.STATES.LONGITUDINAL_SHORTENING.value: self.STATES.LONGITUDINAL_DISTANCE.value,
-            self.STATES.RADIAL_SHORTENING.value: self.STATES.RADIUS.value,
-            self.STATES.WALL_THICKENING.value: self.STATES.THICKNESS.value,
-            self.STATES.LONG_STRAIN.value: self.STATES.LONG_LENGTH.value,
-            self.STATES.CIRC_STRAIN.value: self.STATES.CIRC_LENGTH.value,
-            self.STATES.TWIST.value: self.STATES.ROTATION.value,
-            self.STATES.TORSION.value: self.STATES.ROTATION.value,
-            self.STATES.ROTATION.value: self.STATES.ROTATION.value # required just for spk computation
-        }
+        # self.metric_geochar_map = {
+        #     self.STATES.LONGITUDINAL_SHORTENING.value: self.STATES.LONGITUDINAL_DISTANCE.value,
+        #     self.STATES.RADIAL_SHORTENING.value: self.STATES.RADIUS.value,
+        #     self.STATES.WALL_THICKENING.value: self.STATES.THICKNESS.value,
+        #     self.STATES.LONG_STRAIN.value: self.STATES.LONG_LENGTH.value,
+        #     self.STATES.CIRC_STRAIN.value: self.STATES.CIRC_LENGTH.value,
+        #     self.STATES.TWIST.value: self.STATES.ROTATION.value,
+        #     self.STATES.TORSION.value: self.STATES.ROTATION.value,
+        #     self.STATES.ROTATION.value: self.STATES.ROTATION.value # required just for spk computation
+        # }
         logger.setLevel(log_level)
 
     # =============================
@@ -218,37 +218,26 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     # ---------- Geo metric
 
-    def compute_spk_radius(self, spk: object, 
+    def compute_spk_radial_distance(self, spk: object, 
                            dtype: np.dtype = np.float64, 
-                           approach="moving_centers",
+                           approach="moving_vector",
                            log_level=logging.INFO,
                            **kwargs):
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
         logger.setLevel(log_level)
-        logger.debug("Computing speckle radius for spk: '{}'".format(spk))
+        logger.debug("Computing speckle RADIAL_DISTANCE for spk: '{}'".format(spk))
         logger.debug("Using approach: '{}'".format(approach))
         # check if xyz was computed, otherwise try to automatically compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
         # get nodal position for all timesteps
         xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
-        if approach == "moving_centers":
-            # check if speckle centers were computed. If not, compute them.
-            if not self.states.check_spk_key(spk, self.STATES.CENTERS):
-                self.compute_spk_centers_over_timesteps(spk, log_level=log_level, **kwargs)
-            # get centers data
-            centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
-            spk_res = np.array([radius(coords, center=center) for coords, center in zip(xyz, centers)], 
-                            dtype=dtype)
-        elif approach == "fixed_centers":
-            spk_res = np.array([radius(coords, center=spk.center) for coords in xyz], 
-                            dtype=dtype)
-        elif approach == "moving_vector":
+        if approach == "moving_vector":
             from project_heart.utils.vector_utils import dist_from_line
             # check if speckle apex and base values were computed. If not, compute them.
             if not self.states.check_key(self.STATES.BASE_REF) or \
             not self.states.check_key(self.STATES.APEX_REF):
-                self.compute_base_apex_ref_over_timesteps(spk, log_level=log_level, **kwargs)
+                self.compute_base_apex_ref_over_timesteps(**kwargs)
             # get apex and base points over timesteps
             apex_ts = self.states.get(self.STATES.APEX_REF)
             base_ts = self.states.get(self.STATES.BASE_REF)
@@ -262,22 +251,22 @@ class LVBaseMetricsComputations(LV_Speckles):
             spk_res = np.array([np.mean(dist_from_line(coords, p2, p3)) for coords in xyz], dtype=dtype)
         else:
             raise ValueError("Unknown method. Avaiable methods are: "
-                             "'moving_centers', 'fixed_centers', 'moving_vector', 'fixed_vector'."
+                             "'moving_vector', 'fixed_vector'."
                              "Please, check documentation for further details.")
             
-        logger.debug("-mean_coords:'{}\n-radius:'{}'".
+        logger.debug("-mean_coords:'{}\n-RADIAL_DISTANCE:'{}'".
                      format(np.mean(xyz, axis=0), spk_res))
-        self.states.add_spk_data(spk, self.STATES.RADIUS, spk_res)  # save to states
-        return self.states.get_spk_data(spk, self.STATES.RADIUS) # return pointer
+        self.states.add_spk_data(spk, self.STATES.RADIAL_DISTANCE, spk_res)  # save to states
+        return self.states.get_spk_data(spk, self.STATES.RADIAL_DISTANCE) # return pointer
 
-    def compute_radius(self, spks, reduce_by={"group"}, **kwargs):
+    def compute_radial_distance(self, spks, reduce_by={"group"}, **kwargs):
         # set key for this function
-        key = self.STATES.RADIUS
+        key = self.STATES.RADIAL_DISTANCE
         logger.info("Computing metric '{}'".format(key))
         # resolve spks (make sure you have a SpeckeDeque)
         spks = self._resolve_spk_args(spks)
         # compute metric
-        res = [self.compute_spk_radius(spk, **kwargs) for spk in spks]
+        res = [self.compute_spk_radial_distance(spk, **kwargs) for spk in spks]
         # reduce metric (here we compute the mean radius across entire LV)
         self._reduce_metric_and_save(res, key, **kwargs)
         # set metric relationship with spks 
@@ -307,7 +296,106 @@ class LVBaseMetricsComputations(LV_Speckles):
         spks = self._resolve_spk_args(spks)
         # compute metric for all spks
         res = [self._compute_spk_relative_error(spk, 
-                    self.STATES.RADIUS, key,
+                    self.STATES.RADIAL_DISTANCE, key,
+                    t_ed=t_ed, reduce_by=reduce_by, **kwargs) for spk in spks]
+        # reduce metric (here we compute the mean data across entire LV)
+        self._reduce_metric_and_save(res, key, **kwargs)
+        # set metric relationship with spks 
+        # so that we can reference which spks were used to compute this metric
+        self.states.set_data_spk_rel(spks, key)
+        # Break down computation by each 'set of spks'
+        if "group" in reduce_by:
+            logger.debug("Reducing metric by group for '{}'".format(key))
+            self._reduce_metric_by_group(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
+        if "name" in reduce_by:
+            logger.debug("Reducing metric by name for '{}'".format(key))
+            self._reduce_metric_by_name(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "group_name" in reduce_by:
+            logger.debug("Reducing metric by group and name for '{}'".format(key))
+            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+        return self.states.get(key, t=t_ed)
+    
+    # ---------------------------
+    # ---- Radial strain ---- 
+
+    # ---------- Geo metric
+
+    def compute_spk_radial_length(self, spk: object, 
+                           dtype: np.dtype = np.float64, 
+                           approach="moving_center",
+                           log_level=logging.INFO,
+                           **kwargs):
+        assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle RADIAL_LENGTH for spk: '{}'".format(spk))
+        logger.debug("Using approach: '{}'".format(approach))
+        # check if xyz was computed, otherwise try to automatically compute it.
+        if not self.states.check_key(self.STATES.XYZ):
+            self.compute_xyz_from_displacement()
+        # get nodal position for all timesteps
+        xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
+        if approach == "moving_centers":
+            # check if speckle centers were computed. If not, compute them.
+            if not self.states.check_spk_key(spk, self.STATES.CENTERS):
+                self.compute_spk_centers_over_timesteps(spk, log_level=log_level, **kwargs)
+            # get centers data
+            centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
+            spk_res = np.array([radius(coords, center=center) for coords, center in zip(xyz, centers)], 
+                            dtype=dtype)
+        elif approach == "fixed_centers":
+            spk_res = np.array([radius(coords, center=spk.center) for coords in xyz], 
+                            dtype=dtype)
+        else:
+            raise ValueError("Unknown method. Avaiable methods are: "
+                             "'moving_centers', 'fixed_centers'."
+                             "Please, check documentation for further details.")
+            
+        logger.debug("-mean_coords:'{}\n-RADIAL_LENGTH:'{}'".
+                     format(np.mean(xyz, axis=0), spk_res))
+        self.states.add_spk_data(spk, self.STATES.RADIAL_LENGTH, spk_res)  # save to states
+        return self.states.get_spk_data(spk, self.STATES.RADIAL_LENGTH) # return pointer
+
+    def compute_radial_length(self, spks, reduce_by={"group"}, **kwargs):
+        # set key for this function
+        key = self.STATES.RADIAL_LENGTH
+        logger.info("Computing metric '{}'".format(key))
+        # resolve spks (make sure you have a SpeckeDeque)
+        spks = self._resolve_spk_args(spks)
+        # compute metric
+        res = [self.compute_spk_radial_length(spk, **kwargs) for spk in spks]
+        # reduce metric (here we compute the mean radius across entire LV)
+        self._reduce_metric_and_save(res, key, **kwargs)
+        # set metric relationship with spks 
+        # so that we can reference which spks were used to compute this metric
+        self.states.set_data_spk_rel(spks, key)
+        # Break down computation by each 'set of spks'
+        if "group" in reduce_by:
+            logger.debug("Reducing metric by group for '{}'".format(key))
+            self._reduce_metric_by_group(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
+        if "name" in reduce_by:
+            logger.debug("Reducing metric by name for '{}'".format(key))
+            self._reduce_metric_by_name(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "group_name" in reduce_by:
+            logger.debug("Reducing metric by group and name for '{}'".format(key))
+            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+
+    # ---------- Clinical metric
+
+    def compute_radial_strain(self, spks, t_ed=0.0, reduce_by={"group"}, **kwargs):
+        # set key for this function
+        key = self.STATES.RADIAL_SHORTENING
+        logger.info("Computing metric '{}'".format(key))
+        # resolve spks (make sure you have a SpeckeDeque)
+        spks = self._resolve_spk_args(spks)
+        # compute metric for all spks
+        res = [self._compute_spk_relative_error(spk, 
+                    self.STATES.RADIAL_LENGTH, key,
                     t_ed=t_ed, reduce_by=reduce_by, **kwargs) for spk in spks]
         # reduce metric (here we compute the mean data across entire LV)
         self._reduce_metric_and_save(res, key, **kwargs)
@@ -343,30 +431,30 @@ class LVBaseMetricsComputations(LV_Speckles):
             epi_spk), "epi_spk must be a valid 'Speckle' object."
 
         # check if radius were computed for ENDOCARDIUM
-        if not self.states.check_spk_key(endo_spk, self.STATES.RADIUS):
+        if not self.states.check_spk_key(endo_spk, self.STATES.RADIAL_LENGTH):
             try:
-                self.compute_radius(endo_spk, **kwargs)
+                self.compute_radial_length(endo_spk, **kwargs)
             except:
                 raise RuntimeError(
                     "Unable to compute radius data for endo spk '{}'."
                     "Please, either verify required data or add"
-                    "state data for 'RADIUS' manually."
+                    "state data for 'RADIAL_LENGTH' manually."
                     .format(endo_spk.str))
         # check if radius were computed for EPICARDIUM
-        if not self.states.check_spk_key(epi_spk, self.STATES.RADIUS):
+        if not self.states.check_spk_key(epi_spk, self.STATES.RADIAL_LENGTH):
             try:
-                self.compute_radius(epi_spk, **kwargs)
+                self.compute_radial_length(epi_spk, **kwargs)
             except:
                 raise RuntimeError(
                     "Unable to compute radius data for epi spk '{}'."
                     "Please, either verify required data or add"
-                    "state data for 'RADIUS' manually."
+                    "state data for 'RADIAL_LENGTH' manually."
                     .format(epi_spk.str))
         logger.setLevel(log_level)
         logger.debug("Computing speckle thickness for spks: '{}' and '{}"
                      .format(endo_spk, epi_spk))
-        r_endo = self.states.get_spk_data(endo_spk, self.STATES.RADIUS)
-        r_epi = self.states.get_spk_data(epi_spk, self.STATES.RADIUS)
+        r_endo = self.states.get_spk_data(endo_spk, self.STATES.RADIAL_LENGTH)
+        r_epi = self.states.get_spk_data(epi_spk, self.STATES.RADIAL_LENGTH)
         thickness = r_epi - r_endo
         logger.debug("-r_endo:\n'{}'\n-r_epi:\n'{}\n-thickness:\n'{}'\n".
                      format(r_endo, r_epi, thickness))

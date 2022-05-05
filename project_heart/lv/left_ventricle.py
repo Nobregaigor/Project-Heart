@@ -65,11 +65,16 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
 
     # --- Metrics that do require spks
 
-    def radius(self, spks, t=None, recompute=False, **kwargs):
-        if not self.states.check_key(self.STATES.RADIUS) or recompute:
-            self.compute_radius(spks, **kwargs)
-        return self.states.get(self.STATES.RADIUS, t=t) 
- 
+    def radial_distance(self, spks, t=None, recompute=False, **kwargs):
+        if not self.states.check_key(self.STATES.RADIAL_DISTANCE) or recompute:
+            self.compute_radial_distance(spks, **kwargs)
+        return self.states.get(self.STATES.RADIAL_DISTANCE, t=t) 
+    
+    def radial_length(self, spks, t=None, recompute=False, **kwargs):
+        if not self.states.check_key(self.STATES.RADIAL_LENGTH) or recompute:
+            self.compute_radial_length(spks, **kwargs)
+        return self.states.get(self.STATES.RADIAL_LENGTH, t=t) 
+    
     def thickness(self, endo_spks, epi_spks, t=None, recompute=False, **kwargs):
         if not self.states.check_key(self.STATES.THICKNESS) or recompute:
             self.compute_thickness(endo_spks, epi_spks, **kwargs)

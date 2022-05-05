@@ -460,7 +460,7 @@ class BaseContainerHandler():
         Returns:
             list: list of timesteps [0.0, t1, t2 ... t]
         """
-        return self.States.timesteps
+        return self.states.timesteps
 
     def states(self) -> dict:
         """
@@ -471,7 +471,7 @@ class BaseContainerHandler():
         Returns:
             dict: {DATA_FIELDS: np.ndarray[], ...} pairs
         """
-        return self.States.data
+        return self.states.data
 
     # ------------------------
     # Get (joker method)

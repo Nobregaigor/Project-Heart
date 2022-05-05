@@ -182,7 +182,9 @@ class LV_STATES(Enum):
     LONGITUDINAL_SHORTENING = "longitudinal_shortening"
     LS = "longitudinal_shortening"
 
-    RADIUS = "radius"
+    # RADIUS = "radius"
+    RADIAL_DISTANCE = "radial_distance"
+    RADIAL_LENGTH = "radial_length"
 
     RADIAL_SHORTENING = "radial_shortening"
     RS = "radial_shortening"
