@@ -93,7 +93,29 @@ class LV_Base(BaseContainerHandler):
             "base_region": base_region_idxs}
         return np.vstack((base_ref, apex_ref)), info
 
-    def est_pts_aligment_with_lv_normal(self, points, n=5, rot_chain=[], **kwargs):
+    def est_apex_and_base_refs_iteratively(self, points, n=5, rot_chain=None, **kwargs):
+        if rot_chain is None:
+            rot_chain = deque()
+        pts = np.copy(points)
+        for _ in range(n):
+            long_line, _ = LV_Base.est_apex_and_base_refs(
+                pts, **kwargs)
+            lv_normal = unit_vector(long_line[0] - long_line[1])
+            curr_rot = get_rotation(lv_normal, self._Z)
+            pts = curr_rot.apply(pts)
+            rot_chain.append(curr_rot)
+        long_line, info = LV_Base.est_apex_and_base_refs(
+            pts, **kwargs)
+        lv_normal = unit_vector(long_line[0] - long_line[1])
+        info["rot_pts"] = pts
+        info["normal"] = lv_normal
+        info["long_line"] = long_line
+        info["rot_chain"] = rot_chain
+        return info
+    
+    def est_pts_aligment_with_lv_normal(self, points, n=5, rot_chain=None, **kwargs):
+        if rot_chain is None:
+            rot_chain = deque()
         pts = np.copy(points)
         for _ in range(n):
             long_line, _ = LV_Base.est_apex_and_base_refs(
@@ -112,6 +134,8 @@ class LV_Base(BaseContainerHandler):
         self._aligment_data = info
         return info
 
+    
+    
     # ----------------------------------------------------------------
     # Aortic and Mitral identification/set functions
 

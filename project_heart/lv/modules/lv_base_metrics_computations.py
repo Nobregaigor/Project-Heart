@@ -119,7 +119,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         for i, pts in enumerate(xyz):
             # because nodes can shift position, we need to re-estimate
             # base and apex positions at each timestep.
-            (es_base, es_apex), _ = self.est_apex_and_base_refs(pts, **kwargs)
+            (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
             base[i] = es_base
             apex[i] = es_apex
 
@@ -150,7 +150,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         for i, pts in enumerate(xyz):
             # because nodes can shift position, we need to re-estimate
             # base and apex positions at each timestep.
-            (es_base, es_apex), _ = self.est_apex_and_base_refs(pts, **apex_base_kwargs)
+            (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **apex_base_kwargs)["long_line"]
             dists[i] = np.linalg.norm(es_base - es_apex)
         # resolve reference key
         nodeset = self.check_enum(nodeset)
