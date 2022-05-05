@@ -132,6 +132,34 @@ def dist_from_plane(pts, normal, d):
     a = np.dot(pts, normal)
     return np.abs(a + d) / np.linalg.norm(normal)
 
+def dist_from_line(p1:np.ndarray, p2:np.ndarray, p3:np.ndarray, dtype:np.dtype=np.float64) -> np.ndarray:
+    """Computes the perpendicular distance between one or multiple points [p1] to a line (or lines) \
+        defined by [p2, p3]. p2 and p3 must have same shape. points are defined as: [x,y,z].
+
+    Args:
+        p1 (np.ndarray): Reference point(s)
+        p2 (np.ndarray): First point on line(s)
+        p3 (np.ndarray): Second point on line(s)
+        dtype (np.dtype, optional): Values are converted to numpy array. This denies the output type. Defaults to np.float64.
+
+    Returns:
+        float or np.ndarray: Perpendicular distance(s). If singular point and line, will return float. Otherwise will return an array.
+    """
+    assert len(p2) == len(p3), "p2 and p3 must have same number of points as they represent lines. Received: p2 ({}), p3 ({})".format(len(p2), len(p3))
+    if not isinstance(p1, np.ndarray):
+        p1 = np.asarray(p1, dtype=dtype)
+        assert p1.shape[-1] == 3, "Point must be composed of [x,y,z]. Received shape (p1): {}".format(p1.shape)
+    if not isinstance(p2, np.ndarray):
+        p2 = np.asarray(p2, dtype=dtype)
+        assert p2.shape[-1] == 3, "Point must be composed of [x,y,z]. Received shape (p2): {}".format(p2.shape)
+    if not isinstance(p3, np.ndarray):
+        p3 = np.asarray(p3, dtype=dtype)
+        assert p3.shape[-1] == 3, "Point must be composed of [x,y,z]. Received shape (p3): {}".format(p3.shape)
+
+    dists = np.linalg.norm(np.cross(p3-p2, p2-p1, axis=-1), axis=-1)/np.linalg.norm(p3-p2, axis=-1)
+    # dists = np.linalg.norm(np.cross(p2-p1, p1-p3, axis=-1), axis=-1)/np.linalg.norm(p2-p1, axis=-1)
+    return dists.astype(dtype)
+
 
 def get_pts_close_to_plane(points, maxd, normal, v, return_mask=False):
     """

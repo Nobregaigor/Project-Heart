@@ -81,7 +81,8 @@ def get_p_along_line(k: float, line):
     if not isinstance(k, float):
         raise TypeError('k must be a float')
     if not isinstance(line, np.ndarray):
-        raise TypeError('line must be a numpy array')
+        # raise TypeError('line must be a numpy array')
+        line = np.asarray(line)
 
     # allocate array data
     data = np.zeros(3, dtype=np.float32)

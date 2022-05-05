@@ -56,6 +56,8 @@ class Speckle():
         self.str = "{}_{}_{}_{}".format(
             self.subset, self.name, self.group, self.collection)
 
+        # self.get_center
+
     def __repr__(self):
         return "<Speckle: .subset: {}, .name: {}, .group: {}, .collection: {}, .t: {}>".format(
             self.subset, self.name, self.group, self.collection, self.t)

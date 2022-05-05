@@ -102,6 +102,7 @@ class LVBaseMetricsComputations(LV_Speckles):
     def compute_base_apex_ref_over_timesteps(self,
                                              nodeset: str = None,
                                              dtype: np.dtype = np.float64,
+                                             **kwargs
                                              ) -> np.ndarray:
 
         # check if xyz was computed; If not, try to compute it.
@@ -113,12 +114,12 @@ class LVBaseMetricsComputations(LV_Speckles):
         # get node positions from nodeset at specified state
         xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
         # compute distances for each timesteps
-        base = np.zeros(len(xyz), dtype=dtype)
-        apex = np.zeros(len(xyz), dtype=dtype)
+        base = np.zeros((len(xyz), 3), dtype=dtype)
+        apex = np.zeros((len(xyz), 3), dtype=dtype)
         for i, pts in enumerate(xyz):
             # because nodes can shift position, we need to re-estimate
             # base and apex positions at each timestep.
-            (es_base, es_apex), _ = self.est_apex_and_base_refs(pts)
+            (es_base, es_apex), _ = self.est_apex_and_base_refs(pts, **kwargs)
             base[i] = es_base
             apex[i] = es_apex
 
@@ -133,10 +134,13 @@ class LVBaseMetricsComputations(LV_Speckles):
     def compute_nodeset_longitudinal_distance(self,
                                       nodeset: str,
                                       dtype: np.dtype = np.float64,
+                                      apex_base_kwargs=None,
                                       ) -> np.ndarray:            
         # check if xyz was computed; If not, try to compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
+        if apex_base_kwargs is None:
+                apex_base_kwargs = {}
         # get node ids (index array) from nodeset
         nodeids = self.get_nodeset(nodeset)
         # get node positions from nodeset at specified state
@@ -146,7 +150,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         for i, pts in enumerate(xyz):
             # because nodes can shift position, we need to re-estimate
             # base and apex positions at each timestep.
-            (es_base, es_apex), _ = self.est_apex_and_base_refs(pts)
+            (es_base, es_apex), _ = self.est_apex_and_base_refs(pts, **apex_base_kwargs)
             dists[i] = np.linalg.norm(es_base - es_apex)
         # resolve reference key
         nodeset = self.check_enum(nodeset)
@@ -182,20 +186,87 @@ class LVBaseMetricsComputations(LV_Speckles):
     # ===============================
     # Spk computations
     # ===============================
-
+    
+    def compute_spk_centers_over_timesteps(self, spk, 
+                                           apex_base_kwargs=None, 
+                                           log_level=logging.INFO,
+                                           **kwargs):
+        # check for speckle input
+        assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle center for spk: '{}'".format(spk))
+        # check if apex and base references were computed
+        if not self.states.check_key(self.STATES.BASE_REF) or \
+            not self.states.check_key(self.STATES.APEX_REF):
+            if apex_base_kwargs is None:
+                apex_base_kwargs = {}
+            self.compute_base_apex_ref_over_timesteps(**apex_base_kwargs)
+        # compute spk centers over timesteps based on 'k' height
+        from project_heart.utils.spatial_utils import get_p_along_line
+        k = spk.k
+        apex_ts = self.states.get(self.STATES.APEX_REF)
+        base_ts = self.states.get(self.STATES.BASE_REF)
+        spk_res = [get_p_along_line(k, [apex,base]) for apex, base in zip(apex_ts, base_ts)]
+        spk_res = np.vstack(spk_res)
+        logger.debug("-k: '{}'\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
+                     format(k, apex_ts, base_ts, spk_res))
+        self.states.add_spk_data(spk, self.STATES.CENTERS, spk_res)  # save to states
+        return self.states.get_spk_data(spk, self.STATES.CENTERS) # return pointer
+    
     # ---------------------------
     # ---- Radial shortening ---- 
 
     # ---------- Geo metric
 
-    def compute_spk_radius(self, spk: object, dtype: np.dtype = np.float64):
+    def compute_spk_radius(self, spk: object, 
+                           dtype: np.dtype = np.float64, 
+                           approach="moving_centers",
+                           log_level=logging.INFO,
+                           **kwargs):
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle radius for spk: '{}'".format(spk))
+        logger.debug("Using approach: '{}'".format(approach))
         # check if xyz was computed, otherwise try to automatically compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
         # get nodal position for all timesteps
         xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
-        spk_res = np.array([radius(coords, center=spk.center) for coords in xyz], dtype=dtype)
+        if approach == "moving_centers":
+            # check if speckle centers were computed. If not, compute them.
+            if not self.states.check_spk_key(spk, self.STATES.CENTERS):
+                self.compute_spk_centers_over_timesteps(spk, log_level=log_level, **kwargs)
+            # get centers data
+            centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
+            spk_res = np.array([radius(coords, center=center) for coords, center in zip(xyz, centers)], 
+                            dtype=dtype)
+        elif approach == "fixed_centers":
+            spk_res = np.array([radius(coords, center=spk.center) for coords in xyz], 
+                            dtype=dtype)
+        elif approach == "moving_vector":
+            from project_heart.utils.vector_utils import dist_from_line
+            # check if speckle apex and base values were computed. If not, compute them.
+            if not self.states.check_key(self.STATES.BASE_REF) or \
+            not self.states.check_key(self.STATES.APEX_REF):
+                self.compute_base_apex_ref_over_timesteps(spk, log_level=log_level, **kwargs)
+            # get apex and base points over timesteps
+            apex_ts = self.states.get(self.STATES.APEX_REF)
+            base_ts = self.states.get(self.STATES.BASE_REF)
+            spk_res = np.array([
+                        np.mean(dist_from_line(coords, apts, bpts)) for coords, apts, bpts in zip(xyz, apex_ts, base_ts)], 
+                        dtype=dtype)
+        elif approach == "fixed_vector":
+            from project_heart.utils.vector_utils import dist_from_line
+            long_line = self.get_long_line() # based on ref normal
+            p2, p3 = long_line[0], long_line[1]
+            spk_res = np.array([np.mean(dist_from_line(coords, p2, p3)) for coords in xyz], dtype=dtype)
+        else:
+            raise ValueError("Unknown method. Avaiable methods are: "
+                             "'moving_centers', 'fixed_centers', 'moving_vector', 'fixed_vector'."
+                             "Please, check documentation for further details.")
+            
+        logger.debug("-mean_coords:'{}\n-radius:'{}'".
+                     format(np.mean(xyz, axis=0), spk_res))
         self.states.add_spk_data(spk, self.STATES.RADIUS, spk_res)  # save to states
         return self.states.get_spk_data(spk, self.STATES.RADIUS) # return pointer
 
@@ -263,7 +334,9 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     # ---------- Geo metric
 
-    def compute_spk_thickness(self, endo_spk, epi_spk, **kwargs):
+    def compute_spk_thickness(self, endo_spk, epi_spk, 
+                              log_level=logging.INFO,
+                              **kwargs):
         assert self.check_spk(
             endo_spk), "endo_spk must be a valid 'Speckle' object."
         assert self.check_spk(
@@ -289,10 +362,14 @@ class LVBaseMetricsComputations(LV_Speckles):
                     "Please, either verify required data or add"
                     "state data for 'RADIUS' manually."
                     .format(epi_spk.str))
-
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle thickness for spks: '{}' and '{}"
+                     .format(endo_spk, epi_spk))
         r_endo = self.states.get_spk_data(endo_spk, self.STATES.RADIUS)
         r_epi = self.states.get_spk_data(epi_spk, self.STATES.RADIUS)
         thickness = r_epi - r_endo
+        logger.debug("-r_endo:\n'{}'\n-r_epi:\n'{}\n-thickness:\n'{}'\n".
+                     format(r_endo, r_epi, thickness))
         self.states.add_spk_data(endo_spk, self.STATES.WALL_THICKNESS, thickness)  # save to states
         self.states.add_spk_data(epi_spk, self.STATES.WALL_THICKNESS, thickness)  # save to states
         # return pointer
@@ -670,9 +747,14 @@ class LVBaseMetricsComputations(LV_Speckles):
         # check if xyz was computed, otherwise try to automatically compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
+        # check if speckle centers were computed. If not, compute them.
+        if not self.states.check_spk_key(spk, self.STATES.CENTERS):
+            self.compute_spk_centers_over_timesteps(spk, **kwargs)
+        # get centers data
+        centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
         # get nodal position for all timesteps for given spk
         xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
-        vecs = np.array(xyz - spk.center, dtype=dtype)
+        vecs = np.array(xyz - centers, dtype=dtype)
         # save to states
         self.states.add_spk_data(spk, self.STATES.SPK_VECS, vecs)  
         # return pointer

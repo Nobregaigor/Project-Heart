@@ -174,6 +174,7 @@ class LV_STATES(Enum):
     BASE_REF = "base_ref"
     APEX_REF = "apex_ref"
     
+    CENTERS = "centers" # used for spk centers
 
     LONGITUDINAL_DISTANCE = "longitudinal_distance"
     LONG_DISTS = "longitudinal_distance"
