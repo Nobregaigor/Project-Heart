@@ -4,6 +4,7 @@
 Here is a brief description of each geometric:
 
 - **radial_distance**: perpendicular distance surface to normal vector (defined from longitudinal line)
+  - Computed using speckles; final value is reduced (default reduction is 'mean')
   - It can be though as the "2D" radial distance on an idealized geometry.
   - Two approaches:
     - *fixed_vector*: uses reference normal (created based on reference configuration).
@@ -12,7 +13,7 @@ Here is a brief description of each geometric:
   - Used for '**radial_shortening**"
 
 - **radial_length**: Vector length from surface to specified centers at longitudinal line.
-  - It is the absolute distance from a spk to its respective center.
+  - Computed using speckles; final value is reduced (default reduction is 'mean')
   - Accounts for curvatures in the geometry.
   - Two approaches:
     - *fixed_centers*: uses reference relative center (created based on reference configuration).
@@ -21,10 +22,12 @@ Here is a brief description of each geometric:
   - Used for '**radial_strain**'
 
 - **wall_thickness**: Mean distance between Epicardium and Endocardium surfaces.
+  - Computed using speckles; final value is reduced (default reduction is 'mean')
   - To account for changes in curvature, we consider "radial_length" when computing the wall thickness.
   - Used for '**wall_thickening**'
 
 - **longitudinal_distance**: Distance from apex to base based on nodesets.
+  - Computed using nodesets; final value is reduced (default reduction is 'mean')
   - It can be though as the distance between top and bottom of an idealized geometry.
   - Two approaches:
     - *extremes*: Uses the maximum and minimum in the Z direction for a given nodeset.
@@ -43,8 +46,10 @@ Here is a brief description of each geometric:
   - Used for '**longitudinal_shortening**'
 
 - **longitudinal_length**: Curvature length of the surface along the longitudinal axis.
+  - Computed using speckles; final value is reduced (default reduction is 'mean')
   - Used for '**longitudinal_strain**'
 
 - **circumferential_length**: Curvature length of the surface along the circumferential axis.
+  - Computed using speckles; final value is reduced (default reduction is 'mean')
   - Used for '**circumferential_strain**'
   
