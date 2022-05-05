@@ -250,9 +250,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             p2, p3 = long_line[0], long_line[1]
             spk_res = np.array([np.mean(dist_from_line(coords, p2, p3)) for coords in xyz], dtype=dtype)
         else:
-            raise ValueError("Unknown method. Avaiable methods are: "
-                             "'moving_vector', 'fixed_vector'."
-                             "Please, check documentation for further details.")
+            raise ValueError("Unknown approach. Avaiable approaches are: "
+                             "'moving_vector', 'fixed_vector'.Received: '{}'. "
+                             "Please, check documentation for further details."
+                             .format(approach))
             
         logger.debug("-mean_coords:'{}\n-RADIAL_DISTANCE:'{}'".
                      format(np.mean(xyz, axis=0), spk_res))
@@ -325,7 +326,7 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     def compute_spk_radial_length(self, spk: object, 
                            dtype: np.dtype = np.float64, 
-                           approach="moving_center",
+                           approach="moving_centers",
                            log_level=logging.INFO,
                            **kwargs):
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
@@ -349,9 +350,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             spk_res = np.array([radius(coords, center=spk.center) for coords in xyz], 
                             dtype=dtype)
         else:
-            raise ValueError("Unknown method. Avaiable methods are: "
-                             "'moving_centers', 'fixed_centers'."
-                             "Please, check documentation for further details.")
+            raise ValueError("Unknown approach. Avaiable approaches are: "
+                             "'moving_centers', 'fixed_centers'. Received: '{}'. "
+                             "Please, check documentation for further details."
+                             .format(approach))
             
         logger.debug("-mean_coords:'{}\n-RADIAL_LENGTH:'{}'".
                      format(np.mean(xyz, axis=0), spk_res))
@@ -429,9 +431,13 @@ class LVBaseMetricsComputations(LV_Speckles):
             endo_spk), "endo_spk must be a valid 'Speckle' object."
         assert self.check_spk(
             epi_spk), "epi_spk must be a valid 'Speckle' object."
-
+        
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle thickness for spks: '{}' and '{}"
+                     .format(endo_spk, epi_spk))
         # check if radius were computed for ENDOCARDIUM
         if not self.states.check_spk_key(endo_spk, self.STATES.RADIAL_LENGTH):
+            logger.debug("Metric 'RADIAL_LENGTH' not found for spk '{}'. Will try to compute.".format(endo_spk))
             try:
                 self.compute_radial_length(endo_spk, **kwargs)
             except:
@@ -442,6 +448,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                     .format(endo_spk.str))
         # check if radius were computed for EPICARDIUM
         if not self.states.check_spk_key(epi_spk, self.STATES.RADIAL_LENGTH):
+            logger.debug("Metric 'RADIAL_LENGTH' not found for spk '{}'. Will try to compute.".format(epi_spk))
             try:
                 self.compute_radial_length(epi_spk, **kwargs)
             except:
@@ -450,9 +457,6 @@ class LVBaseMetricsComputations(LV_Speckles):
                     "Please, either verify required data or add"
                     "state data for 'RADIAL_LENGTH' manually."
                     .format(epi_spk.str))
-        logger.setLevel(log_level)
-        logger.debug("Computing speckle thickness for spks: '{}' and '{}"
-                     .format(endo_spk, epi_spk))
         r_endo = self.states.get_spk_data(endo_spk, self.STATES.RADIAL_LENGTH)
         r_epi = self.states.get_spk_data(epi_spk, self.STATES.RADIAL_LENGTH)
         thickness = r_epi - r_endo
