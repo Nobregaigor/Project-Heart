@@ -64,21 +64,24 @@ class LV_Base(BaseContainerHandler):
         return centroid(lvsurf.points)  # center
 
     @staticmethod
-    def est_apex_ref(points, ql=0.03, **kwargs):
+    def est_apex_ref(points, ql=0.05, **kwargs):
         zvalues = points[:, 2]
         thresh = np.quantile(zvalues, ql)
         apex_region_idxs = np.where(zvalues <= thresh)[0]
         apex_region_pts = points[apex_region_idxs]
-        return np.mean(apex_region_pts, 0), apex_region_idxs
+        # return np.mean(apex_region_pts, 0), apex_region_idxs
+        return centroid(apex_region_pts), apex_region_idxs
+        
 
     @staticmethod
-    def est_base_ref(points, qh=0.90, **kwargs):
+    def est_base_ref(points, qh=0.95, **kwargs):
         zvalues = points[:, 2]
         thresh = np.quantile(zvalues, qh)
         base_region_idxs = np.where(zvalues >= thresh)[0]
         base_region_pts = points[base_region_idxs]
-        base_ref = np.mean(base_region_pts, 0)
-        return base_ref, base_region_idxs
+        # base_ref = np.mean(base_region_pts, 0)
+        # return base_ref, base_region_idxs
+        return centroid(base_region_pts), base_region_idxs
 
     @staticmethod
     def est_apex_and_base_refs(points, **kwargs):
@@ -297,6 +300,7 @@ class LV_Base(BaseContainerHandler):
                 if len(found_ids) > 0:
                     self.add_nodeset(surf_enum, found_ids, overwrite)
 
+    
     # =============================================================================
     # Check methods
 

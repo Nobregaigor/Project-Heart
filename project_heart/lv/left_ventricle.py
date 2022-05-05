@@ -342,7 +342,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                     data = self.states.get(check_val)
                     info["suffix"][save_val] = data
                 except KeyError:
-                    logger.debug("Suffix '{}' not found for metric '{}': {}".format(suffix, metric, check_val))     
+                    logger.debug("Suffix '{}' not found for metric '{}': {}".format(key, metric, check_val))     
         
         if not merged_info or info is None:
             return df, info

@@ -677,7 +677,7 @@ class LV_RegionIdentifier(LV_Base):
 
         # set flag to indicate surfaces were identified from this method:
         self._surfaces_identified_with_class_method = True
-
+    
     # ----------------------------------------------------------------
     # Compiled function
 
@@ -756,6 +756,8 @@ class LV_RegionIdentifier(LV_Base):
             raise ValueError(
                 "Invalid geo type: %s. Check LV_GEO_TYPES enums for valid types." % geo_type)
 
+        # apply functions for all geo types
+        self.set_epi_endo_exclude_base_nodeset()
     # =========================================================================
     # FACET DATA REGION TRANSFORMATION
 
@@ -804,6 +806,15 @@ class LV_RegionIdentifier(LV_Base):
     # =========================================================================
     # Others
 
+    def set_epi_endo_exclude_base_nodeset(self):
+        epi = self.get_nodeset(self.REGIONS.EPI)
+        endo = self.get_nodeset(self.REGIONS.ENDO)
+        base = self.get_nodeset(self.REGIONS.BASE)
+        epi_no_base = np.setdiff1d(epi, base)
+        endo_no_base = np.setdiff1d(endo, base)
+        self.add_nodeset(self.REGIONS.EPI_EXCLUDE_BASE, epi_no_base, True)
+        self.add_nodeset(self.REGIONS.ENDO_EXCLUDE_BASE, endo_no_base, True)
+    
     def set_region_from_mesh_ids(self, key: str, mesh_ids: list) -> np.ndarray:
         """Sets mesh and surface mesh region from a list of ids based on mesh. \
             Each index corresponds to node id, and each value should represent\

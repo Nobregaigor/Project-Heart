@@ -109,10 +109,13 @@ class LVBaseMetricsComputations(LV_Speckles):
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
         # get node ids (index array) from nodeset
-        nodeset = self.REGIONS.EPI if nodeset is None else nodeset
-        nodeids = self.get_nodeset(nodeset)
-        # get node positions from nodeset at specified state
-        xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
+        # nodeset = self.REGIONS.EPI if nodeset is None else nodeset
+        if nodeset is not None:
+            nodeids = self.get_nodeset(nodeset)
+            # get node positions from nodeset at specified state
+            xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
+        else:
+            xyz = self.states.get(self.STATES.XYZ)
         # compute distances for each timesteps
         base = np.zeros((len(xyz), 3), dtype=dtype)
         apex = np.zeros((len(xyz), 3), dtype=dtype)
@@ -133,38 +136,51 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     def compute_nodeset_longitudinal_distance(self,
                                       nodeset: str,
+                                      approach: str = "extremes",
                                       dtype: np.dtype = np.float64,
-                                      apex_base_kwargs=None,
+                                      **kwargs,
                                       ) -> np.ndarray:            
         # check if xyz was computed; If not, try to compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
-        if apex_base_kwargs is None:
-                apex_base_kwargs = {}
         # get node ids (index array) from nodeset
         nodeids = self.get_nodeset(nodeset)
         # get node positions from nodeset at specified state
         xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
         # compute distances for each timesteps
         dists = np.zeros(len(xyz), dtype=dtype)
-        for i, pts in enumerate(xyz):
-            # because nodes can shift position, we need to re-estimate
-            # base and apex positions at each timestep.
-            (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **apex_base_kwargs)["long_line"]
-            dists[i] = np.linalg.norm(es_base - es_apex)
+        if approach == "extremes":
+            for i, pts in enumerate(xyz):
+                dists[i] = abs(np.max(pts[:,2])) + abs(np.min(pts[:,2])) 
+        elif approach == "estimate_apex_base":
+            for i, pts in enumerate(xyz):
+                # because nodes can shift position, we need to re-estimate
+                # base and apex positions at each timestep.
+                (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+                # dists[i] = abs(es_base[-1]) + abs(es_apex[-1])
+                dists[i] = np.linalg.norm(es_base - es_apex)
+        else:
+            raise ValueError("Unknown approach. Avaiable approaches are: "
+                             "'extremes' and 'estimate_apex_base'. Received: '{}'."
+                             "Please, check documentation for further details."
+                             .format(approach))
         # resolve reference key
         nodeset = self.check_enum(nodeset)
+        if nodeset == self.REGIONS.EPI_EXCLUDE_BASE.value:
+            nodeset = self.REGIONS.EPI.value
+        elif nodeset == self.REGIONS.ENDO_EXCLUDE_BASE.value:
+            nodeset = self.REGIONS.ENDO.value
         self.STATES, (_, key) = add_to_enum(self.STATES, self.STATES.LONGITUDINAL_DISTANCE, nodeset)
         logger.info("State key added:'{}'".format(key))
         self.states.add(key, dists)  # save to states
         return self.states.get(key)  # return pointer
 
-    def compute_longitudinal_distance(self, nodesets:set=None, dtype: np.dtype = np.float64) -> np.ndarray:
+    def compute_longitudinal_distance(self, nodesets:set=None, dtype: np.dtype = np.float64, **kwargs) -> np.ndarray:
         # make sure we have endo and epi surface ids
         if nodesets is None:
-            nodesets = {self.REGIONS.ENDO, self.REGIONS.EPI}
+            nodesets = {self.REGIONS.ENDO_EXCLUDE_BASE, self.REGIONS.EPI_EXCLUDE_BASE}
         # compute long dists for each nodeset
-        res = [self.compute_nodeset_longitudinal_distance(key, dtype) for key in nodesets]
+        res = [self.compute_nodeset_longitudinal_distance(key, dtype=dtype, **kwargs) for key in nodesets]
         # reduce metric and return pointer
         return self._reduce_metric_and_save(res, self.STATES.LONGITUDINAL_DISTANCE)
 

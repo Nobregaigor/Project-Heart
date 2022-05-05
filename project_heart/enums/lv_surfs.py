@@ -51,7 +51,10 @@ class LV_SURFS(IntEnum):
     # BASE BORDER
     BASE = 23
     BASE_BORDER = 23
-
+    
+    ENDO_EXCLUDE_BASE = 24
+    EPI_EXCLUDE_BASE = 25
+    
 
 class LV_MESH_DATA(Enum):
 
@@ -63,7 +66,8 @@ class LV_MESH_DATA(Enum):
     # 'guess' based on angle between surf normals and geo center
     EPI_ENDO_GUESS = "LV_EPI_ENDO_GUESS"
     EPI_ENDO = "LV_EPI_ENDO"  # final est. of epi and endo surfs
-
+    EPI_ENDO_EXCLUDE_BASE = "EPI_ENDO_EXCLUDE_BASE"
+    
     # aortic, mitral and intersection (no detailed info)
     AM_SURFS = "LV_AM_SURFS"
     # detailed aortic (endo, epi, border), mitral aortic (endo, epi, border), am_intercection (endo, epi) ...
