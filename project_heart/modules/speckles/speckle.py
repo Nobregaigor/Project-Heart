@@ -28,6 +28,7 @@ class Speckle():
                  elmask:np.ndarray=None,
                  ids:np.ndarray=None,
                  normal:np.ndarray=None,
+                 k_ids:np.ndarray=None,
                  ):
         
         # check for valid keys
@@ -46,6 +47,8 @@ class Speckle():
         elmask = elmask if elmask is not None else np.asarray([])
         ids = ids if ids is not None else np.asarray([])
         normal = normal if normal is not None else np.asarray([])       
+        k_ids = k_ids if k_ids is not None else np.asarray([])       
+        
         
         # reference keys
         self.subset = subset
@@ -64,12 +67,12 @@ class Speckle():
         self.mask = mask     
         self.elmask = elmask
         self.ids = ids
+        self.k_ids = k_ids  # spk cluster ids (array of ids arrays -> (k,n))
 
         # conversion to string (just to facilitate parts of the code).
         self.str = "{}_{}_{}_{}".format(
             self.subset, self.name, self.group, self.collection)
 
-        # self.get_center
 
     def __repr__(self):
         return "<Speckle: .subset: {}, .name: {}, .group: {}, .collection: {}, .t: {}>".format(
