@@ -564,7 +564,7 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     def compute_spk_longitudinal_length(self,
                                         spk,
-                                        method = "fast",
+                                        approach:str = "k_ids",
                                         mfilter_ws=0,
                                         sfilter_ws=0,
                                         sfilter_or=0,
@@ -577,10 +577,18 @@ class LVBaseMetricsComputations(LV_Speckles):
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
         # resolve computation method
-        if method == "fast":
-            fun = partial(compute_longitudinal_length, **kwargs)
-        elif method == "clusters":
+        if approach == "k_ids":
+            from project_heart.utils.spatial_utils import compute_length_from_predefined_cluster_list
+            fun = partial(compute_length_from_predefined_cluster_list, 
+                          clusters=spk.k_local_ids,
+                          assume_sorted=True,
+                          dtype=dtype,**kwargs)
+        elif approach == "kmeans":
+            from project_heart.utils.spatial_utils import compute_length_by_clustering
             fun = partial(compute_length_by_clustering, **kwargs)
+        elif approach == "grouping":
+            from project_heart.utils.spatial_utils import compute_longitudinal_length
+            fun = partial(compute_longitudinal_length, **kwargs)
         else:
             raise ValueError("Unknown method '{}'. options are: 'fast', 'clusters'.")
         # get nodal position for all timesteps for given spk
@@ -708,7 +716,7 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     # ---------- Geo metric
 
-    def compute_spk_circumferential_length(self, spk, method="fast",
+    def compute_spk_circumferential_length(self, spk, approach="k_ids",
                                            mfilter_ws=0,
                                            sfilter_ws=0,
                                            sfilter_or=0,
@@ -720,10 +728,18 @@ class LVBaseMetricsComputations(LV_Speckles):
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
         # resolve computation method
-        if method == "fast":
-            fun = partial(compute_circumferential_length, **kwargs)
-        elif method == "clusters":
+        if approach == "k_ids":
+            from project_heart.utils.spatial_utils import compute_length_from_predefined_cluster_list
+            fun = partial(compute_length_from_predefined_cluster_list, 
+                          clusters=spk.k_local_ids,
+                          assume_sorted=True,
+                          dtype=dtype,**kwargs)
+        elif approach == "kmeans":
+            from project_heart.utils.spatial_utils import compute_length_by_clustering
             fun = partial(compute_length_by_clustering, **kwargs)
+        elif approach == "grouping":
+            from project_heart.utils.spatial_utils import compute_circumferential_length
+            fun = partial(compute_circumferential_length, **kwargs)
         else:
             raise ValueError("Unknown method '{}'. options are: 'fast', 'clusters'.")
         # get nodal position for all timesteps for given spk

@@ -475,4 +475,33 @@ def compute_length_by_clustering(xyz, n_clusters=6, random_state=0, batch_size=5
     
     #compute length
     return line_sum(centers)
+
+def compute_length_from_predefined_cluster_list(xyz:np.ndarray, 
+                                            clusters:list=None, 
+                                            assume_sorted:bool=False,
+                                            use_centroid=False,
+                                            dtype=np.float64,
+                                            **kwargs) -> float:
+    assert clusters is not None, "clusters must be provided."
+    
+    # compute centers from list of clusters
+    if not use_centroid:
+        centers = [np.mean(xyz[kids], axis=0) for kids in clusters]
+    else:
+        centers = [centroid(xyz[kids]) for kids in clusters]
+    # transform list of centers to array
+    centers = np.asarray(centers, dtype=dtype)
+    # for optmization, we can assume list of clusters is sorted
+    if not assume_sorted:
+        # transform to spherical coordinates
+        rs = np.linalg.norm(centers, axis=1)
+        thetas = np.arccos(centers[:, 2]/rs)
+        phis = np.arctan2(centers[:, 1],centers[:, 0])
+
+        # sort by columns
+        ids = np.lexsort((phis, thetas,rs))
+        centers = centers[ids]
+    
+    #compute length
+    return line_sum(centers)
     

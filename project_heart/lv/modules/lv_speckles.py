@@ -195,9 +195,10 @@ class LV_Speckles(LV_RegionIdentifier):
             logger.debug("Adding single subset.")
             
             k_ids = None
+            non_empty_buckets_l = None
             if n_clusters > 0:
                 sub_pts = self.nodes()[valid_ids]
-                k_ids = self._subdivide_speckles(sub_pts, n_clusters, 
+                k_ids, non_empty_buckets_l = self._subdivide_speckles(sub_pts, n_clusters, 
                                                         cluster_criteria, 
                                                         normal, valid_ids,
                                                         spk_center,
@@ -214,7 +215,8 @@ class LV_Speckles(LV_RegionIdentifier):
                 ids=valid_ids,
                 normal=normal,
                 center=spk_center,
-                k_ids=k_ids
+                k_ids=k_ids,
+                k_local_ids=non_empty_buckets_l
             )
         else:
             logger.debug("pts: {}".format(len(pts)))
@@ -222,7 +224,7 @@ class LV_Speckles(LV_RegionIdentifier):
             logger.debug("Adding multiple subsets: {} -> {}"
                          .format(n_subsets, subsets_names))
             # apply speckle subdivision (smart clustering)
-            non_empty_buckets = self._subdivide_speckles(pts, n_subsets, 
+            non_empty_buckets, _ = self._subdivide_speckles(pts, n_subsets, 
                                                          subsets_criteria, 
                                                          normal, valid_ids,
                                                          spk_center,
@@ -232,10 +234,11 @@ class LV_Speckles(LV_RegionIdentifier):
                 logger.debug("Subname: {}".format(subname))
 
                 k_ids = None
+                non_empty_buckets_l = None
                 if n_clusters > 0:
                     logger.debug("pts: {}".format(len(pts)))
                     sub_pts = self.nodes()[sub_ids]
-                    k_ids = self._subdivide_speckles(sub_pts, 
+                    k_ids, non_empty_buckets_l= self._subdivide_speckles(sub_pts, 
                                                      n_clusters,
                                                      cluster_criteria, 
                                                      normal, sub_ids,
@@ -254,7 +257,8 @@ class LV_Speckles(LV_RegionIdentifier):
                     ids=sub_ids,
                     normal=normal,
                     center=spk_center,
-                    k_ids=k_ids
+                    k_ids=k_ids,
+                    k_local_ids=non_empty_buckets_l
                 )
 
         
@@ -281,7 +285,8 @@ class LV_Speckles(LV_RegionIdentifier):
                      .format(n_subsets, subsets_criteria))
         
         # create buckets        
-        buckets = deque([deque() for _ in range(n_subsets)])
+        buckets = deque([deque() for _ in range(n_subsets)])   # holds global ids (within valid_ids -> mesh)
+        buckets_l = deque([deque() for _ in range(n_subsets)]) # holds local ids (within spk)
         logger.debug("Number of buckets: {}.".format(len(buckets)))
         # selecte subdivition based on subsets_criteria
         if subsets_criteria == "z": # regular 'z' axis subdvision.
@@ -377,12 +382,16 @@ class LV_Speckles(LV_RegionIdentifier):
         # add ids to each bucket
         for i, pool_idx in enumerate(bins):
             buckets[pool_idx-1].append(valid_ids[i])
-
+            buckets_l[pool_idx-1].append(i)
+            
         # check for valid buckets (must not be empty)
         non_empty_buckets = deque()
+        non_empty_buckets_l = deque()
         for i, pool in enumerate(buckets):
             if len(pool) > 0:
                 non_empty_buckets.append(buckets[i])
+                non_empty_buckets_l.append(buckets_l[i])
+                
         logger.debug("Number of buckets found (non_empty_buckets): {}.".format(
             len(non_empty_buckets)))
         
@@ -394,7 +403,7 @@ class LV_Speckles(LV_RegionIdentifier):
                         "Expected: '{}', Found: '{}'"
                         .format(len(buckets), len(non_empty_buckets)))
         
-        return non_empty_buckets
+        return non_empty_buckets, non_empty_buckets_l
         
 
     def create_speckles_from_iterable(self, items):

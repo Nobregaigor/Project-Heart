@@ -28,7 +28,8 @@ class Speckle():
                  elmask:np.ndarray=None,
                  ids:np.ndarray=None,
                  normal:np.ndarray=None,
-                 k_ids:np.ndarray=None,
+                 k_ids:list=None,
+                 k_local_ids:list=None,
                  ):
         
         # check for valid keys
@@ -48,7 +49,7 @@ class Speckle():
         ids = ids if ids is not None else np.asarray([])
         normal = normal if normal is not None else np.asarray([])       
         k_ids = k_ids if k_ids is not None else np.asarray([])       
-        
+        k_local_ids = k_local_ids if k_local_ids is not None else np.asarray([])       
         
         # reference keys
         self.subset = subset
@@ -66,9 +67,10 @@ class Speckle():
         # geoemetry relationships
         self.mask = mask     
         self.elmask = elmask
-        self.ids = ids
+        self.ids = np.array(ids, dtype=np.int64)
         self.k_ids = k_ids  # spk cluster ids (array of ids arrays -> (k,n))
-
+        self.k_local_ids = k_local_ids  # spk cluster ids local (array of ids arrays -> (k,n))
+        
         # conversion to string (just to facilitate parts of the code).
         self.str = "{}_{}_{}_{}".format(
             self.subset, self.name, self.group, self.collection)
