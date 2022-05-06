@@ -42,10 +42,10 @@ class Speckle():
 
         # set default values
         center = center if center is not None else np.zeros(3)
-        mask = mask if mask is not None else []
-        elmask = elmask if elmask is not None else []
-        ids = ids if ids is not None else []
-        normal = normal if normal is not None else []       
+        mask = mask if mask is not None else np.asarray([])
+        elmask = elmask if elmask is not None else np.asarray([])
+        ids = ids if ids is not None else np.asarray([])
+        normal = normal if normal is not None else np.asarray([])       
         
         # reference keys
         self.subset = subset
