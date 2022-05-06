@@ -452,29 +452,29 @@ class LVBaseMetricsComputations(LV_Speckles):
         logger.debug("Computing speckle thickness for spks: '{}' and '{}"
                      .format(endo_spk, epi_spk))
         # check if radius were computed for ENDOCARDIUM
-        if not self.states.check_spk_key(endo_spk, self.STATES.RADIAL_LENGTH):
-            logger.debug("Metric 'RADIAL_LENGTH' not found for spk '{}'. Will try to compute.".format(endo_spk))
+        if not self.states.check_spk_key(endo_spk, self.STATES.RADIAL_DISTANCE):
+            logger.debug("Metric 'RADIAL_DISTANCE' not found for spk '{}'. Will try to compute.".format(endo_spk))
             try:
-                self.compute_radial_length(endo_spk, **kwargs)
+                self.compute_radial_distance(endo_spk, **kwargs)
             except:
                 raise RuntimeError(
                     "Unable to compute radius data for endo spk '{}'."
                     "Please, either verify required data or add"
-                    "state data for 'RADIAL_LENGTH' manually."
+                    "state data for 'RADIAL_DISTANCE' manually."
                     .format(endo_spk.str))
         # check if radius were computed for EPICARDIUM
-        if not self.states.check_spk_key(epi_spk, self.STATES.RADIAL_LENGTH):
-            logger.debug("Metric 'RADIAL_LENGTH' not found for spk '{}'. Will try to compute.".format(epi_spk))
+        if not self.states.check_spk_key(epi_spk, self.STATES.RADIAL_DISTANCE):
+            logger.debug("Metric 'RADIAL_DISTANCE' not found for spk '{}'. Will try to compute.".format(epi_spk))
             try:
-                self.compute_radial_length(epi_spk, **kwargs)
+                self.compute_radial_distance(epi_spk, **kwargs)
             except:
                 raise RuntimeError(
                     "Unable to compute radius data for epi spk '{}'."
                     "Please, either verify required data or add"
-                    "state data for 'RADIAL_LENGTH' manually."
+                    "state data for 'RADIAL_DISTANCE' manually."
                     .format(epi_spk.str))
-        r_endo = self.states.get_spk_data(endo_spk, self.STATES.RADIAL_LENGTH)
-        r_epi = self.states.get_spk_data(epi_spk, self.STATES.RADIAL_LENGTH)
+        r_endo = self.states.get_spk_data(endo_spk, self.STATES.RADIAL_DISTANCE)
+        r_epi = self.states.get_spk_data(epi_spk, self.STATES.RADIAL_DISTANCE)
         thickness = r_epi - r_endo
         logger.debug("-r_endo:\n'{}'\n-r_epi:\n'{}\n-thickness:\n'{}'\n".
                      format(r_endo, r_epi, thickness))
