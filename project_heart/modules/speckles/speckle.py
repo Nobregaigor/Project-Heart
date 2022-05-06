@@ -16,20 +16,21 @@ from project_heart.enums import SPK_SETS
 
 class Speckle():
     def __init__(self,
-                 subset=DEFAULT_SUBSET_KEY,
-                 name=DEFAULT_NAME_KEY,
-                 group=DEFAULT_GROUP_KEY,
-                 collection=DEFAULT_COLLECTION_KEY,
-                 t=DEFAULT_T_KEY,
-                 k=DEFAULT_REF_KEY,
-                 center=np.zeros(3),
-                 radius=0.0,
-                 mask=[],
-                 elmask=[],
-                 ids=[],
-                 normal=[],
+                 subset:str=DEFAULT_SUBSET_KEY,
+                 name:str=DEFAULT_NAME_KEY,
+                 group:str=DEFAULT_GROUP_KEY,
+                 collection:str=DEFAULT_COLLECTION_KEY,
+                 t:float=DEFAULT_T_KEY,
+                 k:float=DEFAULT_REF_KEY,
+                 center:np.ndarray=None,
+                 radius:float=0.0,
+                 mask:np.ndarray=None,
+                 elmask:np.ndarray=None,
+                 ids:np.ndarray=None,
+                 normal:np.ndarray=None,
                  ):
-
+        
+        # check for valid keys
         assert isinstance(subset, (str, int, float)), AssertionError(
             "Subset must by a string or integer or a float.")
         assert isinstance(name, (str, int, float)), AssertionError(
@@ -39,20 +40,32 @@ class Speckle():
         assert isinstance(collection, (str, int, float)), AssertionError(
             "Collection must by a string or integer or a float.")
 
+        # set default values
+        center = center if center is not None else np.zeros(3)
+        mask = mask if mask is not None else []
+        elmask = elmask if elmask is not None else []
+        ids = ids if ids is not None else []
+        normal = normal if normal is not None else []       
+        
+        # reference keys
         self.subset = subset
         self.name = name
         self.group = group
         self.collection = collection
-        self.k = k
-        self.t = t
-        self.center = center
-        self.radius = radius
-
-        self.mask = mask
+        
+        # reference metrics
+        self.k = k           # relative position (percentage) from apex to base at long. line
+        self.t = t           # timestep used to create speckle (right now we just use first ts)
+        self.center = center # original center based on k position at longitudinal line 
+        self.radius = radius # reference radius at moment of speckle creation
+        self.normal = normal # normal to speckle plane
+        
+        # geoemetry relationships
+        self.mask = mask     
         self.elmask = elmask
         self.ids = ids
-        self.normal = normal
 
+        # conversion to string (just to facilitate parts of the code).
         self.str = "{}_{}_{}_{}".format(
             self.subset, self.name, self.group, self.collection)
 
