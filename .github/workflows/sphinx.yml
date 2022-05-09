@@ -10,8 +10,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Install pandoc
-        run: |
-          sudo apt-get install --no-install-recommends pandoc
+        run: sudo apt-get install --no-install-recommends pandoc
     - name: Install Python package
         run: python3 -m pip install .
     - name: Install docs dependencies
