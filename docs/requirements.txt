@@ -4,6 +4,7 @@ pandoc
 nbsphinx
 ipython
 ipykernel
+ipywidgets==7.6.5
 pyvista==0.33.3
 vtk==9.1.0
 tetgen==0.6.0
@@ -14,6 +15,4 @@ scikit-learn==1.0.2
 scipy==1.8.0
 widgetsnbextension==3.5.2
 pythreejs==2.3.0
-rich==12.0.1
-python-dateutil==2.8.2
-ipywidgets==7.6.5
+pandas
