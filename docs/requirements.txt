@@ -1,6 +1,6 @@
 furo==2021.11.16
-Sphinx==4.5.0
-pandoc==2.2
-nbsphinx==0.8.8
-ipython==8.3.0
-ipykernel==6.13.0
+Sphinx
+pandoc
+nbsphinx
+ipython
+ipykernel
