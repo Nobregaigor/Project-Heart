@@ -17,7 +17,7 @@ jobs:
         python -m pip install -r docs/requirements.txt
     - name: Build HTML
       run: |
-        python -m sphinx-build -b html ./docs/source ./docs/build/html
+        python -m sphinx -W --keep-going --color docs/ _build/html/
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
