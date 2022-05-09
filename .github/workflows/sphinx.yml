@@ -8,14 +8,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install pandoc
-        run: |
-          sudo apt-get install --no-install-recommends pandoc
+        run: sudo apt-get install --no-install-recommends pandoc
     - name: Install Python package
-        run: |
-          python3 -m pip install .
+        run: python3 -m pip install .
     - name: Install docs dependencies
-        run: |
-          python3 -m pip install -r doc/requirements.txt
+        run: python3 -m pip install -r doc/requirements.txt
     - name: Build HTML
       uses: ammaraskar/sphinx-action@0.4
     - name: Upload artifacts
