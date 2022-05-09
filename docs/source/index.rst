@@ -10,7 +10,7 @@ Welcome to Project Heart's documentation!
    :maxdepth: 5
    :caption: Contents:
 
-   demos/tetrahedralize
+   demos/test
 
 
 
