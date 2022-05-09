@@ -22,34 +22,17 @@ jobs:
           python3 -m pip install .
       - name: Install docs dependencies
         run: |
-          python3 -m pip install -r doc/requirements.txt
+          python3 -m pip install -r docs/requirements.txt
       - name: Build HTML
-        run: |
-          python3 -m sphinx -W --keep-going --color doc/ _build/html/ -d _build/doctrees/ -b html
-      - name: Upload HTML
-        uses: actions/upload-artifact@v2
+        uses: ammaraskar/sphinx-action@0.4
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
         with:
-          name: HTML
-          path: _build/html/
-      - name: Build LaTeX sources
-        run: |
-          python3 -m sphinx -W --keep-going --color doc/ _build/latex/ -d _build/doctrees/ -b latex
-      - name: Run LaTeX
-        uses: dante-ev/latex-action@master
+          name: html-docs
+          path: docs/build/html/
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
         with:
-          working_directory: _build/latex
-          root_file: splines.tex
-      - name: Upload PDF
-        uses: actions/upload-artifact@v2
-        with:
-          name: PDF
-          path: _build/latex/splines.pdf
-      - name: Check links
-        run: |
-          python3 -m sphinx -W --keep-going --color doc/ _build/linkcheck/ -d _build/doctrees/ -b linkcheck
-      - name: Upload linkcheck results
-        uses: actions/upload-artifact@v2
-        if: ${{ success() || failure() }}
-        with:
-          name: linkcheck
-          path: _build/linkcheck/output.*
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/html
