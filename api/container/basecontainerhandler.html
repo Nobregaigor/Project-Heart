@@ -1,0 +1,811 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>BaseContainerHandler &#8212; Project Heart  documentation</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" href="../../_static/styles/sphinx-book-theme.css?digest=62ba249389abaaa9ffc34bf36a076bdc1d65ee18" type="text/css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?digest=f31d14ad54b65d19161ba51d4ffff3a77ae00456"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="LV" href="../left_ventricle.html" />
+    <link rel="prev" title="Container" href="../container.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+<!-- Checkboxes to toggle the left sidebar -->
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle navigation sidebar">
+<label class="overlay overlay-navbar" for="__navigation">
+    <div class="visually-hidden">Toggle navigation sidebar</div>
+</label>
+<!-- Checkboxes to toggle the in-page toc -->
+<input type="checkbox" class="sidebar-toggle" name="__page-toc" id="__page-toc" aria-label="Toggle in-page Table of Contents">
+<label class="overlay overlay-pagetoc" for="__page-toc">
+    <div class="visually-hidden">Toggle in-page Table of Contents</div>
+</label>
+<!-- Headers at the top -->
+<div class="announcement header-item noprint"></div>
+<div class="header header-item noprint"></div>
+
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<!-- Sidebar -->
+<div class="bd-sidebar noprint" id="site-navigation">
+    <div class="bd-sidebar__content">
+        <div class="bd-sidebar__top"><div class="navbar-brand-box">
+    <a class="navbar-brand text-wrap" href="../../index.html">
+      
+      
+      
+      <h1 class="site-logo" id="site-title">Project Heart  documentation</h1>
+      
+    </a>
+</div><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item active">
+        <p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Theory:
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../theory/geometrics/index.html">
+   LV Geometrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../theory/geometrics/radial_metrics.html">
+     Radial Distance and Radial Length
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../theory/clinical_metrics/index.html">
+   LV Clinical Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+  <label for="toctree-checkbox-2">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../theory/clinical_metrics/radial_shortening.html">
+     Radial Shortening
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../theory/clinical_metrics/radial_strain.html">
+     Radial Strain
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Demos:
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../demos/core/index.html">
+   Core Methods
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../demos/core/tetrahedralize.html">
+     Tetrahedralize
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../demos/lv/index.html">
+   LV Demos
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../demos/lv/test.html">
+     this is a test
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  API:
+ </span>
+</p>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="../container.html">
+   Container
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2 current active">
+    <a class="current reference internal" href="#">
+     BaseContainerHandler
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../left_ventricle.html">
+   LV
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../lv/left_ventricle.html">
+     LV
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../lv/lv_base.html">
+     LV_Base
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../lv/lv_fiber_estimator.html">
+     LV_FiberEstimator
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../lv/lv_region_identifier.html">
+     LV_RegionIdentifier
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../lv/lv_speckles.html">
+     LV_Speckles
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+    </div>
+</nav></div>
+        <div class="bd-sidebar__bottom">
+             <!-- To handle the deprecated key -->
+            
+            <div class="navbar_extra_footer">
+            Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
+            </div>
+            
+        </div>
+    </div>
+    <div id="rtd-footer-container"></div>
+</div>
+
+
+          
+
+
+          
+<!-- A tiny helper pixel to detect if we've scrolled -->
+<div class="sbt-scroll-pixel-helper"></div>
+<!-- Main content -->
+<div class="col py-0 content-container">
+    
+    <div class="header-article row sticky-top noprint">
+        
+
+
+
+<div class="col py-1 d-flex header-article-main">
+    <div class="header-article__left">
+        
+        <label for="__navigation"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="right"
+title="Toggle navigation"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-bars"></i>
+  </span>
+
+</label>
+
+        
+    </div>
+    <div class="header-article__right">
+<button onclick="toggleFullScreen()"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="bottom"
+title="Fullscreen mode"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+<div class="menu-dropdown menu-dropdown-download-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Download this page">
+      <i class="fas fa-download"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="../../_sources/api/container/basecontainerhandler.rst.txt"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Download source file"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="headerbtn__text-container">.rst</span>
+</a>
+
+      </li>
+      
+      <li>
+        
+<button onclick="printPdf(this)"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="left"
+title="Print to PDF"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="headerbtn__text-container">.pdf</span>
+</button>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+
+    </div>
+</div>
+
+<!-- Table of contents -->
+<div class="col-md-3 bd-toc show noprint">
+</div>
+    </div>
+    <div class="article row">
+        <div class="col pl-md-3 pl-lg-5 content-container">
+            <!-- Table of contents that is only displayed when printing the page -->
+            <div id="jb-print-docs-body" class="onlyprint">
+                <h1>BaseContainerHandler</h1>
+                <!-- Table of contents -->
+                <div id="print-main-content">
+                    <div id="jb-print-toc">
+                        
+                    </div>
+                </div>
+            </div>
+            <main id="main-content" role="main">
+                
+              <div>
+                
+  <section id="module-project_heart.modules.container.basecontainerhandler">
+<span id="basecontainerhandler"></span><h1>BaseContainerHandler<a class="headerlink" href="#module-project_heart.modules.container.basecontainerhandler" title="Permalink to this headline">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">project_heart.modules.container.basecontainerhandler.</span></span><span class="sig-name descname"><span class="pre">BaseContainerHandler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enums</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler" title="Permalink to this definition">#</a></dt>
+<dd><p>Data storage obj.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.add_discrete_set">
+<span class="sig-name descname"><span class="pre">add_discrete_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discrete_set:</span> <span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replace:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype:</span> <span class="pre">numpy.dtype</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.int64'&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.add_discrete_set" title="Permalink to this definition">#</a></dt>
+<dd><p>Adds a discrete set to the current object. Discreset sets, in this case, are defined as relationships            between nodes. It should be a np.ndarray of shape [nx2], in which n refers to the number of relations            in the set, and the columns represent node ids of two different set of nodes (relations will be defined            rowise).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>dict key acceptable</em>) – Key reference to discrete set.</p></li>
+<li><p><strong>discrete_set</strong> (<em>np.ndarray</em>) – Array of set relationships defined in rowise fashion                 (each row of col 0 will be related to each row in col 1). Must be of shape [nx2].</p></li>
+<li><p><strong>replace</strong> (<em>bool</em><em>, </em><em>optional</em>) – Flag that prevents overwrites. Defaults to False.</p></li>
+<li><p><strong>dtype</strong> (<em>np.dtype</em><em>, </em><em>optional</em>) – If discrete_set is not a np.ndarray, it will be converted                to one and dtype will be used to determine it’s type. Defaults to np.int64.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>KeyError</strong> – If replace is invalid and name is already present in self._discrete_sets’</p></li>
+<li><p><strong>ValueError</strong> – If discrete_set is not a np.ndarray and it could not be converted to one;                or if shape of array is not [nx2].</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.add_nodeset">
+<span class="sig-name descname"><span class="pre">add_nodeset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ids:</span> <span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype:</span> <span class="pre">numpy.dtype</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.int64'&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.add_nodeset" title="Permalink to this definition">#</a></dt>
+<dd><p>Adds a list of indexes as a nodeset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – nodeset name.</p></li>
+<li><p><strong>ids</strong> (<em>np.ndarray</em>) – list of indexes referencing the nodes of given nodeset.</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em><em>, </em><em>optional</em>) – _description_. Defaults to False.</p></li>
+<li><p><strong>dtype</strong> (<em>np.dtype</em><em>, </em><em>optional</em>) – _description_. Defaults to np.int64.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – if ids is not an ndarray</p></li>
+<li><p><strong>ValueError</strong> – if ids is not only composed of integers</p></li>
+<li><p><strong>ValueError</strong> – if max id is greater than number of nodes/points</p></li>
+<li><p><strong>KeyError</strong> – _description_</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.add_surface_oi">
+<span class="sig-name descname"><span class="pre">add_surface_oi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ids:</span> <span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype:</span> <span class="pre">numpy.dtype</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.int64'&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.add_surface_oi" title="Permalink to this definition">#</a></dt>
+<dd><p>Adds a surface of interest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – surface_oi name.</p></li>
+<li><p><strong>ids</strong> (<em>np.ndarray</em>) – list of indexes referencing the nodes of given surface_oi.</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em><em>, </em><em>optional</em>) – _description_. Defaults to False.</p></li>
+<li><p><strong>dtype</strong> (<em>np.dtype</em><em>, </em><em>optional</em>) – _description_. Defaults to np.int64.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – if ids is not an ndarray</p></li>
+<li><p><strong>ValueError</strong> – if ids is not only composed of integers</p></li>
+<li><p><strong>ValueError</strong> – if max id is greater than number of nodes/points</p></li>
+<li><p><strong>KeyError</strong> – _description_</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.cells">
+<span class="sig-name descname"><span class="pre">cells</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">project_heart.enums.vtk_elements.VTK_ELEMENTS</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_json_ready</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.cells" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a pointer to the dictionary of cells in the mesh.
+If key is provided, it returns the array of cells of given key.
+If key and mask are provided, it returns the specified range of cells of given key and mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>VTK_ELEMENTS</em><em>, </em><em>optional</em>) – int corresponding to VTK_ELEMENTS number (ex: 12-&gt; HEXAHEDRON). Defaults to None.</p></li>
+<li><p><strong>mask</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – An index or boolean mask. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dictionary containing {VTK_ELEMENTS: np.ndarray([]), …} pairs or a specified range of cells (ndarray (nxm)).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict or np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_hex8_mesh">
+<span class="sig-name descname"><span class="pre">check_hex8_mesh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_hex8_mesh" title="Permalink to this definition">#</a></dt>
+<dd><p>Checks if mesh is composed of pure simple hexahedrons (8 nodes).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_mesh_data">
+<span class="sig-name descname"><span class="pre">check_mesh_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_mesh_data" title="Permalink to this definition">#</a></dt>
+<dd><p>Check whether given mesh_data is in mesh or surface mesh</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mesh_data</strong> (<em>str</em>) – Mesh data name (or Enum corresponding to mesh data name).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(in_mesh, in_surf_mesh)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple (bool, bool)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_tet4_mesh">
+<span class="sig-name descname"><span class="pre">check_tet4_mesh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_tet4_mesh" title="Permalink to this definition">#</a></dt>
+<dd><p>Checks if mesh is composed of pure simple tetrahedrons (4 nodes).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_tri3_surfmesh">
+<span class="sig-name descname"><span class="pre">check_tri3_surfmesh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_tri3_surfmesh" title="Permalink to this definition">#</a></dt>
+<dd><p>Checks if surface mesh is composed of pure simple triangles (3 nodes).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_vtkElements_mesh">
+<span class="sig-name descname"><span class="pre">check_vtkElements_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vtk_elem_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_vtkElements_mesh" title="Permalink to this definition">#</a></dt>
+<dd><p>Checks if mesh is composed of pure ‘vtk_elem_value’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>vtk_elem_value</strong> (<em>int</em><em> or </em><em>Enum</em>) – Vtk element number representation.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_vtkElements_surfmesh">
+<span class="sig-name descname"><span class="pre">check_vtkElements_surfmesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vtk_elem_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.check_vtkElements_surfmesh" title="Permalink to this definition">#</a></dt>
+<dd><p>Checks if surface mesh is composed of pure ‘vtk_elem_value’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>vtk_elem_value</strong> (<em>int</em><em> or </em><em>Enum</em>) – Vtk element number representation.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.elements">
+<span class="sig-name descname"><span class="pre">elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">project_heart.enums.vtk_elements.VTK_ELEMENTS</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.elements" title="Permalink to this definition">#</a></dt>
+<dd><p>Alias of self.cells method.
+Returns a pointer to the dictionary of cells in the mesh.
+If key is provided, it returns the array of cells of given key.
+If key and mask are provided, it returns the specified range of cells of given key and mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>VTK_ELEMENTS</em><em>, </em><em>optional</em>) – int corresponding to VTK_ELEMENTS number (ex: 12-&gt; HEXAHEDRON). Defaults to None.</p></li>
+<li><p><strong>mask</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – An index or boolean mask. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dictionary containing {VTK_ELEMENTS: cells…} pairs or a specified range of cells (ndarray (nxm)).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict or np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.from_nodes_elements">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_nodes_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes:</span> <span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements:</span> <span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">el_offset:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_dtype:</span> <span class="pre">numpy.dtype</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_dtype:</span> <span class="pre">numpy.dtype</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.int64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.from_nodes_elements" title="Permalink to this definition">#</a></dt>
+<dd><dl class="simple">
+<dt>Creates a mesh dataset from pre-defined nodes and elements.</dt><dd><p>Note: as it creates mesh purely based on nodes and elements, any additional information will be ignored.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nodes</strong> (<em>np.ndarray</em>) – An array containing [x,y,z] coordinates (size should be nx3).</p></li>
+<li><p><strong>elements</strong> (<em>np.ndarray</em>) – A nested list of elements (expected as np.object array) indicating the node index of each element.</p></li>
+<li><p><strong>el_offset</strong> (<em>int</em>) – offset that indicates which element it should start counting from. Defaults to 0.</p></li>
+<li><p><strong>p_dtype</strong> (<em>np.type</em><em>, </em><em>optional</em>) – dtype of points. Defaults to np.float32.</p></li>
+<li><p><strong>e_dtype</strong> (<em>np.type</em><em>, </em><em>optional</em>) – dtype of elements. Defaults to np.int64.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">what</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">GEO_DATA.STATES</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.get" title="Permalink to this definition">#</a></dt>
+<dd><p>This method is convinient way to retrieve specified data from the BaseContainerHandler object.
+The argument ‘what’ must be specified, it determines the location in which the
+method will look for the data. The ‘mask’ argument can be used to retrieve only
+specified range; it can be boolean or index array. If data is to be retrieved from
+States, a key must be specified. The arguments ‘i’ and ‘t’ can be used to specify
+a given state timestep; ‘i’ determines the timestep index, while ‘t’ determines
+the timestep value (if t is not in timesteps, it will look for the closest valid timestep).</p>
+<p>Note: if ‘i’ and ‘t’ are specified, ‘i’ will be used and ‘t’ will be
+ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>what</strong> (<em>GEO_DATA</em><em>, </em><em>optional</em>) – A string inferreing to GEO_DATA (where to look for the data). Defaults to GEO_DATA.STATES.</p></li>
+<li><p><strong>key</strong> (<em>str</em><em>, </em><em>enum</em><em> or </em><em>list/tuple of keys</em><em>, </em><em>optional</em>) – Identifies the state data to be retrieved.                If list is provided, will try to vertically stack data. Defaults to None.</p></li>
+<li><p><strong>mask</strong> (<em>np.ndarray</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – A boolean or index array. Defaults to None.</p></li>
+<li><p><strong>i</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Timestep index. Defaults to None.</p></li>
+<li><p><strong>t</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Timestep value. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If ‘what’ is not int or GEO_DATA.</p></li>
+<li><p><strong>ValueError</strong> – If States is requested but ‘key’ is not specified (is None).</p></li>
+<li><p><strong>ValueError</strong> – If GEO_DATA is invalid.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Array of requested data.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.merge_mesh_and_surface_mesh">
+<span class="sig-name descname"><span class="pre">merge_mesh_and_surface_mesh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pyvista.core.pointset.UnstructuredGrid</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.merge_mesh_and_surface_mesh" title="Permalink to this definition">#</a></dt>
+<dd><p>Combines mesh and surface mesh into a single mesh dataset. This is often            required for some FEA solvers or other libraries (such as LDRB).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Merged mesh.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pv.UnstructuredGrid</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.nodes">
+<span class="sig-name descname"><span class="pre">nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.nodes" title="Permalink to this definition">#</a></dt>
+<dd><p>Alias of self.points method: returns a pointer to the list of points in the mesh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mask</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – An index or boolean mask. Defaults to None.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>pointer to array of points [[x,y,z]…] (nx3).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.points">
+<span class="sig-name descname"><span class="pre">points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.points" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a pointer to the list of points in the mesh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mask</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – An index or boolean mask. Defaults to None.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>pointer to array of points [[x,y,z]…] (nx3).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.prep_for_gmsh">
+<span class="sig-name descname"><span class="pre">prep_for_gmsh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cellregionIds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">pyvista.core.pointset.UnstructuredGrid</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pyvista.core.pointset.UnstructuredGrid</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.prep_for_gmsh" title="Permalink to this definition">#</a></dt>
+<dd><p>Prepares a given mesh for gmsh meshion export. Includes gmsh:physical            and gmsh:geometrical data with ‘cellregionIds’ data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cellregionIds</strong> (<em>np.ndarray</em>) – Integer list identifying regions.</p></li>
+<li><p><strong>mesh</strong> (<em>pv.UnstructuredGrid</em><em>, </em><em>optional</em>) – Mesh object to export. Defaults to None (uses self.mesh).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Mesh dataset with “gmsh:physical” and “gmsh:geometrical” in cell_data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pv.UnstructuredGrid</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.smooth_surface">
+<span class="sig-name descname"><span class="pre">smooth_surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.smooth_surface" title="Permalink to this definition">#</a></dt>
+<dd><p>Adjust point coordinates using Laplacian smoothing.</p>
+<p>Uses Pyvista smoothing method: <a class="reference external" href="https://bit.ly/37ee3hU">https://bit.ly/37ee3hU</a></p>
+<p>WARNING: This function applies smoothing at surface level</p>
+<p>by modifying their coordinates directly, which does not imply</p>
+<p>that cell volumes (if volumetric mesh) will be adjusted.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.states">
+<span class="sig-name descname"><span class="pre">states</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.states" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a pointer to the the states dictionary in self.States.
+Only use this method if you want to directly modify states information.
+Otherwise use ‘self.get’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>{DATA_FIELDS: np.ndarray[], …} pairs</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.tetrahedralize">
+<span class="sig-name descname"><span class="pre">tetrahedralize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">TETRA_BACKEND.TETGEN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_manifold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.tetrahedralize" title="Permalink to this definition">#</a></dt>
+<dd><p>DOC PENDING.</p>
+<p>This is a wrap method for the Wildmeshing library: <a class="reference external" href="https://wildmeshing.github.io/python/">https://wildmeshing.github.io/python/</a>        and the tetgen library <a class="reference external" href="https://tetgen.pyvista.org/">https://tetgen.pyvista.org/</a>.         Credits should be to the owners of the original libraries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>backend</strong> (<em>_type_</em><em>, </em><em>optional</em>) – _description_. Defaults to TETRA_BACKEND.TETGEN.</p></li>
+<li><p><strong>make_manifold</strong> (<em>bool</em><em>, </em><em>optional</em>) – _description_. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ImportError</strong> – _description_</p></li>
+<li><p><strong>ImportError</strong> – _description_</p></li>
+<li><p><strong>NotImplementedError</strong> – _description_</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.timesteps">
+<span class="sig-name descname"><span class="pre">timesteps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.timesteps" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a pointer to the timesteps array contained in self.States.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of timesteps [0.0, t1, t2 … t]</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.modules.container.basecontainerhandler.BaseContainerHandler.to_csv">
+<span class="sig-name descname"><span class="pre">to_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#project_heart.modules.container.basecontainerhandler.BaseContainerHandler.to_csv" title="Permalink to this definition">#</a></dt>
+<dd><p>Write states to csv file</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+            </main>
+            <footer class="footer-article noprint">
+                
+    <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="../container.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Container</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="../left_ventricle.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">LV</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+            </footer>
+        </div>
+    </div>
+    <div class="footer-content row">
+        <footer class="col footer"><p>
+  
+    By Igor A.P. Nobrega<br/>
+  
+      &copy; Copyright 2022, Igor A.P. Nobrega.<br/>
+</p>
+        </footer>
+    </div>
+    
+</div>
+
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+
+
+  </body>
+</html>

@@ -6,12 +6,29 @@
 Welcome to Project Heart's documentation!
 =========================================
 
+.. warning::
+   This module is still under development. Changes might occur!
+
+
+.. toctree::
+   :caption: Theory:
+
+   theory/geometrics/index
+   theory/clinical_metrics/index
+
 .. toctree::
    :maxdepth: 5
-   :caption: Contents:
+   :caption: Demos:
+   :glob:
 
-   demos/test
-   demos/tetrahedralize
+   demos/core/index
+   demos/lv/index
+
+.. toctree::
+   :caption: API:
+
+   api/container
+   api/left_ventricle
 
 
 

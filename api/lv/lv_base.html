@@ -1,0 +1,505 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>LV_Base &#8212; Project Heart  documentation</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" href="../../_static/styles/sphinx-book-theme.css?digest=62ba249389abaaa9ffc34bf36a076bdc1d65ee18" type="text/css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?digest=f31d14ad54b65d19161ba51d4ffff3a77ae00456"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="LV_FiberEstimator" href="lv_fiber_estimator.html" />
+    <link rel="prev" title="LV" href="left_ventricle.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+<!-- Checkboxes to toggle the left sidebar -->
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle navigation sidebar">
+<label class="overlay overlay-navbar" for="__navigation">
+    <div class="visually-hidden">Toggle navigation sidebar</div>
+</label>
+<!-- Checkboxes to toggle the in-page toc -->
+<input type="checkbox" class="sidebar-toggle" name="__page-toc" id="__page-toc" aria-label="Toggle in-page Table of Contents">
+<label class="overlay overlay-pagetoc" for="__page-toc">
+    <div class="visually-hidden">Toggle in-page Table of Contents</div>
+</label>
+<!-- Headers at the top -->
+<div class="announcement header-item noprint"></div>
+<div class="header header-item noprint"></div>
+
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<!-- Sidebar -->
+<div class="bd-sidebar noprint" id="site-navigation">
+    <div class="bd-sidebar__content">
+        <div class="bd-sidebar__top"><div class="navbar-brand-box">
+    <a class="navbar-brand text-wrap" href="../../index.html">
+      
+      
+      
+      <h1 class="site-logo" id="site-title">Project Heart  documentation</h1>
+      
+    </a>
+</div><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item active">
+        <p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Theory:
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../theory/geometrics/index.html">
+   LV Geometrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../theory/geometrics/radial_metrics.html">
+     Radial Distance and Radial Length
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../theory/clinical_metrics/index.html">
+   LV Clinical Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+  <label for="toctree-checkbox-2">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../theory/clinical_metrics/radial_shortening.html">
+     Radial Shortening
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../theory/clinical_metrics/radial_strain.html">
+     Radial Strain
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Demos:
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../demos/core/index.html">
+   Core Methods
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../demos/core/tetrahedralize.html">
+     Tetrahedralize
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../demos/lv/index.html">
+   LV Demos
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../demos/lv/test.html">
+     this is a test
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  API:
+ </span>
+</p>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../container.html">
+   Container
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../container/basecontainerhandler.html">
+     BaseContainerHandler
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="../left_ventricle.html">
+   LV
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2">
+    <a class="reference internal" href="left_ventricle.html">
+     LV
+    </a>
+   </li>
+   <li class="toctree-l2 current active">
+    <a class="current reference internal" href="#">
+     LV_Base
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="lv_fiber_estimator.html">
+     LV_FiberEstimator
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="lv_region_identifier.html">
+     LV_RegionIdentifier
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="lv_speckles.html">
+     LV_Speckles
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+    </div>
+</nav></div>
+        <div class="bd-sidebar__bottom">
+             <!-- To handle the deprecated key -->
+            
+            <div class="navbar_extra_footer">
+            Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
+            </div>
+            
+        </div>
+    </div>
+    <div id="rtd-footer-container"></div>
+</div>
+
+
+          
+
+
+          
+<!-- A tiny helper pixel to detect if we've scrolled -->
+<div class="sbt-scroll-pixel-helper"></div>
+<!-- Main content -->
+<div class="col py-0 content-container">
+    
+    <div class="header-article row sticky-top noprint">
+        
+
+
+
+<div class="col py-1 d-flex header-article-main">
+    <div class="header-article__left">
+        
+        <label for="__navigation"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="right"
+title="Toggle navigation"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-bars"></i>
+  </span>
+
+</label>
+
+        
+    </div>
+    <div class="header-article__right">
+<button onclick="toggleFullScreen()"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="bottom"
+title="Fullscreen mode"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+<div class="menu-dropdown menu-dropdown-download-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Download this page">
+      <i class="fas fa-download"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="../../_sources/api/lv/lv_base.rst.txt"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Download source file"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="headerbtn__text-container">.rst</span>
+</a>
+
+      </li>
+      
+      <li>
+        
+<button onclick="printPdf(this)"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="left"
+title="Print to PDF"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="headerbtn__text-container">.pdf</span>
+</button>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+
+    </div>
+</div>
+
+<!-- Table of contents -->
+<div class="col-md-3 bd-toc show noprint">
+</div>
+    </div>
+    <div class="article row">
+        <div class="col pl-md-3 pl-lg-5 content-container">
+            <!-- Table of contents that is only displayed when printing the page -->
+            <div id="jb-print-docs-body" class="onlyprint">
+                <h1>LV_Base</h1>
+                <!-- Table of contents -->
+                <div id="print-main-content">
+                    <div id="jb-print-toc">
+                        
+                    </div>
+                </div>
+            </div>
+            <main id="main-content" role="main">
+                
+              <div>
+                
+  <section id="module-project_heart.lv.modules.lv_base">
+<span id="lv-base"></span><h1>LV_Base<a class="headerlink" href="#module-project_heart.lv.modules.lv_base" title="Permalink to this headline">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="project_heart.lv.modules.lv_base.LV_Base">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">project_heart.lv.modules.lv_base.</span></span><span class="sig-name descname"><span class="pre">LV_Base</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enums</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#project_heart.lv.modules.lv_base.LV_Base" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="project_heart.lv.modules.lv_base.LV_Base.create_spring_rim_bc">
+<span class="sig-name descname"><span class="pre">create_spring_rim_bc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bc_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_from_c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.8</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#project_heart.lv.modules.lv_base.LV_Base.create_spring_rim_bc" title="Permalink to this definition">#</a></dt>
+<dd><p>Adds information for boundary condition at defined surface.             The current setup creates a ‘rim’ geometry at a distance from             the surface’s center and relates the ‘rim’ nodes with the surface             nodes based on closest distances. This setup is used to create             springs during FEA simulations as BCs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dist_from_c</strong> (<em>float</em><em>, </em><em>optional</em>) – Perpendicular distance determining                 the offset from surface’s center. Defaults to 10.0.</p></li>
+<li><p><strong>height</strong> (<em>float</em><em>, </em><em>optional</em>) – Height of the rim. Defaults to 2.</p></li>
+<li><p><strong>r_alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – Percentage of found surface’s radius.                 Will adjust the radius of the rim based on surface_r*r_alpha.                Defaults to 0.8.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Rim data. Keys are defined based on LV_RIM Enum.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.lv.modules.lv_base.LV_Base.est_centroid">
+<span class="sig-name descname"><span class="pre">est_centroid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#project_heart.lv.modules.lv_base.LV_Base.est_centroid" title="Permalink to this definition">#</a></dt>
+<dd><p>Estimates the centroid of the geometry based on surface mesh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>[x,y,z] coordinates of center</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.lv.modules.lv_base.LV_Base.set_aortic_info">
+<span class="sig-name descname"><span class="pre">set_aortic_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aortic_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">LV_SURFS.AORTIC</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">border_aortic_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">LV_SURFS.BORDER_AORTIC</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_virtual_nodes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#project_heart.lv.modules.lv_base.LV_Base.set_aortic_info" title="Permalink to this definition">#</a></dt>
+<dd><dl class="simple">
+<dt>Sets aortic information for other computations, such as boundary conditions.           Creates ‘aortic_info’ dictionary with radius, center, and mesh ids.           If border information is provided, it adds information for the border as well.</dt><dd><p>If ‘add_virtual_nodes’ is set to true, it will create virtual node information               based on respective centers.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>aortic_id</strong> (<em>int</em><em>, </em><em>str</em><em> or </em><em>Enum</em><em>, </em><em>optional</em>) – identification of aortic nodeset.                 Defaults to LV_SURFS.AORTIC.</p></li>
+<li><p><strong>border_aortic_id</strong> (<em>int</em><em>, </em><em>str</em><em> or </em><em>Enum</em><em>, </em><em>optional</em>) – identification of border aortic nodeset.                 Defaults to LV_SURFS.BORDER_AORTIC.</p></li>
+<li><p><strong>add_virtual_nodes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to create virtual node information.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.lv.modules.lv_base.LV_Base.set_base_info">
+<span class="sig-name descname"><span class="pre">set_base_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">LV_SURFS.BASE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_virtual_nodes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#project_heart.lv.modules.lv_base.LV_Base.set_base_info" title="Permalink to this definition">#</a></dt>
+<dd><p>Sets base information for other computations, such as boundary conditions.           Creates ‘base_info’ dictionary with radius, center, and mesh ids.            If ‘add_virtual_nodes’ is set to true, it will create virtual node information            at center.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_id</strong> (<em>int</em><em>, </em><em>str</em><em> or </em><em>Enum</em><em>, </em><em>optional</em>) – identification of base nodeset.                 Defaults to LV_SURFS.base.</p></li>
+<li><p><strong>add_virtual_nodes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to create virtual node information.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="project_heart.lv.modules.lv_base.LV_Base.set_mitral_info">
+<span class="sig-name descname"><span class="pre">set_mitral_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mitral_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">LV_SURFS.MITRAL</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">border_mitral_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">LV_SURFS.BORDER_MITRAL</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_virtual_nodes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#project_heart.lv.modules.lv_base.LV_Base.set_mitral_info" title="Permalink to this definition">#</a></dt>
+<dd><p>Sets mitral information for other computations, such as boundary conditions.           Creates ‘mitral_info’ dictionary with radius, center, and mesh ids.           if border information is provided, it adds information for the border as well.            If ‘add_virtual_nodes’ is set to true, it will create virtual node information            based on respective centers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mitral_id</strong> (<em>int</em><em>, </em><em>str</em><em> or </em><em>Enum</em><em>, </em><em>optional</em>) – identification of mitral nodeset.                 Defaults to LV_SURFS.MITRAL.</p></li>
+<li><p><strong>border_mitral_id</strong> (<em>int</em><em>, </em><em>str</em><em> or </em><em>Enum</em><em>, </em><em>optional</em>) – identification of border mitral nodeset.                 Defaults to LV_SURFS.BORDER_MITRAL.</p></li>
+<li><p><strong>add_virtual_nodes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to create virtual node information.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+            </main>
+            <footer class="footer-article noprint">
+                
+    <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="left_ventricle.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">LV</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="lv_fiber_estimator.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">LV_FiberEstimator</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+            </footer>
+        </div>
+    </div>
+    <div class="footer-content row">
+        <footer class="col footer"><p>
+  
+    By Igor A.P. Nobrega<br/>
+  
+      &copy; Copyright 2022, Igor A.P. Nobrega.<br/>
+</p>
+        </footer>
+    </div>
+    
+</div>
+
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+
+
+  </body>
+</html>
