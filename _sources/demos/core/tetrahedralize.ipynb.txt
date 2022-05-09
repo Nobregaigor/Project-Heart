@@ -27,7 +27,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "sample_file = Path(\"../sample_files/lvtetmesh.vtk\")"
+    "sample_file = Path(\"../sample_files/lvsample.stl\")"
    ]
   },
   {
@@ -54,7 +54,7 @@
    "outputs": [],
    "source": [
     "%%capture\n",
-    "lv.tetrahedralize(backend=TETRA_BACKEND.WILDMESHING, stop_quality=1000)"
+    "lv.tetrahedralize(backend=TETRA_BACKEND.WILDMESHING, stop_quality=1000);"
    ]
   },
   {
