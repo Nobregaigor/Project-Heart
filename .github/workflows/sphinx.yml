@@ -24,7 +24,8 @@ jobs:
         run: |
           python3 -m pip install -r docs/requirements.txt
       - name: Build HTML
-        uses: ammaraskar/sphinx-action@0.4
+        run: |
+          python3 -m sphinx -W --keep-going --color doc/ _build/html/ -d _build/doctrees/ -b html
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:
