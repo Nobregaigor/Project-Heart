@@ -11,6 +11,8 @@ Welcome to Project Heart's documentation!
    :caption: Contents:
 
    demos/test
+   demos/tetrahedralize
+
 
 
 
