@@ -2,6 +2,7 @@ furo==2021.11.16
 sphinx
 pandoc
 nbsphinx
+jupytext
 ipython
 ipykernel
 ipywidgets==7.6.5

@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Project Heart's documentation!
+Core Methods
 =========================================
 
 .. warning::
@@ -11,31 +11,10 @@ Welcome to Project Heart's documentation!
 
 
 .. toctree::
-   :caption: Theory:
-
-   theory/geometrics/index
-   theory/clinical_metrics/index
-
-.. toctree::
    :maxdepth: 5
    :caption: Demos:
    :glob:
 
-   demos/core/index
-   demos/lv/index
-
-.. toctree::
-   :caption: API:
-
-   api/container
-   api/left_ventricle
+   *
 
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

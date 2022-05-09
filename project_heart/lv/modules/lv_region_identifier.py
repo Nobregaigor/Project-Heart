@@ -75,11 +75,11 @@ class LV_RegionIdentifier(LV_Base):
         return surf_regions.astype(np.int64), apex_base_mesh.astype(np.int64)
 
     def identify_epi_endo_regions(self, threshold: float = 90.0, ref_point: np.ndarray = None) -> tuple:
-        """
-            Estimates Epicardium and Endocardium surfaces based on the angle between \
-                vectors from the reference point to each node and their respective\
-                surface normals. If ref_point is not provided, it will use the center \
-                of the geometry.
+        """Estimates Epicardium and Endocardium surfaces based on the angle between \
+            vectors from the reference point to each node and their respective\
+            surface normals. If ref_point is not provided, it will use the center \
+            of the geometry.
+            
         Args:
             threshold (float, optional): Angles less than threshold will be considered \
                 part of 'Endocardium' while others will be considered part of 'Epicardium'. \
