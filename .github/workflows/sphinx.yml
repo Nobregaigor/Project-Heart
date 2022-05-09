@@ -5,29 +5,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install pandoc
+      run: |
+        sudo apt-get install -y --no-install-recommends pandoc
     - name: Set up Python 3.9.7
       uses: actions/setup-python@v2
       with:
         python-version: 3.9.7
-    - name: Install dependencies
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        $CONDA/bin/conda env update --file environment.yml --name base
-    - name: Test with pytest
-      run: |
-        conda install pytest
-    - name: Install Python package
-      run: |
-        python3 -m pip install .
     - name: Install docs dependencies
       run: |
-        python3 -m pip install -r docs/requirements.txt
+        python -m pip install -r docs/requirements.txt
     - name: Build HTML
-      uses: ammaraskar/sphinx-action@0.4
-      with:
-        docs-folder: "docs/"
-        pre-build-command: "sudo apt-get install --no-install-recommends pandoc"
-        build-command: "sphinx-build -b html ./source ./build/html"
+      run: |
+        python -m sphinx-build -b html ./docs/source ./docs/build/html
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
