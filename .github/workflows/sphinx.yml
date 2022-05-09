@@ -13,10 +13,9 @@ jobs:
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         $CONDA/bin/conda env update --file environment.yml --name base
-        $CONDA/bin/conda install sphinx
-        $CONDA/bin/conda install pandoc
-        $CONDA/bin/conda install ipykernel
-        $CONDA/bin/conda install nbsphinx
+    - name: Test with pytest
+      run: |
+        conda install pytest
     - name: Install Python package
       run: |
         python3 -m pip install .
