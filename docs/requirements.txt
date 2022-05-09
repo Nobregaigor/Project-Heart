@@ -16,3 +16,4 @@ widgetsnbextension==3.5.2
 pythreejs==2.3.0
 rich==12.0.1
 python-dateutil==2.8.2
+ipywidgets==7.6.5
