@@ -18,26 +18,26 @@ jobs:
         $CONDA/bin/conda install -c conda-forge nbsphinx
         $CONDA/bin/conda install -c conda-forge ipykernel
     - name: Install Python package
-        run: |
-          python3 -m pip install .
-      - name: Install docs dependencies
-        run: |
-          python3 -m pip install -r docs/requirements.txt
-      - name: Build HTML
-        uses: ammaraskar/sphinx-action@0.4
-        with:
-          docs-folder: "docs/"
-          pre-build-command: "sudo apt-get install --no-install-recommends pandoc"
-          build-command: "sphinx-build -b html ./source ./build/html"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: html-docs
-          path: docs/build/html/
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/build/html
+      run: |
+        python3 -m pip install .
+    - name: Install docs dependencies
+      run: |
+        python3 -m pip install -r docs/requirements.txt
+    - name: Build HTML
+      uses: ammaraskar/sphinx-action@0.4
+      with:
+        docs-folder: "docs/"
+        pre-build-command: "sudo apt-get install --no-install-recommends pandoc"
+        build-command: "sphinx-build -b html ./source ./build/html"
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: html-docs
+        path: docs/build/html/
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs/build/html
   
