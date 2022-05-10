@@ -13,6 +13,7 @@ Welcome to Project Heart's documentation!
 .. toctree::
    :caption: Theory:
 
+   theory/basic_definitions/index
    theory/geometrics/index
    theory/clinical_metrics/index
 

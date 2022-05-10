@@ -36,7 +36,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Radial Distance and Radial Length" href="radial_metrics.html" />
-    <link rel="prev" title="Welcome to Project Heart’s documentation!" href="../../index.html" />
+    <link rel="prev" title="Types of geometries" href="../basic_definitions/types_of_geometries.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -89,12 +89,34 @@
  </span>
 </p>
 <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../basic_definitions/index.html">
+   LV Definitions, assumptions, and geometric types
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../basic_definitions/geo_references.html">
+     Basic Definitions (Apex, Base, Endocardium, Epicardium...)
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../basic_definitions/types_of_geometries.html">
+     Geometry Types
+    </a>
+   </li>
+  </ul>
+ </li>
  <li class="toctree-l1 current active has-children">
   <a class="current reference internal" href="#">
    LV Geometrical Metrics
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
-  <label for="toctree-checkbox-1">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+  <label for="toctree-checkbox-2">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -130,8 +152,8 @@
   <a class="reference internal" href="../clinical_metrics/index.html">
    LV Clinical Metrics
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
-  <label for="toctree-checkbox-2">
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -159,8 +181,8 @@
   <a class="reference internal" href="../../demos/core/index.html">
    Core Methods
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
-  <label for="toctree-checkbox-3">
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -176,8 +198,8 @@
   <a class="reference internal" href="../../demos/lv/index.html">
    LV Demos
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
-  <label for="toctree-checkbox-4">
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -200,8 +222,8 @@
   <a class="reference internal" href="../../api/container.html">
    Container
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -217,8 +239,8 @@
   <a class="reference internal" href="../../api/left_ventricle.html">
    LV
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-  <label for="toctree-checkbox-6">
+  <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+  <label for="toctree-checkbox-7">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -388,11 +410,6 @@ title="Print to PDF"
   </a>
   <ul class="nav section-nav flex-column">
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#basic-definitions">
-     Basic Definitions:
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#geometrical-metrics-geometrics">
      Geometrical Metrics (Geometrics):
     </a>
@@ -430,11 +447,6 @@ title="Print to PDF"
    Definitions for Left Ventricle Metrics
   </a>
   <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#basic-definitions">
-     Basic Definitions:
-    </a>
-   </li>
    <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#geometrical-metrics-geometrics">
      Geometrical Metrics (Geometrics):
@@ -495,13 +507,6 @@ proposed by the European Association of Echocardiography in 2015
 [<a class="reference external" href="https://core.ac.uk/reader/53744593?utm_source=linkout">1</a>]
 while also implementing different approaches that let’s the user
 decide how the final metrics are computed.</p>
-<section id="basic-definitions">
-<h3>Basic Definitions:<a class="headerlink" href="#basic-definitions" title="Permalink to this headline">#</a></h3>
-<ul class="simple">
-<li><p><strong>Longitudinal Line</strong>: Line formed between Apex and Base reference nodes.</p></li>
-<li><p><strong>Normal vector</strong>: Vector based on longitudinal line as “Apex” to “Base”</p></li>
-</ul>
-</section>
 <section id="geometrical-metrics-geometrics">
 <h3>Geometrical Metrics (Geometrics):<a class="headerlink" href="#geometrical-metrics-geometrics" title="Permalink to this headline">#</a></h3>
 <ul class="simple">
@@ -531,11 +536,11 @@ decide how the final metrics are computed.</p>
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="../../index.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="../basic_definitions/types_of_geometries.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Welcome to Project Heart’s documentation!</p>
+            <p class="prev-next-title">Types of geometries</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="radial_metrics.html" title="next page">

@@ -19,7 +19,7 @@ LV Geometrical Metrics
 
 ------------
 
-.. include:: ./basic_definitions.md
+.. include:: ./intro.md
    :parser: myst_parser.sphinx_
 
 

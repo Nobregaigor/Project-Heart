@@ -1,0 +1,175 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Types of geometries"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "nbsphinx": "hidden"
+   },
+   "outputs": [],
+   "source": [
+    "from pathlib import Path\n",
+    "from project_heart.lv import LV\n",
+    "from project_heart.utils import set_jupyter_backend\n",
+    "from project_heart.enums import *\n",
+    "\n",
+    "set_jupyter_backend(\"pythreejs\")\n",
+    "\n",
+    "sample_file_ideal = Path(\"../../_static/sample_files/ellipsoid.stl\")\n",
+    "lv_ideal = LV.from_file(sample_file_ideal) \n",
+    "\n",
+    "sample_file_typeA = Path(\"../../_static/sample_files/lvtet_typeA.stl\")\n",
+    "lv_typeA = LV.from_file(sample_file_typeA) \n",
+    "\n",
+    "sample_file_typeB = Path(\"../../_static/sample_files/lvtet_typeB.stl\")\n",
+    "lv_typeB = LV.from_file(sample_file_typeB) "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Ideal"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lv_ideal.identify_regions(geo_type=LV_GEO_TYPES.IDEAL,\n",
+    "                          apex_base_args=dict(ab_ql=0.05, ab_qh=0.97),\n",
+    "                          recompute_apex_base=True\n",
+    "                          )\n",
+    "lv_ideal.transform_region_to_facet_data(LV_MESH_DATA.SURFS, method=\"min\")\n",
+    "lv_ideal.plot(\"surface\", \n",
+    "        scalars=LV_MESH_DATA.SURFS,\n",
+    "        container=\"cells\",\n",
+    "        categorical=True,\n",
+    "        )"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lv_ideal.plot_longitudinal_line()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Type A"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lv_typeA.identify_regions(LV_GEO_TYPES.TYPE_A,\n",
+    "    apex_base_args=dict(ab_ql=0.15, ab_qh=0.97),\n",
+    "    endo_epi_args={\"threshold\":80},\n",
+    "    recompute_apex_base=dict(ql=0.001, qh=0.90))\n",
+    "lv_typeA.transform_region_to_facet_data(LV_MESH_DATA.SURFS)\n",
+    "lv_typeA.plot(\"surface\", \n",
+    "        scalars=LV_MESH_DATA.SURFS,\n",
+    "        container=\"cells\",\n",
+    "        categorical=True,\n",
+    "        )"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lv_typeA.plot_longitudinal_line()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Type B"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lv_typeB.identify_regions(LV_GEO_TYPES.TYPE_B,\n",
+    "  apex_base_args=dict(ab_ql=0.04, ab_qh=0.69),\n",
+    "  endo_epi_args=dict(threshold=90.0),\n",
+    "  aortic_mitral_args=dict(a1=0.4,\n",
+    "                          a2=0.5,\n",
+    "                          a3=0.3,\n",
+    "                          a4=75,\n",
+    "                          a5=130,\n",
+    "                          \n",
+    "                          m1=0.17,\n",
+    "                          m2=0.02,\n",
+    "                          m3=0.07,\n",
+    "                          m4=0.333\n",
+    "                          ),\n",
+    "  recompute_apex_base=False # Bug found on this method, working on fix.\n",
+    ")\n",
+    "lv_typeB.transform_region_to_facet_data(LV_MESH_DATA.SURFS, method='median')\n",
+    "lv_typeB.plot(\"surface\", \n",
+    "          scalars=LV_MESH_DATA.SURFS,\n",
+    "          container=\"cells\",\n",
+    "          categorical=True\n",
+    "        )"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lv_typeB.plot_longitudinal_line()"
+   ]
+  }
+ ],
+ "metadata": {
+  "interpreter": {
+   "hash": "a4b270fe5129ef310552b5197d637a230d47119f1e46f0b92ff32b1c5f5c5425"
+  },
+  "kernelspec": {
+   "display_name": "Python 3.9.7 ('project_heart')",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.7"
+  },
+  "orig_nbformat": 4
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
