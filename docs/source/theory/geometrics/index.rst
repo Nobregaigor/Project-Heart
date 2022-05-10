@@ -3,15 +3,28 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-LV Geometrics
+LV Geometrical Metrics
 =========================================
 
 .. warning::
    This module is still under development. Changes might occur!
 
 .. toctree::
-   :caption: LV Geometrics:
 
    Radial Distance and Radial Length <radial_metrics>
+   Wall Thickness <wall_thickness>
+   Longitudinal Distance <longitudinal_distance>
+   Longitudianl Length <longitudinal_length>
+   Circumferential Length <circumferential_length>
+
+------------
+
+.. include:: ./basic_definitions.md
+   :parser: myst_parser.sphinx_
+
+
+
+
+
 
 

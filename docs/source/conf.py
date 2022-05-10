@@ -29,17 +29,24 @@ author = 'Igor A.P. Nobrega'
 # ones.
 extensions = [
     'nbsphinx',
+    'myst_parser',
     'sphinx.ext.autodoc', 
     'sphinx.ext.coverage', 
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
 ]
 
 # You only need to install the jupytext package and add a configuration 
 # setting to conf.py, which can be used to select one of several Markdown 
 # flavors supported by jupytext (here we are using R Markdown):
     
-nbsphinx_custom_formats = {
-    '.md': ['jupytext.reads', {'fmt': 'Rmd'}],
+# nbsphinx_custom_formats = {
+#     '.md': ['jupytext.reads', {'fmt': 'Rmd'}],
+# }
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
 }
 
 # Add any paths that contain templates here, relative to this directory.
