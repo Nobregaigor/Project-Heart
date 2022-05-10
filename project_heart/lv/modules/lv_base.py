@@ -66,8 +66,15 @@ class LV_Base(BaseContainerHandler):
     @staticmethod
     def est_apex_ref(points, ql=0.05, **kwargs):
         zvalues = points[:, 2]
-        thresh = np.quantile(zvalues, ql)
+        zmin = np.min(zvalues)
+        if zmin > 0:
+            thresh = zmin*(1+ql)
+            # apex_region_idxs = np.where(zvalues <= thresh)[0]
+        else:
+            thresh = zmin*(1-ql)
         apex_region_idxs = np.where(zvalues <= thresh)[0]
+        # thresh = np.quantile(zvalues, ql)
+        # apex_region_idxs = np.where(zvalues <= thresh)[0]
         apex_region_pts = points[apex_region_idxs]
         # return np.mean(apex_region_pts, 0), apex_region_idxs
         return centroid(apex_region_pts), apex_region_idxs
@@ -76,11 +83,15 @@ class LV_Base(BaseContainerHandler):
     @staticmethod
     def est_base_ref(points, qh=0.95, **kwargs):
         zvalues = points[:, 2]
-        thresh = np.quantile(zvalues, qh)
-        base_region_idxs = np.where(zvalues >= thresh)[0]
+        zmax = np.max(zvalues)
+        thresh = qh*zmax
+        if zmax > 0:
+            base_region_idxs = np.where(zvalues >= thresh)[0]
+        else:
+            base_region_idxs = np.where(zvalues <= thresh)[0]
+        # thresh = np.quantile(zvalues, qh)
+        # base_region_idxs = np.where(zvalues >= thresh)[0]
         base_region_pts = points[base_region_idxs]
-        # base_ref = np.mean(base_region_pts, 0)
-        # return base_ref, base_region_idxs
         return centroid(base_region_pts), base_region_idxs
 
     @staticmethod

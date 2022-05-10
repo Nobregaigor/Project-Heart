@@ -404,6 +404,59 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                     raise ValueError("info '{}' not found. "
                     "Options are: {}".format(key, list(info.keys())))
     
+    def plot_longitudinal_line(self, re=False, plot_kwargs=None, window_size=None,**kwargs):
+        if window_size is None:
+            window_size = (600,400)
+        # set plot_kwargs as empty dict if not specified
+        if plot_kwargs is None:
+            plot_kwargs = dict()
+        # set default plot args
+        d_plotkwargs = dict(
+            
+                style='wireframe', 
+                color="gray", 
+                opacity=0.6,
+                vnodes=[
+                    (
+                        self.VIRTUAL_NODES.BASE, 
+                        {
+                            "color": "red",
+                            "point_size": 600.0,
+                        }
+                    ),
+                    (
+                        self.VIRTUAL_NODES.APEX, 
+                        {
+                            "color": "orange",
+                            "point_size": 600.0,
+                        }
+                    ),
+                    ],
+                window_size=window_size
+            )
+        d_plotkwargs.update(plot_kwargs)
+        # plot mesh and virtual nodes
+        plotter = self.plot(re=True, **d_plotkwargs)
+        # create long line for plot
+        from project_heart.utils import lines_from_points
+        apex = self.get_virtual_node(self.VIRTUAL_NODES.APEX)
+        base = self.get_virtual_node(self.VIRTUAL_NODES.BASE)
+        line = lines_from_points((apex, base))
+        # set default args for long line and update if user provided
+        # new args.
+        d_kwargs = dict(color="cyan")
+        d_kwargs.update(kwargs)
+        # add line mesh
+        plotter.add_mesh(line, **d_kwargs)
+        # if requested, return plotter
+        if re:
+            return plotter
+        # if not requested, show plot
+        else:
+            plotter.show(window_size=window_size)
+        
+        
+    
     # ===============================
     # exports to FEA solvers
     # ===============================   
@@ -545,3 +598,5 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         logger.debug("Writing file...")
         feb.write(filepath)
         logger.debug("File written successfully.")
+    
+    

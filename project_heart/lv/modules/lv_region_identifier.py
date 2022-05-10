@@ -242,7 +242,7 @@ class LV_RegionIdentifier(LV_Base):
         center_pts = pts[ioi]
         est_base = centroid(center_pts)
         est_radius = radius(center_pts)
-        self.add_virtual_node(LV_VIRTUAL_NODES.MITRAL, est_base)
+        self.add_virtual_node(LV_VIRTUAL_NODES.MITRAL, est_base, replace=True)
 
         # identify final surfaces
         endo_epi_base = np.copy(endo_epi)
@@ -690,6 +690,7 @@ class LV_RegionIdentifier(LV_Base):
                          create_nodesets=True,
                          set_infos=True,
                          set_normal=False,  # recomputes normal based on newly found base virtual node
+                         recompute_apex_base=True
                          ):
 
         if geo_type is None:
@@ -749,6 +750,17 @@ class LV_RegionIdentifier(LV_Base):
                     mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=False)
                 self.create_nodesets_from_regions(
                     mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=False)
+                
+                # create 'base' nodeset from AM data
+                from functools import reduce
+                base = reduce(np.union1d, 
+                                    (
+                                        self.get_nodeset(self.REGIONS.AORTIC),
+                                        self.get_nodeset(self.REGIONS.MITRAL),
+                                        self.get_nodeset(self.REGIONS.AM_INTERCECTION)
+                                    )
+                                )
+                self.add_nodeset(self.REGIONS.BASE, base, True)
             # if set_infos: -> these are already created from '_identify_typeB_regions'
             #     self.set_aortic_info(LV_SURFS.AORTIC)
             #     self.set_mitral_info(LV_SURFS.MITRAL)
@@ -756,8 +768,18 @@ class LV_RegionIdentifier(LV_Base):
             raise ValueError(
                 "Invalid geo type: %s. Check LV_GEO_TYPES enums for valid types." % geo_type)
 
+        # ----
         # apply functions for all geo types
+        # creatre nodeset for epi and endo without base ids
         self.set_epi_endo_exclude_base_nodeset()
+        # recompute apex and base based on 'ENDO' or provided 'recompute_apex_base' args
+        if recompute_apex_base is not None:
+            if isinstance(recompute_apex_base, dict):
+                self.set_apex_and_base_from_nodeset(**recompute_apex_base)
+            elif isinstance(recompute_apex_base, bool) and recompute_apex_base == True:
+                self.set_apex_and_base_from_nodeset(
+                    self.REGIONS.ENDO, ql=0.001, qh=0.95)
+        
     # =========================================================================
     # FACET DATA REGION TRANSFORMATION
 
@@ -877,6 +899,39 @@ class LV_RegionIdentifier(LV_Base):
 
     # ----------------------------------------------------------------
     # Others
+    
+    def set_apex_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
+        if nodeset is None:
+            nodeset = self.REGIONS.ENDO
+        pts=self.points(mask=self.get_nodeset(nodeset))
+        (_, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+        self.add_virtual_node(LV_VIRTUAL_NODES.APEX, es_apex, replace=True)
+        self.compute_normal() # update normal
+        self.compute_long_line() # update long line
+        return self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
+    
+    def set_base_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
+        if nodeset is None:
+            nodeset = self.REGIONS.ENDO
+        pts=self.points(mask=self.get_nodeset(nodeset))
+        (es_base, _) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+        self.add_virtual_node(LV_VIRTUAL_NODES.BASE, es_base, replace=True)
+        self.compute_normal() # update normal
+        self.compute_long_line() # update long line
+        return self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
+    
+    def set_apex_and_base_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
+        if nodeset is None:
+            nodeset = self.REGIONS.ENDO
+        pts=self.points(mask=self.get_nodeset(nodeset))
+        (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+        self.add_virtual_node(LV_VIRTUAL_NODES.APEX, es_apex, replace=True)
+        self.add_virtual_node(LV_VIRTUAL_NODES.BASE, es_base, replace=True)
+        self.compute_normal() # update normal
+        self.compute_long_line() # update long line
+        return (self.get_virtual_node(LV_VIRTUAL_NODES.APEX), 
+                self.get_virtual_node(LV_VIRTUAL_NODES.BASE))
+        
 
     # overwrite class compute normal to include identify_base_and_apex_regions
     def compute_normal(self, **kwargs):

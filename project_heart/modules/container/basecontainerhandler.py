@@ -1336,8 +1336,11 @@ class BaseContainerHandler():
              categorical=False,
              pretty=True,
              background_color='w',
+             window_size=None,
              **kwargs):
-
+        
+        if window_size is None:
+            window_size = (600,400)
         # set plotter
         plotter = pv.Plotter(lighting='three lights')
         plotter.background_color = background_color
@@ -1398,12 +1401,6 @@ class BaseContainerHandler():
                 
                 vals = new_vals
 
-                # if container == "points":
-                #     mesh.point_data["CATEGORICAL_FOR_PLOT"] = vals
-                # elif container == "cells":
-                #     mesh.cell_data["CATEGORICAL_FOR_PLOT"] = vals
-
-                # scalars = "CATEGORICAL_FOR_PLOT"
 
         # add mesh
         if scalars is not None:
@@ -1414,23 +1411,25 @@ class BaseContainerHandler():
         # add mesh
         if len(vnodes) > 0:
             for i, vn in enumerate(vnodes):
+                ptkwargs = dict(point_size=350, 
+                                   render_points_as_spheres=True)
                 if isinstance(vn, str) or isinstance(vn, Enum):
                     vname = vn
-                    cvcolor = vcolor
+                    ptkwargs.update({"color": vcolor})
                 elif isinstance(vn, tuple) or isinstance(vn, list):
                     vname = vn[0]
-                    cvcolor = vn[1]
+                    ptkwargs.update(vn[1])
                 else:
                     raise ValueError("Invalid virtual node type information to plot. \
                         Must be '(either str or Enum)' or '(tuple or list)'.")
                 node = self.get_virtual_node(vname)
-                plotter.add_points(node, color=cvcolor,
-                                   point_size=350, render_points_as_spheres=True)
+                                
+                plotter.add_points(node, **ptkwargs)
 
         if re:
             return plotter
         else:
-            plotter.show()
+            plotter.show(window_size=window_size)
 
     def plot_streamlines(self,
                          vectors: str,
