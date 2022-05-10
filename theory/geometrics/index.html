@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>LV Geometrics &#8212; Project Heart  documentation</title>
+    <title>LV Geometrical Metrics &#8212; Project Heart  documentation</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -35,7 +35,7 @@
     <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="This is a test" href="radial_metrics.html" />
+    <link rel="next" title="Radial Distance and Radial Length" href="radial_metrics.html" />
     <link rel="prev" title="Welcome to Project Heart’s documentation!" href="../../index.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -91,7 +91,7 @@
 <ul class="current nav bd-sidenav">
  <li class="toctree-l1 current active has-children">
   <a class="current reference internal" href="#">
-   LV Geometrics
+   LV Geometrical Metrics
   </a>
   <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
   <label for="toctree-checkbox-1">
@@ -102,6 +102,26 @@
    <li class="toctree-l2">
     <a class="reference internal" href="radial_metrics.html">
      Radial Distance and Radial Length
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="wall_thickness.html">
+     Wall Thickness
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="longitudinal_distance.html">
+     Longitudinal Distance
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="longitudinal_length.html">
+     Longitudianl Length
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="circumferential_length.html">
+     Circumferential Length
     </a>
    </li>
   </ul>
@@ -340,23 +360,98 @@ title="Print to PDF"
     </ul>
   </div>
 </div>
+<label for="__page-toc"
+  class="headerbtn headerbtn-page-toc"
+  
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-list"></i>
+  </span>
+
+</label>
 
     </div>
 </div>
 
 <!-- Table of contents -->
 <div class="col-md-3 bd-toc show noprint">
+    <div class="tocsection onthispage pt-5 pb-3">
+        <i class="fas fa-list"></i> Contents
+    </div>
+    <nav id="bd-toc-nav" aria-label="Page">
+        <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#definitions-for-left-ventricle-metrics">
+   Definitions for Left Ventricle Metrics
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#basic-definitions">
+     Basic Definitions:
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#geometrical-metrics-geometrics">
+     Geometrical Metrics (Geometrics):
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#references">
+       References
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+    </nav>
 </div>
     </div>
     <div class="article row">
         <div class="col pl-md-3 pl-lg-5 content-container">
             <!-- Table of contents that is only displayed when printing the page -->
             <div id="jb-print-docs-body" class="onlyprint">
-                <h1>LV Geometrics</h1>
+                <h1>LV Geometrical Metrics</h1>
                 <!-- Table of contents -->
                 <div id="print-main-content">
                     <div id="jb-print-toc">
                         
+                        <div>
+                            <h2> Contents </h2>
+                        </div>
+                        <nav aria-label="Page">
+                            <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#definitions-for-left-ventricle-metrics">
+   Definitions for Left Ventricle Metrics
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#basic-definitions">
+     Basic Definitions:
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#geometrical-metrics-geometrics">
+     Geometrical Metrics (Geometrics):
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#references">
+       References
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -364,22 +459,68 @@ title="Print to PDF"
                 
               <div>
                 
-  <section id="lv-geometrics">
-<h1>LV Geometrics<a class="headerlink" href="#lv-geometrics" title="Permalink to this headline">#</a></h1>
+  <section id="lv-geometrical-metrics">
+<h1>LV Geometrical Metrics<a class="headerlink" href="#lv-geometrical-metrics" title="Permalink to this headline">#</a></h1>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>This module is still under development. Changes might occur!</p>
 </div>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">LV Geometrics:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="radial_metrics.html">Radial Distance and Radial Length</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="radial_metrics.html#Radial-Distance">Radial Distance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="radial_metrics.html#radial-distance-1">Radial Distance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="radial_metrics.html#radial-distance">Radial Distance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="radial_metrics.html#radial-length">Radial Length</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="wall_thickness.html">Wall Thickness</a></li>
+<li class="toctree-l1"><a class="reference internal" href="longitudinal_distance.html">Longitudinal Distance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="longitudinal_length.html">Longitudianl Length</a></li>
+<li class="toctree-l1"><a class="reference internal" href="circumferential_length.html">Circumferential Length</a></li>
 </ul>
 </div>
+<hr class="docutils" />
+<section id="definitions-for-left-ventricle-metrics">
+<h2>Definitions for Left Ventricle Metrics<a class="headerlink" href="#definitions-for-left-ventricle-metrics" title="Permalink to this headline">#</a></h2>
+<p>Recognizing the different definitions and usage of echocardiographic
+quantification of the left ventricle, this section aims to provide
+information about basic definitions and assumptions used in this
+project.
+Our implementation considers the usage of high-quality meshes, with
+minimal noise and high-fidelity geometry, allowing for high-precision
+computations, rather than simplified assumptions used in the literature.
+Is important to understand that, currently, there is no
+consensus regading 3D speckle tracking. Consequently, we have
+decided to follow some standard practices for 2D speckle tracking
+proposed by the European Association of Echocardiography in 2015
+[<a class="reference external" href="https://core.ac.uk/reader/53744593?utm_source=linkout">1</a>]
+while also implementing different approaches that let’s the user
+decide how the final metrics are computed.</p>
+<section id="basic-definitions">
+<h3>Basic Definitions:<a class="headerlink" href="#basic-definitions" title="Permalink to this headline">#</a></h3>
+<ul class="simple">
+<li><p><strong>Longitudinal Line</strong>: Line formed between Apex and Base reference nodes.</p></li>
+<li><p><strong>Normal vector</strong>: Vector based on longitudinal line as “Apex” to “Base”</p></li>
+</ul>
+</section>
+<section id="geometrical-metrics-geometrics">
+<h3>Geometrical Metrics (Geometrics):<a class="headerlink" href="#geometrical-metrics-geometrics" title="Permalink to this headline">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="radial_metrics.html"><span class="doc std std-doc"><strong>Radial distance</strong></span></a>: Perpendicular distance from Endo/Epi surfaces to normal vector.</p></li>
+<li><p><a class="reference internal" href="radial_metrics.html"><span class="doc std std-doc"><strong>Radial length</strong></span></a>: Magnitude of vector from Endo/Epi surface to a specified center located at ‘k’ height on longitudinal line. The ‘k’ height is based on a percentage from Apex to Base representing the corresponding speckle height at longitudinal line.</p></li>
+<li><p><a class="reference internal" href="wall_thickness.html"><span class="doc std std-doc"><strong>Wall thickness</strong></span></a>: Distance between Epicardium and Endocardium surfaces (can be computed based on radial distance or radia length).</p></li>
+<li><p><a class="reference internal" href="longitudinal_distance.html"><span class="doc std std-doc"><strong>Longitudinal distance</strong></span></a>: Euclidean distance between Apex and Base reference nodes.</p></li>
+<li><p><a class="reference internal" href="longitudinal_length.html"><span class="doc std std-doc"><strong>Longitudinal length</strong></span></a>: Curvature length of Endo/Epi surfaces along longitudinal axis.</p></li>
+<li><p><a class="reference internal" href="circumferential_length.html"><span class="doc std std-doc"><strong>Circumferential length</strong></span></a>: Curvature length of Endo/Epi surfaces along circumferential axis.</p></li>
+</ul>
+<hr class="docutils" />
+<section id="references">
+<h4>References<a class="headerlink" href="#references" title="Permalink to this headline">#</a></h4>
+<ul class="simple">
+<li><p>[1] <a class="reference external" href="https://core.ac.uk/reader/53744593?utm_source=linkout">Definitions for a common standard for 2D speckletracking echocardiography: consensus documentof the EACVI/ASE/Industry Task Force tostandardize deformation imaging</a></p></li>
+</ul>
+</section>
+</section>
+</section>
 </section>
 
 
@@ -400,7 +541,7 @@ title="Print to PDF"
     <a class='right-next' id="next-link" href="radial_metrics.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">This is a test</p>
+        <p class="prev-next-title">Radial Distance and Radial Length</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
