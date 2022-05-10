@@ -17,9 +17,4 @@ for the identification of left ventricle features.
 - [**Type B**](./types_of_geometries.ipynb): Geometry created based on patien-specific data with two openings: Mitral and Aortic valves.
 
 
-____
-### References
-
-- [1] [Definitions for a common standard for 2D speckletracking echocardiography: consensus documentof the EACVI/ASE/Industry Task Force tostandardize deformation imaging](https://core.ac.uk/reader/53744593?utm_source=linkout)
-
 
