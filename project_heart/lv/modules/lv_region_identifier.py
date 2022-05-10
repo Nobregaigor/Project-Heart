@@ -713,7 +713,7 @@ class LV_RegionIdentifier(LV_Base):
                 self.create_nodesets_from_regions(
                     mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
                 self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=True)
             if set_infos:
                 self.set_base_info(LV_SURFS.BASE)
             if set_normal:
@@ -728,7 +728,7 @@ class LV_RegionIdentifier(LV_Base):
                 self.create_nodesets_from_regions(
                     mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
                 self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=True)
             if set_infos:
                 self.set_base_info(LV_SURFS.BASE)
             if set_normal:
@@ -749,7 +749,7 @@ class LV_RegionIdentifier(LV_Base):
                 self.create_nodesets_from_regions(
                     mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=False)
                 self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=False)
+                    mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=True)
                 
                 # create 'base' nodeset from AM data
                 from functools import reduce
