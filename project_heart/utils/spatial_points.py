@@ -84,7 +84,7 @@ def create_rim_circunference(
     return rim, center, elements
 
 
-def lines_from_points(points: np.ndarray) -> pv.PolyData:
+def lines_from_points(points: np.ndarray, dtype:np.dtype= np.float64) -> pv.PolyData:
     """Given an array of points as [[x1,y1,z1], [x2,y2,z2], ...], make a line set.
 
     Args:
@@ -94,6 +94,10 @@ def lines_from_points(points: np.ndarray) -> pv.PolyData:
         pv.PolyData: Pyvista PolyData dataset.
     """
     poly = pv.PolyData()
+    if not isinstance(points, np.ndarray):
+        points = np.array(points, dtype=dtype)
+    else:
+        points=points.astype(dtype)
     poly.points = points
     cells = np.full((len(points)-1, 3), 2, dtype=np.int_)
     cells[:, 1] = np.arange(0, len(points)-1, dtype=np.int_)
