@@ -3,6 +3,7 @@ sphinx
 pandoc
 nbsphinx
 jupytext
+myst-parser
 ipython
 ipykernel
 ipywidgets==7.6.5
