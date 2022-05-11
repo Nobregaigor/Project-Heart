@@ -4,6 +4,7 @@ pandoc
 nbsphinx
 jupytext
 myst-parser
+sphinx-book-theme
 ipython
 ipykernel
 ipywidgets==7.6.5
@@ -18,4 +19,4 @@ scipy==1.8.0
 widgetsnbextension==3.5.2
 pythreejs==2.3.0
 pandas
-sphinx-book-theme
+febio-python==0.1.4
