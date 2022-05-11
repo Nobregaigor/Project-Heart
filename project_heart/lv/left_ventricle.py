@@ -564,14 +564,14 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         else:
             plotter.show(window_size=window_size)
         
-    def plot_speckles_radial_distances(self, spk_args, t=0, approach="moving_vector", window_size=None):
+    def plot_speckles_radial_distances(self, spk_args, t=0, approach="moving_vector", window_size=None, **kwargs):
         from project_heart.utils.spatial_utils import project_pt_on_line
         
         if window_size is None:
             window_size = (600,400)
 
         # plot speckles
-        plotter = self.plot_speckles(spk_args, cmap="tab20", categories=True, re=True, t=t)
+        plotter = self.plot_speckles(spk_args, cmap="tab20", categories=True, re=True, t=t, **kwargs)
         
         if approach=="fixed_vector":
             apex_ts = self.states.get(self.STATES.APEX_REF, t=0)
@@ -597,15 +597,15 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         
         return np.mean(line_lengths)
        
-    def plot_speckles_radial_lengths(self, spk_args, t=0, approach="moving_vector", window_size=None):
+    def plot_speckles_radial_lengths(self, spk_args, t=0, approach="moving_centers", window_size=None, **kwargs):
         
         if window_size is None:
             window_size = (600,400)
 
         # plot speckles
-        plotter = self.plot_speckles(spk_args, cmap="tab20", categories=True, re=True, t=t)
+        plotter = self.plot_speckles(spk_args, cmap="tab20", categories=True, re=True, t=t, **kwargs)
         
-        if approach=="fixed_vector":
+        if approach=="fixed_centers":
             apex_ts = self.states.get(self.STATES.APEX_REF, t=0)
             base_ts = self.states.get(self.STATES.BASE_REF, t=0)
         else:
@@ -616,7 +616,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         line_lengths = []
         for spk in spk_deque:
             spk_xyz = self.states.get(self.STATES.XYZ, mask=spk.ids, t=t)
-            if approach=="fixed_vector":
+            if approach=="fixed_centers":
                 spk_la_center = self.get_speckles_la_centers(spk_args, t=0)
             else:
                 spk_la_center = self.get_speckles_la_centers(spk_args, t=t)

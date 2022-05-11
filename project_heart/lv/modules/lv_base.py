@@ -128,18 +128,25 @@ class LV_Base(BaseContainerHandler):
             qh = self._base_qh
         else:
             self._base_qh = qh
-            
+        # check minimum n
+        if n <= 0:
+            n = 1
+        # estimate pts aligment
         for _ in range(n):
-            long_line, _ = LV_Base.est_apex_and_base_refs(
+            long_line, info = LV_Base.est_apex_and_base_refs(
                 pts, ql=ql, qh=qh, **kwargs)
             lv_normal = unit_vector(long_line[0] - long_line[1])
             curr_rot = get_rotation(lv_normal, self._Z)
             pts = curr_rot.apply(pts)
             rot_chain.append(curr_rot)
-        long_line, info = LV_Base.est_apex_and_base_refs(
-            pts, ql=ql, qh=qh, **kwargs)
-        lv_normal = unit_vector(long_line[0] - long_line[1])
-        info["rot_pts"] = pts
+            
+        # we now have the data after aligment estimatiom.
+        # we need to return info at initial state:
+        pts = np.copy(points)
+        apex_pt = centroid(pts[info["apex_region"]])
+        base_pt = centroid(pts[info["base_region"]])
+        long_line = np.vstack((base_pt, apex_pt))
+        lv_normal = unit_vector(long_line[1] - long_line[0])
         info["normal"] = lv_normal
         info["long_line"] = long_line
         info["rot_chain"] = rot_chain
@@ -177,7 +184,6 @@ class LV_Base(BaseContainerHandler):
         self._aligment_data = info
         return info
 
-    
     
     # ----------------------------------------------------------------
     # Aortic and Mitral identification/set functions

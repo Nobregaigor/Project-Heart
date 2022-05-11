@@ -17,9 +17,9 @@ def get_lv_typeA():
     lv.states.from_pickle(statesfile)
     
     lv.identify_regions(LV_GEO_TYPES.TYPE_A,
-        apex_base_args=dict(ab_ql=0.15, ab_qh=0.97),
+        apex_base_args=dict(ab_ql=0.15, ab_qh=0.95),
         endo_epi_args={"threshold":80},
-        recompute_apex_base=dict(ql=0.001, qh=0.90))
+        recompute_apex_base=dict(ql=0.001, qh=0.75))
   
     endo_long = []
     epi_long = []
@@ -146,7 +146,61 @@ def get_lv_typeA():
             kmax=-1.0,
             log_level=logging.WARN,
         )
+    
+    
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="endo",
+            name="THICK",
+            from_nodeset=LV_SURFS.ENDO,
+            d=6.0,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
 
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="endo",
+            name="MID",
+            from_nodeset=LV_SURFS.ENDO,
+            d=3.0,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
+    
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="endo",
+            name="THIN",
+            from_nodeset=LV_SURFS.ENDO,
+            d=1.75,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
     
     _ = lv.compute_base_apex_ref_over_timesteps()
     

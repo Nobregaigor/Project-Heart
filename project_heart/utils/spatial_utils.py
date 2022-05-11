@@ -31,24 +31,27 @@ def get_rotation(from_vec, to_vector):
     return rot
 
 
-def centroid(points, ql=0.01, qh=0.99):
+def centroid(points, filter=True, ql=0.01, qh=0.99):
 
-    # remove outliers in x, y and z directions
-    x = points[:, 0]
-    y = points[:, 1]
-    z = points[:, 2]
-    low_x = np.quantile(x, ql)
-    high_x = np.quantile(x, qh)
-    low_y = np.quantile(y, ql)
-    high_y = np.quantile(y, qh)
-    low_z = np.quantile(z, ql)
-    high_z = np.quantile(z, qh)
-    filter = np.where((x >= low_x) & (x <= high_x) &
-                      (y >= low_y) & (y <= high_y) &
-                      (z >= low_z) & (z <= high_z)
-                      )[0]
-    bound_points = points[filter]
-    if len(bound_points) == 0:
+    if filter:
+        # remove outliers in x, y and z directions
+        x = points[:, 0]
+        y = points[:, 1]
+        z = points[:, 2]
+        low_x = np.quantile(x, ql)
+        high_x = np.quantile(x, qh)
+        low_y = np.quantile(y, ql)
+        high_y = np.quantile(y, qh)
+        low_z = np.quantile(z, ql)
+        high_z = np.quantile(z, qh)
+        filter = np.where((x >= low_x) & (x <= high_x) &
+                        (y >= low_y) & (y <= high_y) &
+                        (z >= low_z) & (z <= high_z)
+                        )[0]
+        bound_points = points[filter]
+        if len(bound_points) == 0:
+            bound_points = points
+    else:
         bound_points = points
     # compute centroid based on mean of extremas
     x = bound_points[:, 0]

@@ -213,6 +213,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                                            apex_base_kwargs=None, 
                                            log_level=logging.INFO,
                                            **kwargs):
+        from project_heart.utils.spatial_utils import project_pt_on_line
         # check for speckle input
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
         logger.setLevel(log_level)
@@ -224,14 +225,17 @@ class LVBaseMetricsComputations(LV_Speckles):
                 apex_base_kwargs = {}
             self.compute_base_apex_ref_over_timesteps(**apex_base_kwargs)
         # compute spk centers over timesteps based on 'k' height
-        from project_heart.utils.spatial_utils import get_p_along_line
+        # from project_heart.utils.spatial_utils import get_p_along_line
 
         apex_ts = self.states.get(self.STATES.APEX_REF)
         base_ts = self.states.get(self.STATES.BASE_REF)
-        xs = np.mean((apex_ts[:, 0], base_ts[:, 0]), axis=0).reshape((-1,1))
-        ys = np.mean((apex_ts[:, 1], base_ts[:, 1]), axis=0).reshape((-1,1))
-        zs = np.mean(self.get_speckles_xyz(spk), 1)[:, 2].reshape((-1,1))
-        spk_res = np.hstack((xs,ys,zs)) #[get_p_along_line(k, [apex,base]) for apex, base in zip(apex_ts, base_ts)]
+        # xs = np.mean((apex_ts[:, 0], base_ts[:, 0]), axis=0).reshape((-1,1))
+        # ys = np.mean((apex_ts[:, 1], base_ts[:, 1]), axis=0).reshape((-1,1))
+        # zs = np.mean(self.get_speckles_xyz(spk), 1)[:, 2].reshape((-1,1))
+        spk_center = np.mean(self.get_speckles_xyz(spk), 1)
+        p_pt = project_pt_on_line(spk_center, apex_ts, base_ts)
+        
+        spk_res = p_pt#np.hstack((xs,ys,zs)) #[get_p_along_line(k, [apex,base]) for apex, base in zip(apex_ts, base_ts)]
                                         #spk_res = np.vstack(spk_res)
         logger.debug("\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
                      format(apex_ts, base_ts, spk_res))

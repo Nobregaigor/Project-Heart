@@ -55,6 +55,8 @@ class LV_SURFS(IntEnum):
     ENDO_EXCLUDE_BASE = 24
     EPI_EXCLUDE_BASE = 25
     
+    ENDO_BASE = 26 # endo + base
+    
 
 class LV_MESH_DATA(Enum):
 
