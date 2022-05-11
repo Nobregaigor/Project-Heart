@@ -1,6 +1,6 @@
 # Project Heart
 
-Documentation is on the way! Not ready, but it is starting to take shape. You can find it here: [Docs](nobregaigor.github.io/project-heart/)
+Documentation is on the way! Not ready, but it is starting to take shape. You can find it here: [Docs](https://nobregaigor.github.io/Project-Heart/)
 
 _As I am finalizing core functions and adding visualization methods, I will be adding new documentation. Some changes in the code might occur, since this project is still under developement._
 
