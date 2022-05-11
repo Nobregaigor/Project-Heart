@@ -5,6 +5,7 @@ import numpy as np
 from collections import deque
 
 from project_heart.modules.speckles import SpecklesDict, SpeckleStates, Speckle
+from project_heart.modules.speckles.speckle import SpeckeDeque
 from project_heart.utils.vector_utils import *
 from project_heart.utils.spatial_utils import *
 from project_heart.utils.spatial_points import *
@@ -292,7 +293,7 @@ class LV_Speckles(LV_RegionIdentifier):
         if subsets_criteria == "z": # regular 'z' axis subdvision.
             zs = pts[:, 2]
             min_z, max_z = np.min(zs), np.max(zs)
-            bins = np.digitize(zs, np.linspace(min_z, max_z+1, n_subsets))
+            bins = np.digitize(zs, np.linspace(min_z-1, max_z+1, n_subsets+1))
         elif subsets_criteria == "z2": # complex 'z' axis subdvision.
             # for this criteria, we will be spliting in z and if nodes are left/right
             # side of the plane with respect to the ZAXIS. Therefore we must have equal
@@ -305,8 +306,7 @@ class LV_Speckles(LV_RegionIdentifier):
             # approximate left and right sides of the plane without the need to sort
             # note: y values must be positive.
             zs = pts[:, 2]
-            angle_y = angle_between(np.cross(self._Z, normal)[
-                                    :2], self._Y[:2], check_orientation=False)
+            angle_y = angle_between(np.cross(self._Z, normal)[:2], self._Y[:2], check_orientation=False)
 
             if abs(angle_y) <= np.radians(45) or abs(angle_y) >= np.radians(135):
                 ys = pts[:, 1]
@@ -317,7 +317,7 @@ class LV_Speckles(LV_RegionIdentifier):
             # get ranges of of modified z-axis and compute bins
             min_z, max_z = np.min(arr), np.max(arr)
             bins = np.digitize(arr, np.linspace(
-                min_z, max_z+1, n_subsets+1))
+                min_z-1, max_z+1, n_subsets+1))
 
             # The previous method works for most scenarios. However, there are some
             # limitation when deciding which bin the bottom nodes belong to.
@@ -375,6 +375,10 @@ class LV_Speckles(LV_RegionIdentifier):
             bins = np.digitize(
                 angles, np.linspace(min_a*0.999, max_a*1.001, n_subsets+1))
             logger.debug("Unique bins: {}.".format(np.unique(bins)))
+        elif subsets_criteria == "kmeans":
+            from sklearn.cluster import KMeans
+            kmeans = KMeans(n_clusters=n_subsets, n_init=5, random_state=0)
+            bins = kmeans.fit_predict(pts)+1
         else:
             raise ValueError(
                 "Unknown subset criteria. Valid options are: 'z', 'z2', or 'angles'")
@@ -405,7 +409,6 @@ class LV_Speckles(LV_RegionIdentifier):
         
         return non_empty_buckets, non_empty_buckets_l
         
-
     def create_speckles_from_iterable(self, items):
         assert_iterable(items, False)
         for i, spk_args in enumerate(items):
@@ -439,5 +442,160 @@ class LV_Speckles(LV_RegionIdentifier):
 
         return self.set_region_from_mesh_ids(region_key, region)
 
+    def get_speckles_xyz(self, spk_args, t=0) -> np.ndarray:
+        spks_ids = self._resolve_spk_args(spk_args).stack_ids()
+        if self.states.check_key(self.STATES.XYZ):
+            xyz = self.states.get(self.STATES.XYZ, t=t, mask=spks_ids)
+        else:
+            xyz = self.nodes(mask=spks_ids)
+        return xyz
+    
+    def get_speckles_centers(self, spk_args, t=0) -> np.ndarray:
+        spk_deque = self._resolve_spk_args(spk_args)
+        centers = deque()
+        if self.states.check_key(self.STATES.XYZ):
+            xyz = self.states.get(self.STATES.XYZ, t=t)
+        else:
+            xyz = self.nodes()
+        for spk in spk_deque:
+            centers.append(np.mean(xyz[spk.ids], axis=0))
+        return np.vstack(centers)
+    
+    def get_speckles_k_centers(self, spk_args, t=0) -> np.ndarray:
+        
+        if self.states.check_key(self.STATES.XYZ):
+            xyz = self.states.get(self.STATES.XYZ, t=t)
+        else:
+            xyz = self.nodes()
+            
+        spk_deque = self._resolve_spk_args(spk_args)
+        centers = deque()    
+        for spk in spk_deque:
+            for kids in spk.k_ids:
+                centers.append(np.mean(xyz[kids], axis=0))
+        return np.vstack(centers)
+    
+    def plot_speckles(self, 
+                        spk_args, 
+                        t=0, 
+                        k_bins=False,
+                        add_centers=False,
+                        add_k_centers=False,
+                        plot_kwargs=None, 
+                        centers_kwargs=None,
+                        k_centers_kwargs=None,
+                        k_centers_as_line=False,
+                        window_size=None, 
+                        **kwargs):
+        
+        
+        # Set default values
+        if window_size is None:
+            window_size = (600,400)
+        if plot_kwargs is None:
+            plot_kwargs = dict()
+        if centers_kwargs is None:
+            centers_kwargs = dict()
+        if k_centers_kwargs is None:
+            k_centers_kwargs = dict()
+            
+        d_plotkwargs = dict(
+                style='points', 
+                color="gray", 
+                opacity=0.7,
+                window_size=window_size
+            )
+        d_plotkwargs.update(plot_kwargs)
+        
+        # get spk data
+        spk_deque = self._resolve_spk_args(spk_args) 
+        spk_pts = self.get_speckles_xyz(spk_deque, t=t) # spk locations
+        
+        # resolve default args based on specifications
+        d_kwargs = dict()
+        if not add_centers and not add_k_centers:
+            d_kwargs.update(
+                dict(
+                point_size=275,
+                cmap="tab20"
+                )
+            )
+        else:
+            d_kwargs.update(
+                dict(
+                point_size=200,
+                opacity=0.60
+                )
+            )
+        d_kwargs.update(kwargs)
+        
+        if k_bins:
+            klabels = spk_deque.binarize_k_clusters()
+            kl_ids = spk_deque.enumerate_ids()
+            bins = np.zeros(len(klabels))
+            bins[kl_ids] = klabels + 1
+        else:
+            bins = spk_deque.binarize()
+            
+        plotter = self.plot("mesh", t=t, re=True, **d_plotkwargs)
+        plotter.add_points(spk_pts, scalars=bins, **d_kwargs)
+        
+        if add_centers:
+            centers = self.get_speckles_centers(spk_deque, t=t)
+            if not add_k_centers:
+                d_centers_args = dict(
+                    point_size=300,
+                    color="red"
+                )
+            else:
+                d_centers_args = dict(
+                    point_size=300,
+                    color="orange",
+                    opacity=0.90
+                )
+            d_centers_args.update(centers_kwargs)
+            plotter.add_points(centers, **d_centers_args)
+        
+        if add_k_centers:
+            k_centers = self.get_speckles_k_centers(spk_deque, t=t)
+            if not k_centers_as_line:
+                d_k_centers_args = dict(
+                        point_size=300,
+                        color="red"
+                    )
+                d_k_centers_args.update(k_centers_kwargs)
+                plotter.add_points(k_centers, **d_k_centers_args)
+            else:
+                d_k_centers_args = dict(color="red", width=10)
+                d_k_centers_args.update(k_centers_kwargs)
+                plotter.add_lines(k_centers, **d_k_centers_args)
+        
+        
+        plotter.show(window_size=window_size)
+        
+    
     def check_spk(self, spk):
         return isinstance(spk, Speckle)
+
+    
+    def _resolve_spk_args(self, spk_args):
+        from collections.abc import Iterable
+        if isinstance(spk_args, dict):
+            spks = self.get_speckles(**spk_args)
+            if len(spks) == 0:
+                raise ValueError("No spks found for given spk_args: {}".format(spk_args))
+        elif isinstance(spk_args, Iterable):
+            if not issubclass(spk_args.__class__, SpeckeDeque):
+                spks = SpeckeDeque([spk_args])
+            else:
+                spks = spk_args
+        elif issubclass(spk_args.__class__, Speckle):
+            spks = SpeckeDeque([spk_args])
+        else:
+            raise TypeError("'spks' must be a Iterable of spk objects."\
+                            "The respective function argument can be either a "\
+                            "dictionary containing 'get_speckles' args or one "\
+                            "of the following types: 'list', 'tuple', 'np.ndarray'. "
+                            "Received type: {}".format(type(spk_args))
+                            )
+        return spks

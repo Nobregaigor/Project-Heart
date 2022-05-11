@@ -75,7 +75,6 @@ class Speckle():
         self.str = "{}_{}_{}_{}".format(
             self.subset, self.name, self.group, self.collection)
 
-
     def __repr__(self):
         return "<Speckle: .subset: {}, .name: {}, .group: {}, .collection: {}, .t: {}>".format(
             self.subset, self.name, self.group, self.collection, self.t)
@@ -89,6 +88,12 @@ class Speckle():
     
     def key(self):
         return hash((self.t, self.subset, self.name, self.group, self.collection))
+
+    def stack_k_local_ids(self) -> np.ndarray:
+        return np.hstack(self.k_local_ids)
+    
+    def binarize_local_ids(self) -> np.ndarray:
+        return np.hstack([np.zeros(len(ids), np.int64)+i for i, ids in enumerate(self.k_local_ids)])
 
 class SpeckeDeque(deque):
     def __init__(self, *args, **kwargs):
@@ -123,7 +128,32 @@ class SpeckeDeque(deque):
 
         return grouped
 
+    def reduce_ids(self) -> np.ndarray:
+        from functools import reduce
+        return reduce(np.union1d, [spk.ids for spk in list(self)])
 
+    def stack_ids(self) -> np.ndarray:
+        return np.hstack([spk.ids for spk in list(self)])
+
+    def binarize(self) -> np.ndarray:
+        return np.hstack([np.zeros(len(spk.ids), np.int64)+i for i, spk in enumerate(list(self))])
+
+    def stack_k_local_ids(self) -> np.ndarray:
+        return np.hstack([spk.stack_k_local_ids() for spk in list(self)])
+
+    def binarize_k_clusters(self) -> np.ndarray:
+        return np.hstack([spk.binarize_local_ids() for spk in list(self)])
+    
+    def enumerate_ids(self) -> np.ndarray:
+        ids = self.stack_k_local_ids()
+        offset = 0
+        for spk in list(self):
+            new_offset = offset + len(spk.ids)
+            ids[offset:new_offset] += offset
+            offset = new_offset
+        return ids
+    
+       
 class SpecklesDict():
     def __init__(self):
         self._speckles = dict()

@@ -1337,6 +1337,7 @@ class BaseContainerHandler():
              pretty=True,
              background_color='w',
              window_size=None,
+             t=None,
              **kwargs):
         
         if window_size is None:
@@ -1364,9 +1365,17 @@ class BaseContainerHandler():
         # set mesh
         if mode == "mesh":
             mesh = self.mesh
+            if t is not None:
+                assert isinstance(t, (int, float)), "Timestep must be an int or float. Received: {}".format(t)
+                if t > 0 and self.states.check_key("xyz"): # XYZ is hardcoded for now. will change later.
+                    new_mesh = mesh.copy()
+                    new_mesh.points = self.states.get("xyz", t=t)
+                    mesh = new_mesh
+                            
         elif mode == "surface":
             mesh = self.get_surface_mesh()
-
+                   
+        
         # add mesh
         if scalars is not None:
             if isinstance(scalars, (str, int, Enum)):
