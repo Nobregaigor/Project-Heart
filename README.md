@@ -1,8 +1,8 @@
 # Project Heart
 
---- DOCUMENTATION PENDING (still under development) ---
+Documentation is on the way! Not ready, but it is starting to take shape. You can find it here: [Docs](nobregaigor.github.io/project-heart/)
 
-![image](https://user-images.githubusercontent.com/42748242/162364034-682412ea-9753-4ab5-8985-abded0a8e75b.png)
+_As I am finalizing core functions and adding visualization methods, I will be adding new documentation. Some changes in the code might occur, since this project is still under developement._
 
 # How to install:
 
