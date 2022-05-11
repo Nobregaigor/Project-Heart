@@ -13,6 +13,7 @@ LV Definitions, assumptions, and geometric types
 
    Basic Definitions (Apex, Base, Endocardium, Epicardium...) <geo_references>
    Geometry Types <types_of_geometries>
+   Speckle Tracking <speckles>
    
 ------------
 
