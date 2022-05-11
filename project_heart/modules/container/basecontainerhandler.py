@@ -792,6 +792,23 @@ class BaseContainerHandler():
                 "Number of data points must match number of cells [elements] at mesh.")
         self.mesh.cell_data[key] = data
 
+    def extract_largest_mesh(self):
+        
+        # extract largest connect mesh
+        mesh = self.mesh.extract_largest()
+        n = mesh.n_points
+        # apply id correction (when extracting, ids might change position)
+        from project_heart.utils.cloud_ops import map_A_to_B
+        idmap = map_A_to_B(self.mesh.points, mesh.points)
+        # save new mesh points
+        self.mesh.points = mesh.points[idmap[:n]]
+        
+        # modify states
+        for key in self.states.data:
+            _d = self.states.data[key][:, :n, :]
+            self.states.data[key] = _d
+        
+
     # -------------------------------
     # Surface mesh related functions
 
