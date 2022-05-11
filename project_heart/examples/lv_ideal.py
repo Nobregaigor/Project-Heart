@@ -5,7 +5,7 @@ import numpy as np
 import logging
 
 import os
-CURR_DIR = os.path.dirname(__file__)
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def get_lv_ideal():
 
