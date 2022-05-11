@@ -1,0 +1,318 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Radial Metrics"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "nbsphinx": "hidden"
+   },
+   "outputs": [],
+   "source": [
+    "from pathlib import Path\n",
+    "from project_heart.lv import LV\n",
+    "from project_heart.utils import set_jupyter_backend\n",
+    "from project_heart.enums import *\n",
+    "set_jupyter_backend(\"pythreejs\")\n",
+    "\n",
+    "import numpy as np\n",
+    "float_formatter = \"{:.5f}\".format\n",
+    "np.set_printoptions(formatter={'float_kind':float_formatter})\n",
+    "\n",
+    "sample_file_ideal = Path(\"../../_static/sample_files/ideal_linear_pressure_increase.xplt\")\n",
+    "lv_ideal = LV.from_file(sample_file_ideal) \n",
+    "lv_ideal.identify_regions(geo_type=LV_GEO_TYPES.IDEAL,\n",
+    "                          apex_base_args=dict(ab_ql=0.05, ab_qh=0.97),\n",
+    "                          recompute_apex_base=dict(ql=0.05, qh=0.95)\n",
+    "                          )\n",
+    "\n",
+    "import numpy as np\n",
+    "import logging\n",
+    "\n",
+    "endo_long = []\n",
+    "epi_long = []\n",
+    "for i, a in enumerate(np.linspace(0, np.pi, 6, endpoint=False)):\n",
+    "    \n",
+    "    spk = lv_ideal.create_speckles(\n",
+    "        collection=\"long-6\",\n",
+    "        group=\"endo\",\n",
+    "        name=str(i),\n",
+    "        from_nodeset=LV_SURFS.ENDO,\n",
+    "        exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case\n",
+    "        d=1.75,\n",
+    "        k=0.5,\n",
+    "        normal_to=[np.cos(a),np.sin(a),0.0],\n",
+    "        n_subsets=6,\n",
+    "        subsets_criteria=\"z2\",\n",
+    "        cluster_criteria=\"z2\",\n",
+    "        n_clusters=10,\n",
+    "        t=0.0,\n",
+    "        kmin=-1,\n",
+    "        kmax=0.95,\n",
+    "        log_level=logging.WARN,\n",
+    "    )\n",
+    "    endo_long.append(spk)\n",
+    "\n",
+    "    spk = lv_ideal.create_speckles(\n",
+    "        collection=\"long-6\",\n",
+    "        group=\"epi\",\n",
+    "        name=str(i),\n",
+    "        from_nodeset=LV_SURFS.EPI,\n",
+    "        exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case\n",
+    "        d=2.4,\n",
+    "        k=0.5,\n",
+    "        normal_to=[np.cos(a),np.sin(a),0.0],\n",
+    "        n_subsets=6,\n",
+    "        subsets_criteria=\"z2\",\n",
+    "        cluster_criteria=\"z2\",\n",
+    "        n_clusters=10,\n",
+    "        t=0.0,\n",
+    "        kmin=-1,\n",
+    "        kmax=0.95,\n",
+    "        log_level=logging.WARN,\n",
+    "    )\n",
+    "    epi_long.append(spk)\n",
+    "\n",
+    "endo_circ = []\n",
+    "epi_circ = []\n",
+    "\n",
+    "names = [\"subapex\", \"apex\", \"superapex\", \"submid\", \"mid\", \"supermid\", \"subbase\", \"base\", \"superbase\"]\n",
+    "for i, a in enumerate(np.linspace(0.25, 0.95, len(names), endpoint=False)):\n",
+    "    \n",
+    "    spk = lv_ideal.create_speckles(\n",
+    "        collection=\"circ-6\",\n",
+    "        group=\"endo\",\n",
+    "        name=names[i],\n",
+    "        from_nodeset=LV_SURFS.ENDO,\n",
+    "        d=1.75,\n",
+    "        k=a,\n",
+    "        normal_to=[0.0, 0.0, 1.0],\n",
+    "        n_subsets=6,\n",
+    "        subsets_criteria=\"angles\",\n",
+    "        cluster_criteria=\"angles2\",\n",
+    "        n_clusters=8,\n",
+    "        t=0.0,\n",
+    "        kmin=-1.0,\n",
+    "        kmax=-1.0,\n",
+    "        log_level=logging.WARN,\n",
+    "    )\n",
+    "    endo_circ.append(spk)\n",
+    "\n",
+    "    spk = lv_ideal.create_speckles(\n",
+    "        collection=\"circ-6\",\n",
+    "        group=\"epi\",\n",
+    "        name=names[i],\n",
+    "        from_nodeset=LV_SURFS.EPI,\n",
+    "        d=1.75,\n",
+    "        k=a,\n",
+    "        normal_to=[0.0, 0.0, 1.0],\n",
+    "        n_subsets=6,\n",
+    "        subsets_criteria=\"angles\",\n",
+    "        cluster_criteria=\"angles2\",\n",
+    "        n_clusters=8,\n",
+    "        t=0.0,\n",
+    "        kmin=-1.0,\n",
+    "        kmax=-1.0,\n",
+    "        log_level=logging.WARN,\n",
+    "    )\n",
+    "    epi_circ.append(spk)\n",
+    "\n",
+    "\n",
+    "\n",
+    "_ = lv_ideal.create_speckles(\n",
+    "        collection=\"SAMPLE\",\n",
+    "        group=\"epi\",\n",
+    "        name=\"SAMPLE\",\n",
+    "        from_nodeset=LV_SURFS.EPI,\n",
+    "        d=4.0,\n",
+    "        k=0.8,\n",
+    "        normal_to=[0.0, 0.0, 1.0],\n",
+    "        n_subsets=6,\n",
+    "        subsets_criteria=\"angles\",\n",
+    "        cluster_criteria=\"angles2\",\n",
+    "        n_clusters=8,\n",
+    "        t=0.0,\n",
+    "        kmin=-1.0,\n",
+    "        kmax=-1.0,\n",
+    "        log_level=logging.WARN,\n",
+    "    )\n",
+    "\n",
+    "_ = lv_ideal.create_speckles(\n",
+    "        collection=\"SAMPLE\",\n",
+    "        group=\"endo\",\n",
+    "        name=\"SAMPLE\",\n",
+    "        from_nodeset=LV_SURFS.ENDO,\n",
+    "        d=4.0,\n",
+    "        k=0.8,\n",
+    "        normal_to=[0.0, 0.0, 1.0],\n",
+    "        n_subsets=6,\n",
+    "        subsets_criteria=\"angles\",\n",
+    "        cluster_criteria=\"angles2\",\n",
+    "        n_clusters=8,\n",
+    "        t=0.0,\n",
+    "        kmin=-1.0,\n",
+    "        kmax=-1.0,\n",
+    "        log_level=logging.WARN,\n",
+    "    )\n",
+    "\n",
+    "_ = lv_ideal.compute_base_apex_ref_over_timesteps()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Radial metrics"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "In our implementation, 'radial metrics' are defined as any metric that relates a point with the left ventricle's longitudinal axis. In a clinical setting, these metrics are used to compute radial shortening and radial strain. However, it is often unclear how to proper establish its calculation as different reference points related to the longitudinal axis can be selected. \n",
+    "For instance, we can use a 'center' point located at a specified 'height' of the longitudinal axis and compute the vector length from this reference to a point on the endocardium surface. On the other hand, we can compute the perpendicular distance between a point on the endocardium and the longitudinal axis. \n",
+    "With this in mind, we provided two distinct metrics for radial measurements: 'Radial Distance' and 'Radial Length'. \n",
+    "\n",
+    "In addition, our implementation consider the usage of [Speckles](../basic_definitions/speckles.ipynb), which helps to approximate a clinical setting, facilitates the computation for certain metrics and helps to minimizing errors due to noise in geometry by averaging values based on local regions. See [docs](../basic_definitions/speckles.ipynb) for details."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Radial Distance"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Definition**: Perpendicular distance from a given point to normal vector (defined from longitudinal line)\n",
+    "\n",
+    "The 'Radial distance' is computed as the perpendicular distance (shortest euclidean distance) between a point (based on speckles) at a given region of the geometry and the longitudinal axis. Considering tha such axis is aligned with the Z axis, this metric can be thought as the '2D radius' from a top view (xy plane). Here is an example:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample_spk = lv_ideal.get_speckles(spk_name=\"SAMPLE\", spk_group=\"epi\", spk_collection=\"SAMPLE\")[0]\n",
+    "timestep = 0.0"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rd = lv_ideal.plot_speckles_radial_distances(sample_spk, t=timestep)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rds = lv_ideal.radial_distance(sample_spk, \n",
+    "                       recompute=True, \n",
+    "                       log_level=logging.WARN, \n",
+    "                       approach=\"moving_vector\",\n",
+    "                       t=timestep\n",
+    "                       )"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rd, rds"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Radial Length"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Definition**:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample_spk = lv_ideal.get_speckles(\n",
+    "    spk_name=\"SAMPLE\", spk_group=\"epi\", spk_collection=\"SAMPLE\")[0]\n",
+    "rd = lv_ideal.plot_speckles_radial_lengths(sample_spk, t=1.0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Thinner speckles, better results"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "circ_spks = lv_ideal.get_speckles(spk_name=\"base\", spk_collection=\"circ-6\")\n",
+    "rd = lv_ideal.plot_speckles_radial_lengths(circ_spks[-1], t=1.0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## "
+   ]
+  }
+ ],
+ "metadata": {
+  "interpreter": {
+   "hash": "a4b270fe5129ef310552b5197d637a230d47119f1e46f0b92ff32b1c5f5c5425"
+  },
+  "kernelspec": {
+   "display_name": "Python 3.9.7 ('project_heart')",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.7"
+  },
+  "orig_nbformat": 4
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
