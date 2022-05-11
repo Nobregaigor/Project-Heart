@@ -126,7 +126,14 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "# What are Speckles?"
+    "## What are Speckles?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Speckles ..."
    ]
   },
   {
