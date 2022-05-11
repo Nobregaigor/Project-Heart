@@ -6,15 +6,16 @@ import logging
 
 import os
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+filepath = "./sample_files/lv_typeA_hex.vtk"
+filepath = os.path.join(CURR_DIR, filepath)
 
-def get_lv_typeA():
+statesfile = "./sample_files/sample_displacement_lv_typeA_hex_states_linear_press_incr.pbz2"
+statesfile = os.path.join(CURR_DIR, statesfile)
 
-    filepath="./sample_files/lv_typeA_hex.vtk"
-    filepath = os.path.join(CURR_DIR, filepath)
+def get_lv_typeA(filepath=filepath,statesfile=statesfile):
+
     lv = LV.from_file(Path(filepath)) 
-    statesfile="./sample_files/sample_displacement_lv_typeA_hex_states_linear_press_incr.pbz2"
-    statesfile = os.path.join(CURR_DIR, statesfile)
-    lv.states.from_pickle(statesfile)
+    lv.states.from_pickle(str(statesfile))
     
     lv.identify_regions(LV_GEO_TYPES.TYPE_A,
         apex_base_args=dict(ab_ql=0.15, ab_qh=0.95),

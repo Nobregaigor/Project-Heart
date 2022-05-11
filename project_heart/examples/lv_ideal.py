@@ -6,11 +6,11 @@ import logging
 
 import os
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+filepath = "./sample_files/ideal_linear_pressure_increase.xplt"
+filepath = os.path.join(CURR_DIR, filepath)
+    
+def get_lv_ideal(filepath=filepath):
 
-def get_lv_ideal():
-
-    filepath="./sample_files/ideal_linear_pressure_increase.xplt"
-    filepath = os.path.join(CURR_DIR, filepath)
     lv = LV.from_file(Path(filepath)) 
     lv.identify_regions(geo_type=LV_GEO_TYPES.IDEAL,
                             apex_base_args=dict(ab_ql=0.05, ab_qh=0.97),

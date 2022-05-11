@@ -13,8 +13,6 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../project_heart'))
-sys.path.insert(0, os.path.abspath('../../project_heart/examples'))
-sys.path.insert(0, os.path.abspath('../../project_heart/examples.sample_files'))
 
 
 # -- Project information -----------------------------------------------------
