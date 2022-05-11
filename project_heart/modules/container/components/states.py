@@ -4,6 +4,7 @@ from numbers import Number  # for type comparison
 from project_heart.enums import DATA_FORMAT, STATES
 from enum import Enum
 
+from project_heart.utils.json_encoders import NumpyEncoder
 
 class States():
     def __init__(self, enums={}):
@@ -106,3 +107,38 @@ class States():
             name = name.value
         return name
 
+    def to_dict(self):
+        contents = dict()
+        contents["timesteps"] = self.timesteps
+        contents["data"] = self.data
+        contents["data_format"] = {k:v.value if isinstance(v, Enum) else str(v) for k,v in self.data_format.items()}
+        contents["n"] = self.n()
+        # contents["STATES"] = self.STATES
+        # contents["STATE_FORMATS"] = self.STATE_FORMATS
+        return contents
+
+    def to_json(self, filename: str) -> None:
+        import json
+        non_serialized_d = self.to_dict()
+        with open(filename, "w") as outfile:
+            json.dump(non_serialized_d, outfile, sort_keys=True,
+                      cls=NumpyEncoder)
+    
+    def from_json(self, filename:str) -> None:
+        import json
+        with open(filename, "r") as jfile:
+            contents = json.load(jfile)
+        
+        # add timstesp information
+        self.set_timesteps(contents["timesteps"])
+        
+        # add data and formats
+        data = contents["data"]
+        data_format = contents["data_format"]
+        for key in data:
+            self.add(key, np.array(data[key], dtype=np.float64), data_format[key])
+        
+        # add states
+        # self.STATES = contents["STATES"]
+        # self.STATE_FORMATS = contents["STATE_FORMATS"]
+        

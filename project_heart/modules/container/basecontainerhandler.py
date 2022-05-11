@@ -25,12 +25,7 @@ def check_min_version(pkg: str, ver: str):
     return pa_v.parse(im_v(pkg)) >= pa_v.parse(ver)
 
 
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
-
+from project_heart.utils.json_encoders import NumpyEncoder
 
 import logging
 logger = logging.getLogger('BaseContainerHandler')
