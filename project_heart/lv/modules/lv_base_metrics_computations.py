@@ -101,6 +101,7 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     def compute_base_apex_ref_over_timesteps(self,
                                              nodeset: str = None,
+                                             check_preset_nodeset=True,
                                              dtype: np.dtype = np.float64,
                                              **kwargs
                                              ) -> np.ndarray:
@@ -110,6 +111,11 @@ class LVBaseMetricsComputations(LV_Speckles):
             self.compute_xyz_from_displacement()
         # get node ids (index array) from nodeset
         # nodeset = self.REGIONS.EPI if nodeset is None else nodeset
+        
+        if check_preset_nodeset:
+            if nodeset is None and self.apex_and_base_from_nodeset is not None:
+                nodeset = self.apex_and_base_from_nodeset
+            
         if nodeset is not None:
             nodeids = self.get_nodeset(nodeset)
             # get node positions from nodeset at specified state
@@ -219,13 +225,16 @@ class LVBaseMetricsComputations(LV_Speckles):
             self.compute_base_apex_ref_over_timesteps(**apex_base_kwargs)
         # compute spk centers over timesteps based on 'k' height
         from project_heart.utils.spatial_utils import get_p_along_line
-        k = spk.k
+
         apex_ts = self.states.get(self.STATES.APEX_REF)
         base_ts = self.states.get(self.STATES.BASE_REF)
-        spk_res = [get_p_along_line(k, [apex,base]) for apex, base in zip(apex_ts, base_ts)]
-        spk_res = np.vstack(spk_res)
-        logger.debug("-k: '{}'\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
-                     format(k, apex_ts, base_ts, spk_res))
+        xs = np.mean((apex_ts[:, 0], base_ts[:, 0]), axis=0).reshape((-1,1))
+        ys = np.mean((apex_ts[:, 1], base_ts[:, 1]), axis=0).reshape((-1,1))
+        zs = np.mean(self.get_speckles_xyz(spk), 1)[:, 2].reshape((-1,1))
+        spk_res = np.hstack((xs,ys,zs)) #[get_p_along_line(k, [apex,base]) for apex, base in zip(apex_ts, base_ts)]
+                                        #spk_res = np.vstack(spk_res)
+        logger.debug("\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
+                     format(apex_ts, base_ts, spk_res))
         self.states.add_spk_data(spk, self.STATES.CENTERS, spk_res)  # save to states
         return self.states.get_spk_data(spk, self.STATES.CENTERS) # return pointer
     

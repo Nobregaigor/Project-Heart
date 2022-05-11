@@ -96,7 +96,7 @@ class States():
         """
         if t not in self.timesteps:
             return np.argmin(np.abs(np.asarray(self.timesteps, dtype=np.float32) - t))
-        return self.timesteps.index(t)
+        return list(self.timesteps).index(t)
 
     def check_key(self, key: str) -> bool:
         key = self.check_enum(key)

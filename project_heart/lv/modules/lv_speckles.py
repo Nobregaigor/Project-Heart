@@ -442,7 +442,7 @@ class LV_Speckles(LV_RegionIdentifier):
 
         return self.set_region_from_mesh_ids(region_key, region)
 
-    def get_speckles_xyz(self, spk_args, t=0) -> np.ndarray:
+    def get_speckles_xyz(self, spk_args, t=None) -> np.ndarray:
         spks_ids = self._resolve_spk_args(spk_args).stack_ids()
         if self.states.check_key(self.STATES.XYZ):
             xyz = self.states.get(self.STATES.XYZ, t=t, mask=spks_ids)
@@ -450,7 +450,7 @@ class LV_Speckles(LV_RegionIdentifier):
             xyz = self.nodes(mask=spks_ids)
         return xyz
     
-    def get_speckles_centers(self, spk_args, t=0) -> np.ndarray:
+    def get_speckles_centers(self, spk_args, t=None) -> np.ndarray:
         spk_deque = self._resolve_spk_args(spk_args)
         centers = deque()
         if self.states.check_key(self.STATES.XYZ):
@@ -461,7 +461,18 @@ class LV_Speckles(LV_RegionIdentifier):
             centers.append(np.mean(xyz[spk.ids], axis=0))
         return np.vstack(centers)
     
-    def get_speckles_k_centers(self, spk_args, t=0) -> np.ndarray:
+    def get_speckles_la_centers(self, spk_args, t=None) -> np.ndarray:
+        
+        spk_deque = self._resolve_spk_args(spk_args)
+        centers = deque()
+        for spk in spk_deque:
+            if not self.states.check_spk_key(spk, self.STATES.CENTERS):
+                self.compute_spk_centers_over_timesteps(spk)
+            c = self.states.get_spk_data(spk, self.STATES.CENTERS, t=t)
+            centers.append(c)
+        return np.vstack(centers)
+    
+    def get_speckles_k_centers(self, spk_args, t=None) -> np.ndarray:
         
         if self.states.check_key(self.STATES.XYZ):
             xyz = self.states.get(self.STATES.XYZ, t=t)
@@ -474,106 +485,7 @@ class LV_Speckles(LV_RegionIdentifier):
             for kids in spk.k_ids:
                 centers.append(np.mean(xyz[kids], axis=0))
         return np.vstack(centers)
-    
-    def plot_speckles(self, 
-                        spk_args, 
-                        t=0, 
-                        k_bins=False,
-                        add_centers=False,
-                        add_k_centers=False,
-                        plot_kwargs=None, 
-                        centers_kwargs=None,
-                        k_centers_kwargs=None,
-                        k_centers_as_line=False,
-                        window_size=None, 
-                        **kwargs):
-        
-        
-        # Set default values
-        if window_size is None:
-            window_size = (600,400)
-        if plot_kwargs is None:
-            plot_kwargs = dict()
-        if centers_kwargs is None:
-            centers_kwargs = dict()
-        if k_centers_kwargs is None:
-            k_centers_kwargs = dict()
-            
-        d_plotkwargs = dict(
-                style='points', 
-                color="gray", 
-                opacity=0.7,
-                window_size=window_size
-            )
-        d_plotkwargs.update(plot_kwargs)
-        
-        # get spk data
-        spk_deque = self._resolve_spk_args(spk_args) 
-        spk_pts = self.get_speckles_xyz(spk_deque, t=t) # spk locations
-        
-        # resolve default args based on specifications
-        d_kwargs = dict()
-        if not add_centers and not add_k_centers:
-            d_kwargs.update(
-                dict(
-                point_size=275,
-                cmap="tab20"
-                )
-            )
-        else:
-            d_kwargs.update(
-                dict(
-                point_size=200,
-                opacity=0.60
-                )
-            )
-        d_kwargs.update(kwargs)
-        
-        if k_bins:
-            klabels = spk_deque.binarize_k_clusters()
-            kl_ids = spk_deque.enumerate_ids()
-            bins = np.zeros(len(klabels))
-            bins[kl_ids] = klabels + 1
-        else:
-            bins = spk_deque.binarize()
-            
-        plotter = self.plot("mesh", t=t, re=True, **d_plotkwargs)
-        plotter.add_points(spk_pts, scalars=bins, **d_kwargs)
-        
-        if add_centers:
-            centers = self.get_speckles_centers(spk_deque, t=t)
-            if not add_k_centers:
-                d_centers_args = dict(
-                    point_size=300,
-                    color="red"
-                )
-            else:
-                d_centers_args = dict(
-                    point_size=300,
-                    color="orange",
-                    opacity=0.90
-                )
-            d_centers_args.update(centers_kwargs)
-            plotter.add_points(centers, **d_centers_args)
-        
-        if add_k_centers:
-            k_centers = self.get_speckles_k_centers(spk_deque, t=t)
-            if not k_centers_as_line:
-                d_k_centers_args = dict(
-                        point_size=300,
-                        color="red"
-                    )
-                d_k_centers_args.update(k_centers_kwargs)
-                plotter.add_points(k_centers, **d_k_centers_args)
-            else:
-                d_k_centers_args = dict(color="red", width=10)
-                d_k_centers_args.update(k_centers_kwargs)
-                plotter.add_lines(k_centers, **d_k_centers_args)
-        
-        
-        plotter.show(window_size=window_size)
-        
-    
+
     def check_spk(self, spk):
         return isinstance(spk, Speckle)
 

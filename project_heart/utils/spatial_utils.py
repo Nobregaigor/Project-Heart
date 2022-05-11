@@ -48,7 +48,8 @@ def centroid(points, ql=0.01, qh=0.99):
                       (z >= low_z) & (z <= high_z)
                       )[0]
     bound_points = points[filter]
-
+    if len(bound_points) == 0:
+        bound_points = points
     # compute centroid based on mean of extremas
     x = bound_points[:, 0]
     y = bound_points[:, 1]
@@ -504,4 +505,15 @@ def compute_length_from_predefined_cluster_list(xyz:np.ndarray,
     
     #compute length
     return line_sum(centers)
+
+
+
+# ===================================
+# Projections
+# ===================================
+
+def project_pt_on_line(pt, p1, p2):
     
+    l2 = np.sum((p1-p2)**2) # distance between p1 and p2
+    t = np.sum((pt - p1) * (p2 - p1)) / l2
+    return p1 + t * (p2 - p1)

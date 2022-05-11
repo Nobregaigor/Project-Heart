@@ -20,6 +20,9 @@ class LV_RegionIdentifier(LV_Base):
     def __init__(self, geo_type=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geo_type = geo_type
+        
+        
+        self.apex_and_base_from_nodeset = None
 
     # =========================================================================
     # POINT DATA REGION IDENTIFICATION
@@ -778,7 +781,7 @@ class LV_RegionIdentifier(LV_Base):
                 self.set_apex_and_base_from_nodeset(**recompute_apex_base)
             elif isinstance(recompute_apex_base, bool) and recompute_apex_base == True:
                 self.set_apex_and_base_from_nodeset(
-                    self.REGIONS.ENDO, ql=0.001, qh=0.95)
+                    self.REGIONS.ENDO, ql=self._apex_ql, qh=self._base_qh)
         
     # =========================================================================
     # FACET DATA REGION TRANSFORMATION
@@ -923,6 +926,8 @@ class LV_RegionIdentifier(LV_Base):
     def set_apex_and_base_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
         if nodeset is None:
             nodeset = self.REGIONS.ENDO
+        self.apex_and_base_from_nodeset = nodeset # set flag
+        
         pts=self.points(mask=self.get_nodeset(nodeset))
         (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
         self.add_virtual_node(LV_VIRTUAL_NODES.APEX, es_apex, replace=True)

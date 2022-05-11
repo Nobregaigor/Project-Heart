@@ -404,39 +404,45 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                     raise ValueError("info '{}' not found. "
                     "Options are: {}".format(key, list(info.keys())))
     
-    def plot_longitudinal_line(self, re=False, plot_kwargs=None, window_size=None,**kwargs):
+    def plot_longitudinal_line(self, 
+                               re=False, 
+                               plot_kwargs=None, 
+                               window_size=None, 
+                               plotter=None,
+                               **kwargs):
         if window_size is None:
             window_size = (600,400)
         # set plot_kwargs as empty dict if not specified
         if plot_kwargs is None:
             plot_kwargs = dict()
         # set default plot args
-        d_plotkwargs = dict(
-            
-                style='wireframe', 
-                color="gray", 
-                opacity=0.6,
-                vnodes=[
-                    (
-                        self.VIRTUAL_NODES.BASE, 
-                        {
-                            "color": "red",
-                            "point_size": 600.0,
-                        }
-                    ),
-                    (
-                        self.VIRTUAL_NODES.APEX, 
-                        {
-                            "color": "orange",
-                            "point_size": 600.0,
-                        }
-                    ),
-                    ],
-                window_size=window_size
-            )
-        d_plotkwargs.update(plot_kwargs)
-        # plot mesh and virtual nodes
-        plotter = self.plot(re=True, **d_plotkwargs)
+        if plotter is None:
+            d_plotkwargs = dict(
+                
+                    style='wireframe', 
+                    color="gray", 
+                    opacity=0.6,
+                    vnodes=[
+                        (
+                            self.VIRTUAL_NODES.BASE, 
+                            {
+                                "color": "red",
+                                "point_size": 600.0,
+                            }
+                        ),
+                        (
+                            self.VIRTUAL_NODES.APEX, 
+                            {
+                                "color": "orange",
+                                "point_size": 600.0,
+                            }
+                        ),
+                        ],
+                    window_size=window_size
+                )
+            d_plotkwargs.update(plot_kwargs)
+            # plot mesh and virtual nodes
+            plotter = self.plot(re=True, **d_plotkwargs)
         # create long line for plot
         from project_heart.utils import lines_from_points
         apex = self.get_virtual_node(self.VIRTUAL_NODES.APEX)
@@ -455,7 +461,176 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         else:
             plotter.show(window_size=window_size)
         
+    def plot_speckles(self, 
+                        spk_args, 
+                        t=0, 
+                        k_bins=False,
+                        add_centers=False,
+                        add_k_centers=False,
+                        add_la_centers=False,
+                        plot_kwargs=None, 
+                        centers_kwargs=None,
+                        la_centers_kwargs=None,
+                        k_centers_kwargs=None,
+                        k_centers_as_line=False,
+                        window_size=None, 
+                        re=False,
+                        plotter=None,
+                        **kwargs):
         
+        
+        # Set default values
+        if window_size is None:
+            window_size = (600,400)
+        if plot_kwargs is None:
+            plot_kwargs = dict()
+        if centers_kwargs is None:
+            centers_kwargs = dict()
+        if k_centers_kwargs is None:
+            k_centers_kwargs = dict()
+        if la_centers_kwargs is None:
+            la_centers_kwargs = dict()
+        
+        if plotter is None:
+            d_plotkwargs = dict(
+                    style='points', 
+                    color="gray", 
+                    opacity=0.7,
+                    window_size=window_size
+                )
+            d_plotkwargs.update(plot_kwargs)
+            plotter = self.plot("mesh", t=t, re=True, **d_plotkwargs)
+        
+        # get spk data
+        spk_deque = self._resolve_spk_args(spk_args) 
+        spk_pts = self.get_speckles_xyz(spk_deque, t=t) # spk locations
+        
+        # resolve default args based on specifications
+        d_kwargs = dict()
+        if not add_centers and not add_k_centers:
+            d_kwargs.update(
+                dict(
+                point_size=275,
+                cmap="tab20"
+                )
+            )
+        else:
+            d_kwargs.update(
+                dict(
+                point_size=200,
+                opacity=0.60
+                )
+            )
+        d_kwargs.update(kwargs)
+        # resolze spke color palette
+        if k_bins:
+            klabels = spk_deque.binarize_k_clusters()
+            kl_ids = spk_deque.enumerate_ids()
+            bins = np.zeros(len(klabels))
+            bins[kl_ids] = klabels + 1
+        else:
+            bins = spk_deque.binarize()
+        # add speckle plot        
+        plotter.add_points(spk_pts, scalars=bins, **d_kwargs)
+        
+        # add additional info
+        if add_centers:
+            centers = self.get_speckles_centers(spk_deque, t=t)
+            if not add_k_centers:
+                d_centers_args = dict(point_size=300,color="red")
+            else:
+                d_centers_args = dict(point_size=300,color="orange",opacity=0.90)
+            d_centers_args.update(centers_kwargs)
+            plotter.add_points(centers, **d_centers_args)
+        if add_k_centers:
+            k_centers = self.get_speckles_k_centers(spk_deque, t=t)
+            if not k_centers_as_line:
+                d_k_centers_args = dict(point_size=300,color="red")
+                d_k_centers_args.update(k_centers_kwargs)
+                plotter.add_points(k_centers, **d_k_centers_args)
+            else:
+                d_k_centers_args = dict(color="red", width=10)
+                d_k_centers_args.update(k_centers_kwargs)
+                plotter.add_lines(k_centers, **d_k_centers_args)
+        if add_la_centers:
+            la_centers = self.get_speckles_la_centers(spk_deque, t=t)
+            d_la_k_centers_args = dict(point_size=300,color="green")
+            d_la_k_centers_args.update(la_centers_kwargs)
+            plotter.add_points(la_centers, **d_la_k_centers_args)
+        
+        # resolve plotter return
+        if re:
+            return plotter
+        else:
+            plotter.show(window_size=window_size)
+        
+    def plot_speckles_radial_distances(self, spk_args, t=0, approach="moving_vector", window_size=None):
+        from project_heart.utils.spatial_utils import project_pt_on_line
+        
+        if window_size is None:
+            window_size = (600,400)
+
+        # plot speckles
+        plotter = self.plot_speckles(spk_args, cmap="tab20", categories=True, re=True, t=t)
+        
+        if approach=="fixed_vector":
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=0)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=0)
+        else:
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=t)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=t)
+        
+        spk_deque = self._resolve_spk_args(spk_args)
+        line_lengths = []
+        for spk in spk_deque:
+            spk_xyz = self.states.get(self.STATES.XYZ, mask=spk.ids, t=t)
+
+            for pt in spk_xyz:
+                p_pt = project_pt_on_line(pt, apex_ts, base_ts)
+                line_lengths.append(np.linalg.norm(pt - p_pt))
+                plotter.add_lines(np.vstack((pt, p_pt)), color="magenta")
+            
+            plotter.add_lines(np.vstack((apex_ts, base_ts)), color="cyan")
+            plotter.add_points(np.vstack((apex_ts, base_ts)), color="purple", point_size=200)
+
+        plotter.show(window_size=window_size)
+        
+        return np.mean(line_lengths)
+       
+    def plot_speckles_radial_lengths(self, spk_args, t=0, approach="moving_vector", window_size=None):
+        
+        if window_size is None:
+            window_size = (600,400)
+
+        # plot speckles
+        plotter = self.plot_speckles(spk_args, cmap="tab20", categories=True, re=True, t=t)
+        
+        if approach=="fixed_vector":
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=0)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=0)
+        else:
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=t)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=t)
+        
+        spk_deque = self._resolve_spk_args(spk_args)
+        line_lengths = []
+        for spk in spk_deque:
+            spk_xyz = self.states.get(self.STATES.XYZ, mask=spk.ids, t=t)
+            if approach=="fixed_vector":
+                spk_la_center = self.get_speckles_la_centers(spk_args, t=0)
+            else:
+                spk_la_center = self.get_speckles_la_centers(spk_args, t=t)
+
+            for pt in spk_xyz:
+                line_lengths.append(np.linalg.norm(pt - spk_la_center))
+                plotter.add_lines(np.vstack((pt, spk_la_center)), color="magenta")
+            
+            plotter.add_lines(np.vstack((apex_ts, base_ts)), color="cyan")
+            plotter.add_points(np.vstack((apex_ts, base_ts)), color="purple", point_size=200)
+
+        plotter.show(window_size=window_size)
+        
+        return np.mean(line_lengths)
     
     # ===============================
     # exports to FEA solvers

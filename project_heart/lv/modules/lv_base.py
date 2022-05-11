@@ -38,6 +38,9 @@ class LV_Base(BaseContainerHandler):
         self.base_info = {}
 
         self._aligment_data = {}
+        
+        self._apex_ql = 0.05
+        self._base_qh = 0.95
 
         self._long_line = None
 
@@ -65,6 +68,7 @@ class LV_Base(BaseContainerHandler):
 
     @staticmethod
     def est_apex_ref(points, ql=0.05, **kwargs):
+        # print("apex:", ql)
         zvalues = points[:, 2]
         zmin = np.min(zvalues)
         if zmin > 0:
@@ -82,6 +86,7 @@ class LV_Base(BaseContainerHandler):
 
     @staticmethod
     def est_base_ref(points, qh=0.95, **kwargs):
+        # print("base:", qh)
         zvalues = points[:, 2]
         zmax = np.max(zvalues)
         thresh = qh*zmax
@@ -92,6 +97,7 @@ class LV_Base(BaseContainerHandler):
         # thresh = np.quantile(zvalues, qh)
         # base_region_idxs = np.where(zvalues >= thresh)[0]
         base_region_pts = points[base_region_idxs]
+        # print(len(base_region_pts))
         return centroid(base_region_pts), base_region_idxs
 
     @staticmethod
@@ -107,19 +113,31 @@ class LV_Base(BaseContainerHandler):
             "base_region": base_region_idxs}
         return np.vstack((base_ref, apex_ref)), info
 
-    def est_apex_and_base_refs_iteratively(self, points, n=5, rot_chain=None, **kwargs):
+    def est_apex_and_base_refs_iteratively(self, points, 
+                                           n=5, rot_chain=None, 
+                                           ql=None, qh=None,
+                                           **kwargs):
         if rot_chain is None:
             rot_chain = deque()
         pts = np.copy(points)
+        if ql is None:
+            ql = self._apex_ql
+        else:
+            self._apex_ql = ql
+        if qh is None:
+            qh = self._base_qh
+        else:
+            self._base_qh = qh
+            
         for _ in range(n):
             long_line, _ = LV_Base.est_apex_and_base_refs(
-                pts, **kwargs)
+                pts, ql=ql, qh=qh, **kwargs)
             lv_normal = unit_vector(long_line[0] - long_line[1])
             curr_rot = get_rotation(lv_normal, self._Z)
             pts = curr_rot.apply(pts)
             rot_chain.append(curr_rot)
         long_line, info = LV_Base.est_apex_and_base_refs(
-            pts, **kwargs)
+            pts, ql=ql, qh=qh, **kwargs)
         lv_normal = unit_vector(long_line[0] - long_line[1])
         info["rot_pts"] = pts
         info["normal"] = lv_normal
@@ -127,19 +145,30 @@ class LV_Base(BaseContainerHandler):
         info["rot_chain"] = rot_chain
         return info
     
-    def est_pts_aligment_with_lv_normal(self, points, n=5, rot_chain=None, **kwargs):
+    def est_pts_aligment_with_lv_normal(self, points, 
+                                        n=5, rot_chain=None, 
+                                        ql=None, qh=None,
+                                        **kwargs):
         if rot_chain is None:
             rot_chain = deque()
         pts = np.copy(points)
+        if ql is None:
+            ql = self._apex_ql
+        else:
+            self._apex_ql = ql
+        if qh is None:
+            qh = self._base_qh
+        else:
+            self._base_qh = ql
         for _ in range(n):
             long_line, _ = LV_Base.est_apex_and_base_refs(
-                pts, **kwargs)
+                pts, ql=ql, qh=qh, **kwargs)
             lv_normal = unit_vector(long_line[0] - long_line[1])
             curr_rot = get_rotation(lv_normal, self._Z)
             pts = curr_rot.apply(pts)
             rot_chain.append(curr_rot)
         long_line, info = LV_Base.est_apex_and_base_refs(
-            pts, **kwargs)
+            pts, ql=ql, qh=qh, **kwargs)
         lv_normal = unit_vector(long_line[0] - long_line[1])
         info["rot_pts"] = pts
         info["normal"] = lv_normal
