@@ -288,8 +288,7 @@
    "outputs": [],
    "source": [
     "rl_mv = lv_typeA.plot_speckles_radial_lengths(sample_spk_typeA, t=0.15, \n",
-    "                                             approach=\"moving_centers\", \n",
-    "                                             plot_kwargs={\"style\": None})"
+    "                                             approach=\"moving_centers\")"
    ]
   },
   {
@@ -299,8 +298,7 @@
    "outputs": [],
    "source": [
     "rl_fv = lv_typeA.plot_speckles_radial_lengths(sample_spk_typeA, t=0.15, \n",
-    "                                             approach=\"fixed_centers\", \n",
-    "                                             plot_kwargs={\"style\": None})"
+    "                                             approach=\"fixed_centers\")"
    ]
   },
   {
