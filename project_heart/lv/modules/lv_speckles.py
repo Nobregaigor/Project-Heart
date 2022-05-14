@@ -398,17 +398,28 @@ class LV_Speckles(LV_RegionIdentifier):
             logger.debug("p_center: {}.".format(p_center))
             # compute angles between a reference vector and other vectos
             vecs = ppts - p_center 
-            ref_max_pt = np.argmax(np.linalg.norm(vecs, axis=1))
-            ref_min_pt = np.argmin(np.linalg.norm(vecs, axis=1))
+            vecs_sum = np.linalg.norm(vecs, axis=1)
+            ref_max_pt = np.argmax(vecs_sum)
+            ref_min_pt = np.argmin(vecs_sum)
             logger.debug("ref_max_pt: {}.".format(ref_max_pt))
-            logger.debug("ref_max_pt: {}.".format(ref_min_pt))
+            logger.debug("ref_min_pt: {}.".format(ref_min_pt))
             ref_max_vec = vecs[ref_max_pt]
             ref_min_vec = vecs[ref_min_pt]
             logger.debug("ref_max_vec: {}.".format(ref_max_vec))
-            angles = angle_between(vecs, ref_max_vec, check_orientation=False)
+            logger.debug("ref_min_vec: {}.".format(ref_min_vec))
+            angles = angle_between(vecs, ref_max_vec, check_orientation=False) # initial guess
             min_a, max_a = np.min(angles), np.max(angles)
-            logger.debug("min_a: {}.".format(min_a))
-            logger.debug("max_a: {}.".format(max_a))
+            logger.debug("min_a: {}.".format(np.degrees(min_a)))
+            logger.debug("max_a: {}.".format(np.degrees(max_a)))
+            min_idx, max_idx = np.argmin(angles), np.argmax(angles)
+            ref_max_vec = vecs[max_idx]
+            ref_min_vec = vecs[min_idx]
+            logger.debug("ref_max_vec: {}.".format(ref_max_vec))
+            logger.debug("ref_min_vec: {}.".format(ref_min_vec))
+            angles = angle_between(vecs, vecs[max_idx], check_orientation=False)
+            min_a, max_a = np.min(angles), np.max(angles)
+            logger.debug("min_a: {}.".format(np.degrees(min_a)))
+            logger.debug("max_a: {}.".format(np.degrees(max_a)))
             # create bins
             bins = np.digitize(
                 angles, np.linspace(min_a*0.999, max_a*1.001, n_subsets+1))
@@ -524,7 +535,7 @@ class LV_Speckles(LV_RegionIdentifier):
             centers.append(c)
         return np.vstack(centers)
     
-    def get_speckles_k_centers(self, spk_args, t=None) -> np.ndarray:
+    def get_speckles_k_centers(self, spk_args, t=None, **kwargs) -> np.ndarray:
         
         if self.states.check_key(self.STATES.XYZ) and t is not None:
             xyz = self.states.get(self.STATES.XYZ, t=t)
@@ -536,7 +547,10 @@ class LV_Speckles(LV_RegionIdentifier):
         for spk in spk_deque:
             for kids in spk.k_ids:
                 centers.append(np.mean(xyz[kids], axis=0))
-                
+        
+        centers = np.asarray(centers)
+        from project_heart.utils.spatial_utils import apply_filter_on_line_segment
+        centers = apply_filter_on_line_segment(centers, **kwargs)
         return np.vstack(centers)
 
     def check_spk(self, spk):

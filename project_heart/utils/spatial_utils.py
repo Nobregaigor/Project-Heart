@@ -423,21 +423,53 @@ def compute_length_by_clustering(xyz, n_clusters=6, random_state=0, batch_size=5
     #compute length
     return line_sum(centers)
 
+def apply_filter_on_line_segment(xyz, 
+                            mfilter_ws=0, 
+                           sfilter_ws=0, 
+                           sfilter_or=0,
+                           keep_first=False,
+                           keep_last=False):
+    def _apply_filter(seq):
+        # reduce noise with filters
+        new_seq = np.copy(seq)
+        if mfilter_ws > 0 and len(seq) > mfilter_ws:
+            from scipy import signal
+            new_seq = signal.medfilt(seq, mfilter_ws)
+            if keep_first:
+                new_seq[0] = seq[0]
+            if keep_last:
+                new_seq[-1] = seq[-1]
+        if sfilter_ws > 0 and len(seq) > sfilter_ws:
+            from scipy import signal
+            new_seq = signal.savgol_filter(seq, sfilter_ws, sfilter_or)
+            if keep_first:
+                new_seq[0] = seq[0]
+            if keep_last:
+                new_seq[-1] = seq[-1]
+        return seq
+            
+    xyz[:, 0] = _apply_filter(xyz[:, 0])
+    xyz[:, 1] = _apply_filter(xyz[:, 1])
+    xyz[:, 2] = _apply_filter(xyz[:, 2])
+    
+    return xyz
+
+
 def compute_length_from_predefined_cluster_list(xyz:np.ndarray, 
                                             clusters:list=None, 
                                             assume_sorted:bool=False,
                                             use_centroid=False,
+                                            filter_args=None,
                                             dtype=np.float64,
                                             **kwargs) -> float:
     assert clusters is not None, "clusters must be provided."
-    
     # compute centers from list of clusters
     if not use_centroid:
         centers = [np.mean(xyz[kids], axis=0) for kids in clusters]
     else:
         centers = [centroid(xyz[kids]) for kids in clusters]
     # transform list of centers to array
-    centers = np.asarray(centers, dtype=dtype)
+    centers = np.asarray(centers, dtype=dtype)    
     # for optmization, we can assume list of clusters is sorted
     if not assume_sorted:
         # transform to spherical coordinates
@@ -448,7 +480,9 @@ def compute_length_from_predefined_cluster_list(xyz:np.ndarray,
         # sort by columns
         ids = np.lexsort((phis, thetas,rs))
         centers = centers[ids]
-    
+    # apply filters (if requested)
+    if filter_args is not None:
+        centers = apply_filter_on_line_segment(centers, **filter_args)
     #compute length
     return line_sum(centers)
 

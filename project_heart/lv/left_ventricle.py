@@ -473,6 +473,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                         la_centers_kwargs=None,
                         k_centers_kwargs=None,
                         k_centers_as_line=False,
+                        k_center_filters=None,
                         window_size=None, 
                         re=False,
                         plotter=None,
@@ -490,6 +491,8 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             k_centers_kwargs = dict()
         if la_centers_kwargs is None:
             la_centers_kwargs = dict()
+        if k_center_filters is None:
+            k_center_filters = dict()
         
         if plotter is None:
             d_plotkwargs = dict(
@@ -544,7 +547,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             d_centers_args.update(centers_kwargs)
             plotter.add_points(centers, **d_centers_args)
         if add_k_centers:
-            k_centers = self.get_speckles_k_centers(spk_deque, t=t)
+            k_centers = self.get_speckles_k_centers(spk_deque, t=t, **k_center_filters)
             # if not k_centers_as_line:
             d_k_centers_args = dict(point_size=300,color="blue")
             d_k_centers_args.update(k_centers_kwargs)

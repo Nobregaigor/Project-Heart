@@ -633,9 +633,7 @@ class LVBaseMetricsComputations(LV_Speckles):
     def compute_spk_longitudinal_length(self,
                                         spk,
                                         approach:str = "k_ids",
-                                        mfilter_ws=0,
-                                        sfilter_ws=0,
-                                        sfilter_or=0,
+                                        line_seg_filter_kwargs=None,
                                         dtype: np.dtype = np.float64,
                                         **kwargs):
         from functools import partial
@@ -650,6 +648,7 @@ class LVBaseMetricsComputations(LV_Speckles):
             fun = partial(compute_length_from_predefined_cluster_list, 
                           clusters=spk.k_local_ids,
                           assume_sorted=True,
+                          filter_args=line_seg_filter_kwargs,
                           dtype=dtype,**kwargs)
         elif approach == "kmeans":
             from project_heart.utils.spatial_utils import compute_length_by_clustering
@@ -663,11 +662,6 @@ class LVBaseMetricsComputations(LV_Speckles):
         xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
         # compute response for given spk
         spk_res = np.array([fun(coords) for coords in xyz], dtype=dtype)
-        # apply filter (if requested)
-        spk_res = self.apply_noise_filter(spk_res, 
-                        mfilter_ws=mfilter_ws, 
-                        sfilter_ws=sfilter_ws,
-                        sfilter_or=sfilter_or)
         # save to states
         self.states.add_spk_data(spk, self.STATES.LONG_LENGTH, spk_res)
         # return pointer
@@ -784,10 +778,9 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     # ---------- Geo metric
 
-    def compute_spk_circumferential_length(self, spk, approach="k_ids",
-                                           mfilter_ws=0,
-                                           sfilter_ws=0,
-                                           sfilter_or=0,
+    def compute_spk_circumferential_length(self, spk, 
+                                           approach="k_ids",
+                                           line_seg_filter_kwargs=None,
                                            dtype: np.dtype = np.float64,
                                            **kwargs):
         from functools import partial
@@ -801,6 +794,7 @@ class LVBaseMetricsComputations(LV_Speckles):
             fun = partial(compute_length_from_predefined_cluster_list, 
                           clusters=spk.k_local_ids,
                           assume_sorted=True,
+                          filter_args=line_seg_filter_kwargs,
                           dtype=dtype,**kwargs)
         elif approach == "kmeans":
             from project_heart.utils.spatial_utils import compute_length_by_clustering
@@ -814,11 +808,6 @@ class LVBaseMetricsComputations(LV_Speckles):
         xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
         # compute response for given spk
         spk_res = np.array([fun(coords) for coords in xyz], dtype=dtype)
-        # apply filter (if requested)
-        spk_res = self.apply_noise_filter(spk_res, 
-                        mfilter_ws=mfilter_ws, 
-                        sfilter_ws=sfilter_ws,
-                        sfilter_or=sfilter_or)
         # save to states
         self.states.add_spk_data(spk, self.STATES.CIRC_LENGTH, spk_res)
         # return pointer
@@ -1151,15 +1140,29 @@ class LVBaseMetricsComputations(LV_Speckles):
     # Other
     # ===============================
 
-    def apply_noise_filter(self, timeseries, mfilter_ws=0, sfilter_ws=0, sfilter_or=0):
+    def apply_noise_filter(self, timeseries, 
+                           mfilter_ws=0, 
+                           sfilter_ws=0, 
+                           sfilter_or=0,
+                           keep_first=False,
+                           keep_last=False):
         # reduce noise with filters
+        new_ts = np.copy(timeseries)
         if mfilter_ws > 0 and len(timeseries) > mfilter_ws:
             from scipy import signal
-            timeseries = signal.medfilt(timeseries, mfilter_ws)
+            new_ts = signal.medfilt(timeseries, mfilter_ws)
+            if keep_first:
+                new_ts[0] = timeseries[0]
+            if keep_last:
+                new_ts[-1] = timeseries[-1]
         if sfilter_ws > 0 and len(timeseries) > sfilter_ws:
             from scipy import signal
-            timeseries = signal.savgol_filter(timeseries, sfilter_ws, sfilter_or)
-        return timeseries
+            new_ts = signal.savgol_filter(timeseries, sfilter_ws, sfilter_or)
+            if keep_first:
+                new_ts[0] = timeseries[0]
+            if keep_last:
+                new_ts[-1] = timeseries[-1]
+        return new_ts
 
     # ===============================
     # Generic spk compilation
