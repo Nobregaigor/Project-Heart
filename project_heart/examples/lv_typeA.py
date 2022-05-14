@@ -19,7 +19,7 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
     
     lv.identify_regions(LV_GEO_TYPES.TYPE_A,
         apex_base_args=dict(ab_ql=0.15, ab_qh=0.95),
-        endo_epi_args={"threshold":80},
+        endo_epi_args={"threshold":85, "br":1.25, "ba":100},
         recompute_apex_base=dict(ql=0.001, qh=0.75))
   
     endo_long = []
@@ -37,7 +37,7 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             normal_to=[np.cos(a),np.sin(a),0.0],
             n_subsets=6,
             subsets_criteria="z2",
-            cluster_criteria="z2",
+            cluster_criteria="angles3",
             n_clusters=10,
             t=0.0,
             kmin=-1,
@@ -57,7 +57,7 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             normal_to=[np.cos(a),np.sin(a),0.0],
             n_subsets=6,
             subsets_criteria="z2",
-            cluster_criteria="z2",
+            cluster_criteria="angles3",
             n_clusters=10,
             t=0.0,
             kmin=-1,
@@ -200,6 +200,79 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             t=0.0,
             kmin=-1.0,
             kmax=-1.0,
+            log_level=logging.WARN,
+        )
+    
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="epi",
+            name="THICK",
+            from_nodeset=LV_SURFS.EPI,
+            d=6.0,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
+
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="epi",
+            name="MID",
+            from_nodeset=LV_SURFS.EPI,
+            d=3.0,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
+    
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="epi",
+            name="THIN",
+            from_nodeset=LV_SURFS.EPI,
+            d=1.75,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
+    
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="epi",
+            name="SAMPLE-LONG",
+            from_nodeset=LV_SURFS.EPI,
+            exclude_nodeset=[LV_SURFS.BASE, LV_SURFS.ENDO],
+            d=2.5,
+            k=0.5,
+            normal_to=[1.0,0.0,0.0],
+            n_subsets=6,
+            subsets_criteria="z2",
+            cluster_criteria="angles3",
+            n_clusters=4,
+            t=0.0,
+            kmin=-1,
+            kmax=0.85,
             log_level=logging.WARN,
         )
     

@@ -454,40 +454,95 @@ class LVBaseMetricsComputations(LV_Speckles):
     # ---------- Geo metric
 
     def compute_spk_thickness(self, endo_spk, epi_spk, 
+                              approach="radial_distance",
+                              dist_tol_between_spks_la_center=1.0,
+                              assert_subsets=True,
                               log_level=logging.INFO,
                               **kwargs):
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle thickness for spks: '{}' and '{}"
+                     .format(endo_spk, epi_spk))
+        
         assert self.check_spk(
             endo_spk), "endo_spk must be a valid 'Speckle' object."
         assert self.check_spk(
             epi_spk), "epi_spk must be a valid 'Speckle' object."
         
-        logger.setLevel(log_level)
-        logger.debug("Computing speckle thickness for spks: '{}' and '{}"
-                     .format(endo_spk, epi_spk))
-        # check if radius were computed for ENDOCARDIUM
-        if not self.states.check_spk_key(endo_spk, self.STATES.RADIAL_DISTANCE):
+        # safety assertions
+        if dist_tol_between_spks_la_center >= 0:
+            endo_center = endo_spk.center
+            epi_center = epi_spk.center
+            dist = np.linalg.norm(endo_center - epi_center)
+            assert dist <= dist_tol_between_spks_la_center, (""
+                    "Distance between endo and epi speckles is greater than allowed tolerance. "
+                    "This means that speckles might not be related in order to compute thickness. "
+                    "For instance, trying to use 'base' and 'apex' speckle; which will "
+                    "result in wrong thickness computation. If you want to proceed, please "
+                    "set 'dist_tol_between_spks_la_center' to -1.\n"
+                    "Distance: {}. Allowed: {}\n"
+                    "Endo reference center is located at: {}. \n"
+                    "Epi reference center is located at: {}. \n"
+                    "Endo spk: {}.\nEpi spk: {}"
+                    "".format(dist, dist_tol_between_spks_la_center,
+                              endo_center, epi_center, endo_spk, epi_spk)
+                    )
+        if assert_subsets:
+            endo_subset = endo_spk.subset
+            epi_subset = epi_spk.subset
+            assert endo_subset == epi_subset, (""
+                "Subsets are not equal. This means that you might be trying to use speckles "
+                "at different segements to compute thickness. For instance, trying to use "
+                "speckles at '0' and '90' degrees, respectively, w.r.t. X axis, which will "
+                "result in wrong thickness computation. If you would like to proceed, please "
+                " set 'assert_subsets' to False.\n"
+                "Endo spk: {}.\nEpi spk: {}"
+                "".format(endo_spk, epi_spk)
+                )
+        
+        # check for valid approaches
+        if approach == "radial_distance":
+            radial_metric = self.STATES.RADIAL_DISTANCE
+        elif approach == "radial_length":
+            radial_metric = self.STATES.RADIAL_LENGTH
+        else:
+            raise ValueError("Unknown approach. Options are: "
+                             "'radial_distance' or 'radial_length'. "
+                             "Received '{}'"
+                             "Check documentation for further details."
+                             .format(approach))
+            
+        # check if radial metric was computed for ENDOCARDIUM
+        if not self.states.check_spk_key(endo_spk, radial_metric):
             logger.debug("Metric 'RADIAL_DISTANCE' not found for spk '{}'. Will try to compute.".format(endo_spk))
             try:
-                self.compute_radial_distance(endo_spk, **kwargs)
+                if approach == "radial_distance":
+                    self.compute_radial_distance(endo_spk, **kwargs)
+                else:
+                    self.compute_radial_length(endo_spk, **kwargs)
             except:
                 raise RuntimeError(
                     "Unable to compute radius data for endo spk '{}'."
                     "Please, either verify required data or add"
                     "state data for 'RADIAL_DISTANCE' manually."
                     .format(endo_spk.str))
-        # check if radius were computed for EPICARDIUM
-        if not self.states.check_spk_key(epi_spk, self.STATES.RADIAL_DISTANCE):
+        # check if radial metric was computed for EPICARDIUM
+        if not self.states.check_spk_key(epi_spk, radial_metric):
             logger.debug("Metric 'RADIAL_DISTANCE' not found for spk '{}'. Will try to compute.".format(epi_spk))
             try:
-                self.compute_radial_distance(epi_spk, **kwargs)
+                if approach == "radial_distance":
+                    self.compute_radial_distance(epi_spk, **kwargs)
+                else:
+                    self.compute_radial_length(epi_spk, **kwargs)
             except:
                 raise RuntimeError(
                     "Unable to compute radius data for epi spk '{}'."
                     "Please, either verify required data or add"
                     "state data for 'RADIAL_DISTANCE' manually."
                     .format(epi_spk.str))
-        r_endo = self.states.get_spk_data(endo_spk, self.STATES.RADIAL_DISTANCE)
-        r_epi = self.states.get_spk_data(epi_spk, self.STATES.RADIAL_DISTANCE)
+        # get spk data
+        r_endo = self.states.get_spk_data(endo_spk, radial_metric)
+        r_epi = self.states.get_spk_data(epi_spk, radial_metric)
+        # compute thickness
         thickness = r_epi - r_endo
         logger.debug("-r_endo:\n'{}'\n-r_epi:\n'{}\n-thickness:\n'{}'\n".
                      format(r_endo, r_epi, thickness))

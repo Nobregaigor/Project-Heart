@@ -111,13 +111,20 @@ class LV_Speckles(LV_RegionIdentifier):
                     "equal to the number of subsets.")
         elif n_subsets > 0 and len(subsets_names) == 0:
             subsets_names = list(range(n_subsets))
-
+            
+        # # remove any existing speckle with same references
+        # self.speckles.remove(
+        #     spk_name=name,
+        #     spk_group=group,
+        #     spk_collection=collection,
+        # )
+        
         # assume default values
         cluster_criteria = subsets_criteria if cluster_criteria is None else cluster_criteria
         n_clusters = 3 * n_subsets if n_clusters is None else n_clusters
         
         # determine nodes to use
-        if from_nodeset is None:
+        if from_nodeset is None: 
             logger.debug("Using all avaiable nodes.")
             # keep track of nodes data
             nodes = self.nodes()
@@ -130,9 +137,15 @@ class LV_Speckles(LV_RegionIdentifier):
         
         if exclude_nodeset is not None:
             logger.debug("Excluding nodes from nodeset %s" % exclude_nodeset)
-            ids_to_exclude = self.get_nodeset(exclude_nodeset)
-            ids = np.setdiff1d(ids, ids_to_exclude)
-            nodes = self.nodes(mask=ids)
+            if isinstance(exclude_nodeset, (list, tuple)):
+                for exc_ndset in exclude_nodeset:
+                    ids_to_exclude = self.get_nodeset(exc_ndset)
+                    ids = np.setdiff1d(ids, ids_to_exclude)
+                    nodes = self.nodes(mask=ids)
+            else:
+                ids_to_exclude = self.get_nodeset(exclude_nodeset)
+                ids = np.setdiff1d(ids, ids_to_exclude)
+                nodes = self.nodes(mask=ids)
 
         
         # Determine which normal to use
@@ -237,7 +250,8 @@ class LV_Speckles(LV_RegionIdentifier):
                 k_ids = None
                 non_empty_buckets_l = None
                 if n_clusters > 0:
-                    logger.debug("pts: {}".format(len(pts)))
+                    logger.debug("len(pts): {}".format(len(pts)))
+                    logger.debug("sub_ids[:5]: {}".format(np.array(sub_ids)[:5]))
                     sub_pts = self.nodes()[sub_ids]
                     k_ids, non_empty_buckets_l= self._subdivide_speckles(sub_pts, 
                                                      n_clusters,
@@ -262,8 +276,6 @@ class LV_Speckles(LV_RegionIdentifier):
                     k_local_ids=non_empty_buckets_l
                 )
 
-        
-        
         return self.speckles.get(
             spk_name=name,
             spk_group=group,
@@ -375,6 +387,46 @@ class LV_Speckles(LV_RegionIdentifier):
             bins = np.digitize(
                 angles, np.linspace(min_a*0.999, max_a*1.001, n_subsets+1))
             logger.debug("Unique bins: {}.".format(np.unique(bins)))
+        elif subsets_criteria == "angles3": 
+            # project points onto a single plane based on spk normal
+            logger.debug("pts.shape: {}.".format(pts.shape))
+            logger.debug("pts[:5]: \n{}.".format(pts[:5]))
+            plane_d = calc_plane_d(normal, ref_center)
+            logger.debug("plane_d: {}.".format(plane_d))
+            ppts = project_pts_onto_plane(pts, normal, plane_d)
+            p_center = project_pts_onto_plane(ref_center, normal, plane_d)[0]
+            logger.debug("p_center: {}.".format(p_center))
+            # compute angles between a reference vector and other vectos
+            vecs = ppts - p_center 
+            ref_max_pt = np.argmax(np.linalg.norm(vecs, axis=1))
+            ref_min_pt = np.argmin(np.linalg.norm(vecs, axis=1))
+            logger.debug("ref_max_pt: {}.".format(ref_max_pt))
+            logger.debug("ref_max_pt: {}.".format(ref_min_pt))
+            ref_max_vec = vecs[ref_max_pt]
+            ref_min_vec = vecs[ref_min_pt]
+            logger.debug("ref_max_vec: {}.".format(ref_max_vec))
+            angles = angle_between(vecs, ref_max_vec, check_orientation=False)
+            min_a, max_a = np.min(angles), np.max(angles)
+            logger.debug("min_a: {}.".format(min_a))
+            logger.debug("max_a: {}.".format(max_a))
+            # create bins
+            bins = np.digitize(
+                angles, np.linspace(min_a*0.999, max_a*1.001, n_subsets+1))
+            # sort bins in 'ascending' order based on first bin 
+            # this is useful to keep consistency between speckles
+            angle_between_refs = angle_between(ref_max_vec, ref_min_vec, 
+                                            check_orientation=True, zaxis=normal)   
+            logger.debug("angle_between_refs: {}.".format(np.degrees(angle_between_refs)))
+            if angle_between_refs > np.radians(180):
+                logger.debug("reversing bins: {} > 180.".format(np.degrees(angle_between_refs)))
+                uvals = np.unique(bins)
+                logger.debug("uvals: {}.".format(uvals))
+                new_bins = np.zeros(len(bins), dtype=np.int64)
+                for i, u in enumerate(uvals[::-1]):
+                    new_bins[bins==u] = i
+                bins = new_bins + 1
+            logger.debug("Unique bins: {}.".format(np.unique(bins)))
+            logger.debug("bins: \n{}.".format(bins))
         elif subsets_criteria == "kmeans":
             from sklearn.cluster import KMeans
             kmeans = KMeans(n_clusters=n_subsets, n_init=5, random_state=0)
@@ -474,16 +526,17 @@ class LV_Speckles(LV_RegionIdentifier):
     
     def get_speckles_k_centers(self, spk_args, t=None) -> np.ndarray:
         
-        if self.states.check_key(self.STATES.XYZ):
+        if self.states.check_key(self.STATES.XYZ) and t is not None:
             xyz = self.states.get(self.STATES.XYZ, t=t)
         else:
             xyz = self.nodes()
             
         spk_deque = self._resolve_spk_args(spk_args)
-        centers = deque()    
+        centers = deque() 
         for spk in spk_deque:
             for kids in spk.k_ids:
                 centers.append(np.mean(xyz[kids], axis=0))
+                
         return np.vstack(centers)
 
     def check_spk(self, spk):

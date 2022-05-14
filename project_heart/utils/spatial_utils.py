@@ -158,11 +158,21 @@ def sort_circumferential_2D(xy, vec=np.asarray([1.0, 0.0])):
     return xy[idx]
 
 
+def sort_by_spherical(xyz):
+    # transform to spherical coordinates
+    rs = np.linalg.norm(xyz, axis=1)
+    thetas = np.arccos(xyz[:, 2]/rs)
+    phis = np.arctan2(xyz[:, 1],xyz[:, 0])
+    # sort by columns
+    ids = np.lexsort((phis, thetas,rs))
+    return xyz[ids], ids
+
 # ==================================
 # GROUPING
 # ==================================
 
-def grouping_by_distance(xyz, w=1.0, assume_sorted=False, decay=0.95, min_g=4, sort_mode="vertical", max_trials=100):
+def grouping_by_distance(xyz, w=1.0, assume_sorted=False, decay=0.95, min_g=4, sort_mode="spherical", 
+                         max_trials=100):
     """
       This function simplifies a xyz curve by grouping elements based on their
       distance. 
@@ -173,6 +183,8 @@ def grouping_by_distance(xyz, w=1.0, assume_sorted=False, decay=0.95, min_g=4, s
     if not assume_sorted:
         if sort_mode == "vertical":
             xyz = xyz[np.lexsort([xyz[:, 1], xyz[:, 0], xyz[:, 2]])]
+        if sort_mode == "spherical":
+            xyz, _ = sort_by_spherical(xyz)
         elif sort_mode == "circumferential":
             xyz = sort_circumferential_2D(xyz)
 
@@ -224,83 +236,14 @@ def grouping_by_distance(xyz, w=1.0, assume_sorted=False, decay=0.95, min_g=4, s
     data = np.array([np.average(val, axis=0) for val in groups if len(val) > 0],
                     dtype=np.float32)
 
-    mean_last_two = np.mean(xyz[-2:], axis=0)
-    if np.linalg.norm(mean_last_two-data[-1]) <= np.linalg.norm(data[-1]-data[-2])*w:
-        data = np.vstack((data, mean_last_two))
+    # mean_last_two = np.mean(xyz[-2:], axis=0)
+    # if np.linalg.norm(mean_last_two-data[-1]) <= np.linalg.norm(data[-1]-data[-2])*w:
+    #     data = np.vstack((data, mean_last_two))
 
-    if np.linalg.norm(xyz[0]-data[0]) <= np.linalg.norm(data[0]-data[1])*w:
-        data = np.vstack((xyz[0], data))
+    # if np.linalg.norm(xyz[0]-data[0]) <= np.linalg.norm(data[0]-data[1])*w:
+    #     data = np.vstack((xyz[0], data))
     return data
 
-
-def group_by_z(xyz, zaxis=np.asarray([0., 0., 1.])):
-
-    buckets = deque([deque() for _ in range(n_subsets)])
-
-    # set values to be digitized. The final values will have the similar meaning
-    # as a 2D view on xz as: y = sign(x)*y. This method allows for quickly
-    # approximate left and right sides of the plane without the need to sort
-    # note: y values must be positive.
-    zs = pts[:, 2]
-    angle_y = angle_between_2D(np.cross(zaxis, normal)[:2], YAXIS[:2])
-    if abs(angle_y) <= np.radians(45) or abs(angle_y) >= np.radians(135):
-        ys = pts[:, 1]
-        arr = np.sign(ys)*(zs-np.min(zs))
-    else:
-        xs = pts[:, 0]
-        arr = np.sign(xs)*(zs-np.min(zs))
-    # get ranges of of modified z-axis and compute bins
-    min_z, max_z = np.min(arr), np.max(arr)
-    bins = np.digitize(arr, np.linspace(min_z, max_z+1, n_subsets+1))
-
-    # The previous method works for most scenarios. However, there are some
-    # limitation when deciding which bin the bottom nodes belong to.
-    # Let's check if any modification needs to be made. The heuristic will
-    # be based on the distance between a given node and the median value of
-    # its bin and the opposite bin. If the distance between the opposite bin
-    # is less than of the one to its bin's median, it probably should be
-    # in the opposite bin.
-
-    # simply get the left and right ids (bucket idexes) of bottom bins
-    # They sould be the two middle bins.
-    right_id = n_subsets//2
-    left_id = n_subsets//2+1
-
-    # get indexes of right and left ids (so that we can refer to them later)
-    right_idexes = np.argwhere(bins == right_id).reshape((-1,))
-    left_idexes = np.argwhere(bins == left_id).reshape((-1,))
-
-    # get right and left pts
-    right_pts = pts[right_idexes][:, :2]
-    left_pts = pts[left_idexes][:, :2]
-
-    # compute median of each bin
-    right_median = np.median(right_pts, axis=0)
-    left_median = np.median(left_pts, axis=0)
-
-    # compute the distance from each node to it's current bin's median
-    d_r_to_m = np.linalg.norm((right_pts-right_median), axis=1)
-    d_l_to_m = np.linalg.norm((left_pts-left_median), axis=1)
-
-    # compute the distance from each node to the opposite bin's median
-    d_r_to_l = np.linalg.norm((right_pts-left_median), axis=1)
-    d_l_to_r = np.linalg.norm((left_pts-right_median), axis=1)
-
-    # For each distance, if the distance between the opposite bin and the
-    # current bin is shorter than the one from the current bin, the node
-    # belongs to the opposite bin.
-    for i, (drm, drl) in enumerate(zip(d_r_to_m, d_r_to_l)):
-        if drl < drm:
-            bins[right_idexes[i]] = left_id
-    for i, (dlm, dlr) in enumerate(zip(d_l_to_m, d_l_to_r)):
-        if dlr < dlm:
-            bins[left_idexes[i]] = right_id
-
-    # add ids to each bucket
-    for i, pool_idx in enumerate(bins):
-        buckets[pool_idx-1].append(valid_ids[i])
-
-    return buckets
 
 # ==================================
 # 2d SEG. LENGTH

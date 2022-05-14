@@ -59,9 +59,11 @@ def angle_between(a, b, assume_unit_vector=False, check_orientation=True, zaxis=
 
     if check_orientation:
         zaxis = np.asarray(zaxis)
+        if zaxis.shape == (3,) or zaxis.shape == (2,):
+            zaxis = np.repeat(np.expand_dims(zaxis, 1), len(a), axis=1).T
         angle = np.array(list(map(
             check_angle_orientation,
-            angle, a, b)
+            angle, a, b, zaxis)
         ))
 
     if not single_element:
@@ -125,12 +127,27 @@ def calc_plane_d(normal, v):
     d = -np.dot(normal[:3], v)
     return d
 
+def distance(p1, p2, dtype=np.float64):
+    if not isinstance(p1, np.ndarray):
+        p1 = np.array(p1, dtype=dtype)
+    if not isinstance(p2, np.ndarray):
+        p2 = np.array(p2, dtype=dtype)
+    return np.linalg.norm(p1-p2).astype(dtype)
 
-def dist_from_plane(pts, normal, d):
+def dist_from_plane(pts, normal, d, abs=True):
     """ Returns the perpendicular distance from point p and plane"""
     # print(p)
     a = np.dot(pts, normal)
-    return np.abs(a + d) / np.linalg.norm(normal)
+    if abs:
+        return np.abs(a + d) / np.linalg.norm(normal)
+    else:
+        return a + d / np.linalg.norm(normal)
+
+def project_pts_onto_plane(pts, plane_normal, plane_d):
+    plane_normal = unit_vector(plane_normal)
+    dists = dist_from_plane(pts, plane_normal, plane_d, abs=False).reshape((-1,1))
+    return pts - dists*plane_normal
+
 
 def dist_from_line(p1:np.ndarray, p2:np.ndarray, p3:np.ndarray, dtype:np.dtype=np.float64) -> np.ndarray:
     """Computes the perpendicular distance between one or multiple points [p1] to a line (or lines) \

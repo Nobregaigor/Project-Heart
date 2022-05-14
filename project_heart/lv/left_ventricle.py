@@ -518,7 +518,8 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             d_kwargs.update(
                 dict(
                 point_size=200,
-                opacity=0.60
+                opacity=0.60,
+                cmap="tab20"
                 )
             )
         d_kwargs.update(kwargs)
@@ -544,14 +545,14 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             plotter.add_points(centers, **d_centers_args)
         if add_k_centers:
             k_centers = self.get_speckles_k_centers(spk_deque, t=t)
-            if not k_centers_as_line:
-                d_k_centers_args = dict(point_size=300,color="red")
-                d_k_centers_args.update(k_centers_kwargs)
-                plotter.add_points(k_centers, **d_k_centers_args)
-            else:
-                d_k_centers_args = dict(color="red", width=10)
-                d_k_centers_args.update(k_centers_kwargs)
-                plotter.add_lines(k_centers, **d_k_centers_args)
+            # if not k_centers_as_line:
+            d_k_centers_args = dict(point_size=300,color="blue")
+            d_k_centers_args.update(k_centers_kwargs)
+            plotter.add_points(k_centers, **d_k_centers_args)
+        # else:
+            d_k_centers_args = dict(color="magenta", width=10)
+            d_k_centers_args.update(k_centers_kwargs)
+            plotter.add_lines(k_centers, **d_k_centers_args)
         if add_la_centers:
             la_centers = self.get_speckles_la_centers(spk_deque, t=t)
             d_la_k_centers_args = dict(point_size=300,color="green")
@@ -632,6 +633,205 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         
         return np.mean(line_lengths)
     
+    def plot_speckles_wall_thickness_rd(self, endo_spk_args, epi_spk_args, t=0, approach="moving_vector", window_size=None, **kwargs):
+        
+        from project_heart.utils.spatial_utils import project_pt_on_line
+        from project_heart.utils.vector_utils import unit_vector
+        
+        
+        if window_size is None:
+            window_size = (600,400)
+
+        # plot speckles
+        plotter = self.plot_speckles(endo_spk_args, cmap="tab20", categories=True, re=True, t=t, **kwargs)
+        plotter = self.plot_speckles(epi_spk_args, cmap="tab20", categories=True, re=True, t=t, plotter=plotter, **kwargs)
+        
+        
+        if approach=="fixed_vector":
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=0)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=0)
+        else:
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=t)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=t)
+        
+        endo_spk_deque = self._resolve_spk_args(endo_spk_args)
+        epi_spk_deque = self._resolve_spk_args(epi_spk_args)
+        
+        line_lengths = []
+        for endo_spk, epi_spk in zip(endo_spk_deque, epi_spk_deque):
+            endo_spk_xyz = self.states.get(self.STATES.XYZ, mask=endo_spk.ids, t=t)
+            epi_spk_xyz = self.states.get(self.STATES.XYZ, mask=epi_spk.ids, t=t)
+            
+            for endo_pt, epi_pt in zip(endo_spk_xyz, epi_spk_xyz):
+                endo_p_pt = project_pt_on_line(endo_pt, apex_ts, base_ts)
+                epi_p_pt = project_pt_on_line(epi_pt, apex_ts, base_ts)
+                
+                endo_vec = endo_p_pt - endo_pt
+                epi_vec = epi_p_pt - epi_pt
+                                
+                endo_len = np.linalg.norm(endo_vec)
+                epi_len = np.linalg.norm(epi_vec)
+                
+                thickness = epi_len - endo_len
+                
+                plotter.add_lines(np.vstack((endo_pt, endo_p_pt)), color="orange")
+                plotter.add_lines(np.vstack((epi_pt, epi_p_pt)), color="lightgreen")
+                plotter.add_lines(np.vstack((epi_pt, epi_pt+(thickness*unit_vector(epi_vec)) )), color="magenta")
+                          
+                line_lengths.append(thickness)
+            
+            plotter.add_lines(np.vstack((apex_ts, base_ts)), color="cyan")
+            plotter.add_points(np.vstack((apex_ts, base_ts)), color="purple", point_size=200)
+
+        plotter.show(window_size=window_size)
+        
+        return np.mean(line_lengths)
+    
+    def plot_speckles_wall_thickness_rl(self, endo_spk_args, epi_spk_args, t=0, approach="moving_centers", window_size=None, **kwargs):
+        
+        from project_heart.utils.spatial_utils import project_pt_on_line
+        from project_heart.utils.vector_utils import unit_vector
+        
+        
+        if window_size is None:
+            window_size = (600,400)
+
+        # plot speckles
+        plotter = self.plot_speckles(endo_spk_args, cmap="tab20", categories=True, re=True, t=t, **kwargs)
+        plotter = self.plot_speckles(epi_spk_args, cmap="tab20", categories=True, re=True, t=t, plotter=plotter, **kwargs)
+        
+        
+        if approach=="fixed_vector":
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=0)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=0)
+        else:
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=t)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=t)
+        
+        endo_spk_deque = self._resolve_spk_args(endo_spk_args)
+        epi_spk_deque = self._resolve_spk_args(epi_spk_args)
+        
+        line_lengths = []
+        for endo_spk, epi_spk in zip(endo_spk_deque, epi_spk_deque):
+            endo_spk_xyz = self.states.get(self.STATES.XYZ, mask=endo_spk.ids, t=t)
+            epi_spk_xyz = self.states.get(self.STATES.XYZ, mask=epi_spk.ids, t=t)
+            
+            if approach=="fixed_centers":
+                endo_spk_la_center = self.get_speckles_la_centers(endo_spk_args, t=0)
+                epi_spk_la_center = self.get_speckles_la_centers(epi_spk_args, t=0)
+            else:
+                endo_spk_la_center = self.get_speckles_la_centers(endo_spk_args, t=t)
+                epi_spk_la_center = self.get_speckles_la_centers(endo_spk_args, t=t)
+                                            
+            for endo_pt, epi_pt in zip(endo_spk_xyz, epi_spk_xyz):
+                epi_p_pt = project_pt_on_line(epi_pt, apex_ts, base_ts)
+                
+                endo_vec = endo_spk_la_center - endo_pt
+                epi_vec = epi_spk_la_center - epi_pt
+                                
+                endo_len = np.linalg.norm(endo_vec)
+                epi_len = np.linalg.norm(epi_vec)
+                
+                thickness = epi_len - endo_len
+                
+                plotter.add_lines(np.vstack((endo_pt, endo_spk_la_center)), color="orange")
+                plotter.add_lines(np.vstack((epi_pt, epi_spk_la_center)), color="lightgreen")
+                
+                straight_vec = epi_p_pt - epi_pt
+                vec_dir = np.mean([epi_vec[0], straight_vec], axis=0)
+                
+                plotter.add_lines(np.vstack((epi_pt, epi_pt+(thickness*unit_vector(vec_dir)) )), color="magenta")
+                          
+                line_lengths.append(thickness)
+            
+            plotter.add_lines(np.vstack((apex_ts, base_ts)), color="cyan")
+            plotter.add_points(np.vstack((apex_ts, base_ts)), color="purple", point_size=200)
+
+        plotter.show(window_size=window_size)
+        
+        return np.mean(line_lengths)
+    
+    def plot_longitudinal_distance(self, nodesets, 
+                                   t=0, 
+                                   nodeset_colors=None,
+                                   approach="estimate_apex_base",
+                                   plotter=None, 
+                                   window_size=None, 
+                                   plot_kwargs=None,
+                                   **kwargs):
+        # Set default values
+        if window_size is None:
+            window_size = (600,400)
+        if plot_kwargs is None:
+            plot_kwargs = dict()
+        
+        if nodeset_colors is None:
+            nodeset_colors = ["blue", "green", "brown"]
+        
+        if plotter is None:
+            d_plotkwargs = dict(
+                    style='points', 
+                    color="gray", 
+                    opacity=0.4,
+                    window_size=window_size,
+                    pretty=False,
+                )
+            d_plotkwargs.update(plot_kwargs)
+            plotter = self.plot("mesh", t=t, re=True, **d_plotkwargs)
+            
+            
+        dists = []
+        bases = []
+        apexes = []
+        for i, nodeset in enumerate(nodesets):
+            # get node positions from nodeset at specified state
+            xyz = self.states.get(self.STATES.XYZ,mask=self.get_nodeset(nodeset), t=t)
+ 
+            if approach == "extremes":
+                zs = xyz[:,2]
+                min_idx = np.argmin(zs) 
+                max_idx = np.argmax(zs)
+                es_base = xyz[max_idx]
+                es_apex = xyz[min_idx]
+                dist = abs(zs[max_idx]) + abs(zs[min_idx])
+                es_base[1] = 0.5*(i+1)
+                es_base[0] = 0.0
+                es_apex[1] = 0.5*(i+1)
+                es_apex[0] = 0.0
+                
+            elif approach == "estimate_apex_base":
+                (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(xyz, **kwargs)["long_line"]
+                dist = np.linalg.norm(es_base - es_apex)
+            else:
+                raise ValueError("Unknown approach. Avaiable approaches are: "
+                                "'extremes' and 'estimate_apex_base'. Received: '{}'."
+                                "Please, check documentation for further details."
+                                .format(approach))
+                
+            plotter.add_lines(np.vstack((es_apex, es_base)), width=20, color=nodeset_colors[i])
+            bases.append(es_base)
+            apexes.append(es_apex)
+            dists.append(dist)
+        
+        if approach == "extremes":            
+            mean_apex = np.mean(apexes, axis=0)
+            mean_base = np.mean(bases, axis=0)
+            mean_base[0] = 0.0
+            mean_base[1] = 0.0
+            mean_apex[0] = 0.0
+            mean_apex[1] = 0.0
+            
+            
+        elif approach == "estimate_apex_base":
+            mean_apex = np.mean(apexes, axis=0)
+            mean_base = np.mean(bases, axis=0)
+             
+        plotter.add_lines(np.vstack((mean_apex, mean_base)), color="magenta")
+        plotter.enable_anti_aliasing()
+        
+        plotter.show(window_size=window_size)
+        return np.mean(dists)
+                
     # ===============================
     # exports to FEA solvers
     # ===============================   

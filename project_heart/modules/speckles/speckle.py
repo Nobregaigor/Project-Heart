@@ -157,7 +157,6 @@ class SpeckeDeque(deque):
 class SpecklesDict():
     def __init__(self):
         self._speckles = dict()
-
         self._collections = set((DEFAULT_COLLECTION_KEY,))
         self._groups = set((DEFAULT_GROUP_KEY,))
         self._names = set((DEFAULT_NAME_KEY,))
@@ -239,7 +238,7 @@ class SpecklesDict():
     def remove(self, **kwargs):
         selected = self.get(**kwargs)
         for spk in selected:
-            self._speckles.remove(spk)
+            self._speckles.pop(spk.key())
 
     # ------------------------------
     # these modify information from selected speckles

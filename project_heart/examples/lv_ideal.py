@@ -196,7 +196,80 @@ def get_lv_ideal(filepath=filepath):
             kmax=-1.0,
             log_level=logging.WARN,
         )
+    
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="epi",
+            name="THICK",
+            from_nodeset=LV_SURFS.EPI,
+            d=6.0,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
 
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="epi",
+            name="MID",
+            from_nodeset=LV_SURFS.EPI,
+            d=3.0,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
+    
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="epi",
+            name="THIN",
+            from_nodeset=LV_SURFS.EPI,
+            d=1.75,
+            k=0.8,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=6,
+            subsets_criteria="angles",
+            cluster_criteria="angles2",
+            n_clusters=8,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
+
+
+    _ = lv.create_speckles(
+            collection="SAMPLE",
+            group="epi",
+            name="SAMPLE-LONG",
+            from_nodeset=LV_SURFS.EPI,
+            exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
+            d=4.0,
+            k=0.5,
+            normal_to=[1.0,0.0,0.0],
+            n_subsets=6,
+            subsets_criteria="z2",
+            cluster_criteria="z2",
+            n_clusters=6,
+            t=0.0,
+            kmin=-1,
+            kmax=-1,
+            log_level=logging.WARN,
+        )
     
     _ = lv.compute_base_apex_ref_over_timesteps()
     
