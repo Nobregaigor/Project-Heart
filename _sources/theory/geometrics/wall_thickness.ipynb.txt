@@ -1,0 +1,384 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Wall Thickness"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "nbsphinx": "hidden"
+   },
+   "outputs": [],
+   "source": [
+    "from pathlib import Path\n",
+    "# from project_heart.lv import LV\n",
+    "from project_heart.utils import set_jupyter_backend\n",
+    "from project_heart.enums import *\n",
+    "set_jupyter_backend(\"pythreejs\")\n",
+    "import logging\n",
+    "import numpy as np\n",
+    "float_formatter = \"{:.5f}\".format\n",
+    "np.set_printoptions(formatter={'float_kind':float_formatter})\n",
+    "\n",
+    "from project_heart.examples import get_lv_ideal\n",
+    "from project_heart.examples import get_lv_typeA\n",
+    "\n",
+    "lv_ideal = get_lv_ideal(Path(\"../../_static/sample_files/ideal_linear_pressure_increase copy.xplt\"))\n",
+    "lv_typeA = get_lv_typeA(\n",
+    "    Path(\"../../_static/sample_files/lv_typeA_hex.vtk\"),\n",
+    "    Path(\"../../_static/sample_files/sample_displacement_lv_typeA_hex_states_linear_press_incr.pbz2\")\n",
+    "    )\n",
+    "\n",
+    "sample_spk_typeA_endo = lv_typeA.get_speckles(spk_name=\"SAMPLE\", spk_group=\"endo\", spk_collection=\"SAMPLE\")[0]\n",
+    "sample_spk_typeA_epi = lv_typeA.get_speckles(spk_name=\"SAMPLE\", spk_group=\"epi\", spk_collection=\"SAMPLE\")[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Computing thickness"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Definition**: Distance between Epicardium and Endocardium.\n",
+    "\n",
+    "The distance between the Epicardium and Endocardium regions is used to calculate wall thickness. Due to the possibility that the quantity of speckles in both regions may differ and not reflect the same relative location, which prevents us from measuring the euclidean distance between the two speckles, we employ [radial metrics](./radial_metrics.ipynb). As a result, thickness is calculated as the simple difference between a radial metric at the epicardium and the endocardium. \n",
+    "\n",
+    "Our implementation consider the usage of [Speckles](../basic_definitions/speckles.ipynb), which helps to approximate a clinical setting, facilitates the computation for certain metrics and helps to minimizing errors due to noise in geometry by averaging values based on local regions. See [docs](../basic_definitions/speckles.ipynb) for details. Fo wall thickness, we apply validation checks to confirm speckles at Endocardium and Epicardium are related (close reference center at longitudinal axis and similar subsets).\n",
+    "\n",
+    "The final metric is computed by applying [reduction](./radial_metrics.ipynb) accross values computed from individual speckles. The [default reduction method](./radial_metrics.ipynb) is the 'mean' value for all selected speckles. For instance, if we apply this computation accross speckles at endocardium, we will have the mean values for the endocardium region. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "These are two sample speckles at Endocardium and Epicardium:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample_spk_ideal_endo = lv_ideal.get_speckles(spk_name=\"SAMPLE\", spk_group=\"endo\", spk_collection=\"SAMPLE\")[0]\n",
+    "sample_spk_ideal_epi = lv_ideal.get_speckles(spk_name=\"SAMPLE\", spk_group=\"epi\", spk_collection=\"SAMPLE\")[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Here is a simplified representation of how the wall thickness is calculated. Remember that the final quantity is the difference in length between the epicardium and endocardium vectors (from respective speckles to longitudinal axis reference), which may differ slightly from the visualization.\n",
+    "\n",
+    "Radial metrics from the endocardium are represented by the orange lines. Green lines are epicardium radial metrics. The magenta lines represent the approximate thickness of the wall."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "wt = lv_ideal.plot_speckles_wall_thickness_rd(\n",
+    "    sample_spk_ideal_endo,\n",
+    "    sample_spk_ideal_epi, \n",
+    "    t=0.0\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "wts = lv_ideal.thickness(\n",
+    "    sample_spk_ideal_endo,      # selected speckles at Endocardium\n",
+    "    sample_spk_ideal_epi,       # selected speckles at Epicardium\n",
+    "    approach=\"radial_distance\", # choice of reference LA axis\n",
+    "    method=\"mean\",              # reduction method (default)\n",
+    "    t=0.0,                      # return value at given timestep\n",
+    "    recompute=True,             # forces recomputation (ignores previous computations)\n",
+    "    log_level=logging.ERROR     # \n",
+    "    ) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Sample wall thickness:\", wt)\n",
+    "print(\"Reduced wall thickness by internal algorithm:\", wts)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Radial Length vs Radial Distance"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Considering that we use as basis for the computation a ['radial metric'](./radial_metrics.ipynb), we have two approaches to compute wall thickness: ***radial_distance*** and ***radial_length***. In addition, the user can select valid approaches for each of these radial metrics (see [docs](./radial_metrics.ipynb) for details). \n",
+    "\n",
+    "\n",
+    "Here is a sample visualization between the two metrics. *Note that actual values might differ slightly as thickness metric is computed based on radial metric.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "wt_rd = lv_typeA.plot_speckles_wall_thickness_rd(\n",
+    "    sample_spk_typeA_endo,\n",
+    "    sample_spk_typeA_epi, \n",
+    "    t=0.15\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "wt_rl = lv_typeA.plot_speckles_wall_thickness_rl(\n",
+    "    sample_spk_typeA_endo,\n",
+    "    sample_spk_typeA_epi, \n",
+    "    t=0.15\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Wall thickness based on radial distance:\", wt_rd)\n",
+    "print(\"Wall thickness based on radial length:\", wt_rl)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Comparing Wall Thickness metrics"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "nbsphinx": "hidden"
+   },
+   "outputs": [],
+   "source": [
+    "def plot_all_wall_thickness_metrics(lv, endo_spks, epi_spks, title=\"\"):\n",
+    "        timestep = lv.timesteps()\n",
+    "        mask = timestep >=0.1\n",
+    "\n",
+    "        rd1 = lv.radial_distance(endo_spks, \n",
+    "                                approach=\"fixed_vector\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        rd1 = lv.radial_distance(epi_spks, \n",
+    "                                approach=\"fixed_vector\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        wt_rd1 = lv.thickness(endo_spks, epi_spks,\n",
+    "                                approach=\"radial_distance\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        \n",
+    "        rd2 = lv.radial_distance(endo_spks, \n",
+    "                                approach=\"moving_vector\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        rd2 = lv.radial_distance(epi_spks, \n",
+    "                                approach=\"moving_vector\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        wt_rd2 = lv.thickness(endo_spks, epi_spks,\n",
+    "                                approach=\"radial_distance\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        \n",
+    "        \n",
+    "        rl1 = lv.radial_length(endo_spks, \n",
+    "                                approach=\"fixed_centers\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        rl1 = lv.radial_length(epi_spks, \n",
+    "                                approach=\"fixed_centers\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        wt_rl1 = lv.thickness(endo_spks, epi_spks,\n",
+    "                                approach=\"radial_length\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        \n",
+    "        rl2 = lv.radial_length(endo_spks, \n",
+    "                                approach=\"moving_centers\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        rl2 = lv.radial_length(epi_spks, \n",
+    "                                approach=\"moving_centers\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        wt_rl2 = lv.thickness(endo_spks, epi_spks,\n",
+    "                                approach=\"radial_length\",\n",
+    "                                recompute=True, \n",
+    "                                log_level=logging.ERROR)[mask]\n",
+    "        \n",
+    "        \n",
+    "        \n",
+    "        timestep = timestep[mask] - 0.1\n",
+    "        data = np.hstack([\n",
+    "                        timestep.reshape((-1,1)), \n",
+    "                        wt_rd1.reshape((-1,1)), \n",
+    "                        wt_rd2.reshape((-1,1)),\n",
+    "                        wt_rl1.reshape((-1,1)), \n",
+    "                        wt_rl2.reshape((-1,1))\n",
+    "                        ])\n",
+    "        \n",
+    "        import pandas as pd\n",
+    "        \n",
+    "        df = pd.DataFrame(data,columns=[\n",
+    "                \"timestep\", \n",
+    "                \"wall_thickness_radial_distance_fixed_vector\", \n",
+    "                \"wall_thickness_radial_distance_moving_vector\", \n",
+    "                \"wall_thickness_radial_length_fixed_centers\",\n",
+    "                \"wall_thickness_radial_length_moving_centers\",\n",
+    "                ])\n",
+    "        df.plot(x=\"timestep\", figsize=(10,5), grid=True, title=title)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Effect of different speckle thickness"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "endo_thick_spks = lv_ideal.get_speckles(spk_name=\"THICK\", spk_group=\"endo\", spk_collection=\"SAMPLE\")\n",
+    "epi_thick_spks = lv_ideal.get_speckles(spk_name=\"THICK\", spk_group=\"epi\", spk_collection=\"SAMPLE\")\n",
+    "\n",
+    "endo_mid_spks = lv_ideal.get_speckles(spk_name=\"MID\", spk_group=\"endo\", spk_collection=\"SAMPLE\")\n",
+    "epi_mid_spks = lv_ideal.get_speckles(spk_name=\"MID\", spk_group=\"epi\", spk_collection=\"SAMPLE\")\n",
+    "\n",
+    "endo_thin_spks = lv_ideal.get_speckles(spk_name=\"THIN\", spk_group=\"endo\", spk_collection=\"SAMPLE\")\n",
+    "epi_thin_spks = lv_ideal.get_speckles(spk_name=\"THIN\", spk_group=\"epi\", spk_collection=\"SAMPLE\")\n",
+    "\n",
+    "\n",
+    "plot_all_wall_thickness_metrics(lv_ideal, endo_thick_spks, epi_thick_spks, \n",
+    "                                \"Ideal, using THICK speckles.\")\n",
+    "plot_all_wall_thickness_metrics(lv_ideal, endo_mid_spks, epi_mid_spks, \n",
+    "                                \"Ideal, using MID speckles.\")\n",
+    "plot_all_wall_thickness_metrics(lv_ideal, endo_thin_spks, epi_thin_spks, \n",
+    "                                \"Ideal, using THIN speckles.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Same comparison, but on a typeA geometry:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "endo_thick_spks = lv_typeA.get_speckles(spk_name=\"THICK\", spk_group=\"endo\", spk_collection=\"SAMPLE\")\n",
+    "epi_thick_spks = lv_typeA.get_speckles(spk_name=\"THICK\", spk_group=\"epi\", spk_collection=\"SAMPLE\")\n",
+    "\n",
+    "endo_mid_spks = lv_typeA.get_speckles(spk_name=\"MID\", spk_group=\"endo\", spk_collection=\"SAMPLE\")\n",
+    "epi_mid_spks = lv_typeA.get_speckles(spk_name=\"MID\", spk_group=\"epi\", spk_collection=\"SAMPLE\")\n",
+    "\n",
+    "endo_thin_spks = lv_typeA.get_speckles(spk_name=\"THIN\", spk_group=\"endo\", spk_collection=\"SAMPLE\")\n",
+    "epi_thin_spks = lv_typeA.get_speckles(spk_name=\"THIN\", spk_group=\"epi\", spk_collection=\"SAMPLE\")\n",
+    "\n",
+    "\n",
+    "plot_all_wall_thickness_metrics(lv_typeA, endo_thick_spks, epi_thick_spks, \n",
+    "                                \"Ideal, using THICK speckles.\")\n",
+    "plot_all_wall_thickness_metrics(lv_typeA, endo_mid_spks, epi_mid_spks, \n",
+    "                                \"Ideal, using MID speckles.\")\n",
+    "plot_all_wall_thickness_metrics(lv_typeA, endo_thin_spks, epi_thin_spks, \n",
+    "                                \"Ideal, using THIN speckles.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Comparing Wall Thickness at different locations of the geometry:"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "TO DO."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "interpreter": {
+   "hash": "a4b270fe5129ef310552b5197d637a230d47119f1e46f0b92ff32b1c5f5c5425"
+  },
+  "kernelspec": {
+   "display_name": "Python 3.9.7 ('project_heart')",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.7"
+  },
+  "orig_nbformat": 4
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
