@@ -30,6 +30,23 @@ def get_rotation(from_vec, to_vector):
     rot = tr.from_matrix(rot_matrix)
     return rot
 
+def align_vec_axis(vec:np.ndarray, ref_axis:np.ndarray, new_axis:np.ndarray, unit:bool=False) -> np.ndarray:
+    """Aligns a vector defined at standard axis (X: [1,0,0], Y: [0,1,0], Z: [0,0,1]) to \
+        nont-standard coordinates based on a nre reference axis. 
+   
+    Args:
+        vec (np.ndarray): _description_
+        ref_axis (np.ndarray): _description_
+        unit (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        _type_: _description_
+    """
+    rot = get_rotation(ref_axis, new_axis)
+    if not unit:
+        return rot.apply(vec)
+    else:
+        return unit_vector(rot.apply(vec))
 
 def centroid(points, filter=True, ql=0.01, qh=0.99):
 

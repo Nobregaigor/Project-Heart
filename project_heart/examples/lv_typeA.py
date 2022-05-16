@@ -20,7 +20,7 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
     lv.identify_regions(LV_GEO_TYPES.TYPE_A,
         apex_base_args=dict(ab_ql=0.15, ab_qh=0.95),
         endo_epi_args={"threshold":85, "br":1.25, "ba":100},
-        recompute_apex_base=dict(ql=0.001, qh=0.75))
+        recompute_apex_base=dict(ql=0.03, qh=0.75))
   
     endo_long = []
     epi_long = []
@@ -64,7 +64,44 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             kmax=0.95,
             log_level=logging.WARN,
         )
-        epi_long.append(spk)
+        
+        spk = lv.create_speckles(
+            collection="long-1",
+            group="endo",
+            name=str(i),
+            from_nodeset=LV_SURFS.ENDO,
+            exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
+            d=1.75,
+            k=0.5,
+            normal_to=[np.cos(a),np.sin(a),0.0],
+            n_subsets=0,
+            subsets_criteria="z2",
+            cluster_criteria="angles3",
+            n_clusters=100,
+            t=0.0,
+            kmin=-1,
+            kmax=0.95,
+            log_level=logging.WARN,
+        )
+
+        spk = lv.create_speckles(
+            collection="long-1",
+            group="epi",
+            name=str(i),
+            from_nodeset=LV_SURFS.EPI,
+            exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
+            d=2.4,
+            k=0.5,
+            normal_to=[np.cos(a),np.sin(a),0.0],
+            n_subsets=0,
+            subsets_criteria="z2",
+            cluster_criteria="angles3",
+            n_clusters=100,
+            t=0.0,
+            kmin=-1,
+            kmax=0.95,
+            log_level=logging.WARN,
+        )
 
     endo_circ = []
     epi_circ = []
@@ -269,7 +306,7 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             n_subsets=6,
             subsets_criteria="z2",
             cluster_criteria="angles3",
-            n_clusters=4,
+            n_clusters=18,
             t=0.0,
             kmin=-1,
             kmax=0.85,

@@ -203,12 +203,18 @@ class LV_STATES(Enum):
     WT = "wall_thickening"
     
     LONG_LENGTH = "longitudinal_length"
+    LONGITUDINAL_LENGTH = "longitudinal_length"
+    GLOBAL_LONGITUDINAL_LENGTH = "global_longitudinal_length"
+    GLOBAL_LONG_LENGTH = "global_longitudinal_length"
 
     LONGITUDINAL_STRAIN = "longitudinal_strain"
     LONG_STRAIN = "longitudinal_strain"
     SL = "longitudinal_strain"
 
     CIRC_LENGTH = "circumferential_length"
+    CIRCUMFERENTIAL_LENGTH = "circumferential_length"
+    GLOBAL_CIRCUMFERENTIAL_LENGTH = "global_circumferential_length"
+    GLOBAL_CIRC_LENGTH = "global_circumferential_length"
 
     CIRCUMFERENTIAL_STRAIN = "circumferential_strain"
     CIRC_STRAIN = "circumferential_strain"

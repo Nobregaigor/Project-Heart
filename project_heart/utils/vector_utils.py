@@ -148,6 +148,13 @@ def project_pts_onto_plane(pts, plane_normal, plane_d):
     dists = dist_from_plane(pts, plane_normal, plane_d, abs=False).reshape((-1,1))
     return pts - dists*plane_normal
 
+def project_vec_a_onto_vec_b(a,b, unit=False):
+    b_norm = np.sqrt(sum(b**2))    
+    pr_a = (np.dot(a, b)/b_norm**2)*b
+    if not unit:
+        return pr_a
+    else:
+        return unit_vector(pr_a)
 
 def dist_from_line(p1:np.ndarray, p2:np.ndarray, p3:np.ndarray, dtype:np.dtype=np.float64) -> np.ndarray:
     """Computes the perpendicular distance between one or multiple points [p1] to a line (or lines) \

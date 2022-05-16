@@ -663,13 +663,17 @@ class LVBaseMetricsComputations(LV_Speckles):
         # compute response for given spk
         spk_res = np.array([fun(coords) for coords in xyz], dtype=dtype)
         # save to states
-        self.states.add_spk_data(spk, self.STATES.LONG_LENGTH, spk_res)
+        self.states.add_spk_data(spk, self.STATES.LONGITUDINAL_LENGTH, spk_res)
         # return pointer
-        return self.states.get_spk_data(spk, self.STATES.LONG_LENGTH)
+        return self.states.get_spk_data(spk, self.STATES.LONGITUDINAL_LENGTH)
 
-    def compute_longitudinal_length(self, spks, reduce_by={"group"}, **kwargs):
+    def compute_longitudinal_length(self, spks, reduce_by={"group"}, as_global=False, **kwargs):
         # set key for this function
-        key = self.STATES.LONG_LENGTH
+        if not as_global:
+            key = self.STATES.LONGITUDINAL_LENGTH
+        else:
+            key = self.STATES.GLOBAL_LONGITUDINAL_LENGTH
+            
         logger.info("Computing metric '{}'".format(key))
         # resolve spks (make sure you have a SpeckeDeque)
         spks = self._resolve_spk_args(spks)
@@ -813,9 +817,12 @@ class LVBaseMetricsComputations(LV_Speckles):
         # return pointer
         return self.states.get_spk_data(spk, self.STATES.CIRC_LENGTH)
 
-    def compute_circumferential_length(self, spks, reduce_by={"group"}, **kwargs):
+    def compute_circumferential_length(self, spks, reduce_by={"group"}, as_global=False, **kwargs):
         # set key for this function
-        key = self.STATES.CIRC_LENGTH
+        if not as_global:
+            key = self.STATES.CIRC_LENGTH
+        else:
+            key = self.STATES.GLOBAL_CIRCUMFERENTIAL_LENGTH
         logger.info("Computing metric '{}'".format(key))
         # resolve spks (make sure you have a SpeckeDeque)
         spks = self._resolve_spk_args(spks)

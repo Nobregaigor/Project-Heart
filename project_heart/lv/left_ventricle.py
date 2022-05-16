@@ -85,10 +85,21 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             self.compute_longitudinal_length(spks, **kwargs)
         return self.states.get(self.STATES.LONG_LENGTH, t=t) 
 
+    def global_longitudinal_length(self, spks, t=None, recompute=False, **kwargs):
+        if not self.states.check_key(self.STATES.LONG_LENGTH) or recompute:
+            self.compute_longitudinal_length(spks, as_global=True, **kwargs)
+        return self.states.get(self.STATES.LONG_LENGTH, t=t) 
+    
     def circumferential_length(self, spks, t=None, recompute=False, **kwargs):
         if not self.states.check_key(self.STATES.CIRC_LENGTH) or recompute:
             self.compute_circumferential_length(spks, **kwargs)
         return self.states.get(self.STATES.CIRC_LENGTH, t=t)
+    
+    def global_circumferential_length(self, spks, t=None, recompute=False, **kwargs):
+        if not self.states.check_key(self.STATES.CIRC_LENGTH) or recompute:
+            self.compute_circumferential_length(spks, as_global=True, **kwargs)
+        return self.states.get(self.STATES.CIRC_LENGTH, t=t)
+    
     
     def rotation(self, spks, t=None,  recompute=False, **kwargs):
         if not self.states.check_key(self.STATES.ROTATION) or recompute:

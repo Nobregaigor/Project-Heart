@@ -216,6 +216,7 @@ class LV_Speckles(LV_RegionIdentifier):
                                                         cluster_criteria, 
                                                         normal, valid_ids,
                                                         spk_center,
+                                                        True, #check for orientation
                                                         log_level,
                                                         ignore_unmatch_number_of_clusters)
             self.speckles.append(
@@ -242,6 +243,7 @@ class LV_Speckles(LV_RegionIdentifier):
                                                          subsets_criteria, 
                                                          normal, valid_ids,
                                                          spk_center,
+                                                         False, # dont check for orientation
                                                          log_level)
                         
             for subname, sub_ids in zip(subsets_names, non_empty_buckets):
@@ -258,8 +260,10 @@ class LV_Speckles(LV_RegionIdentifier):
                                                      cluster_criteria, 
                                                      normal, sub_ids,
                                                      spk_center,
+                                                     False, # dont check for orientation
                                                      log_level,
-                                                     ignore_unmatch_number_of_clusters)
+                                                     ignore_unmatch_number_of_clusters,
+                                                     )
                 self.speckles.append(
                     subset=subname,
                     name=name,
@@ -290,6 +294,7 @@ class LV_Speckles(LV_RegionIdentifier):
                             normal, 
                             valid_ids,
                             ref_center, # used for angles
+                            check_orientation=False,
                             log_level=logging.WARNING,
                             ignore_unmatch_number_of_clusters=False):
         logger = logging.getLogger('_subdivide_speckles')
@@ -389,9 +394,9 @@ class LV_Speckles(LV_RegionIdentifier):
             logger.debug("Unique bins: {}.".format(np.unique(bins)))
         elif subsets_criteria == "angles3": 
             if normal[2] < 0:
-                normal = -normal
-                logger.debug("using opposite normal for computation as negative "
-                            "(on z) axis are not fully tested: {}.".format(normal))
+                    normal = -normal
+                    logger.debug("using opposite normal for computation as negative "
+                                "(on z) axis are not fully tested: {}.".format(normal))
             # project points onto a single plane based on spk normal
             logger.debug("pts.shape: {}.".format(pts.shape))
             logger.debug("pts[:5]: \n{}.".format(pts[:5]))
@@ -410,28 +415,72 @@ class LV_Speckles(LV_RegionIdentifier):
             ref_max_vec = vecs[ref_max_pt]
             ref_min_vec = vecs[ref_min_pt]
             logger.debug("ref_max_vec: {}.".format(ref_max_vec))
-            angles = angle_between(vecs, ref_max_vec, check_orientation=False) # initial guess
+            logger.debug("ref_min_vec: {}.".format(ref_min_vec))
+            # compute angles based on 
+            if check_orientation:
+                logger.debug("Using a none or single subset, meaning large speckle. \n" 
+                            "-> 'check_orientation' is set to True."
+                            "-> Will try to eliminate possible discontinuities.")
+                angles = angle_between(vecs, ref_max_vec, check_orientation=True, zaxis=normal)    
+                search_for_jumps = True
+                search_trial = 0
+                max_search_trials = 5
+                dist_step = 0.25
+                while search_for_jumps:
+                    logger.debug("Searching for discontinuity... {}".format(search_trial+1))
+                    sort_ids = np.argsort(angles)
+                    ppts_sorted_by_angles = ppts[sort_ids]
+                    dists_ppts = np.linalg.norm(ppts_sorted_by_angles[1:] - ppts_sorted_by_angles[:-1], axis=1)
+                    dists_grad = np.gradient(dists_ppts)
+                    d_mean, d_stdev = np.mean(dists_grad), np.std(dists_grad)
+                    dist_jump = np.where(np.abs(dists_grad - d_mean) > (10 + (search_trial*dist_step)) *d_stdev)[0]
+                    if len(dist_jump) > 0:
+                        logger.debug("Discontinuity Found: {}".format(len(dist_jump)))
+                        dist_jump_val = dists_grad[dist_jump]
+                        logger.debug("dist_jump: {} -> {}.".format(dist_jump, dist_jump_val))
+                        new_max_pt = sort_ids[dist_jump[np.argmax(dist_jump_val)]]
+                        ref_max_vec = vecs[new_max_pt]
+                        ref_max_pt = new_max_pt
+                        angles = angle_between(vecs, ref_max_vec, check_orientation=True, zaxis=normal)
+                    else:
+                        logger.debug("No discontinuity found: {}".format(len(dist_jump)))
+                        search_for_jumps = False
+                    if search_trial >= max_search_trials:
+                        logger.debug("Could not resolve jumps under {} trials. \n"
+                                    "-> Continuing (errors might occur)".format(max_search_trials))
+                        search_for_jumps = False
+                    search_trial += 1
+            else:
+                logger.debug("Using angles without orientation [0, 180]")
+                angles = angle_between(vecs, ref_max_vec, check_orientation=False)
+            # get reference vecs for binarization bounds
             min_a, max_a = np.min(angles), np.max(angles)
             logger.debug("min_a: {}.".format(np.degrees(min_a)))
             logger.debug("max_a: {}.".format(np.degrees(max_a)))
             min_idx, max_idx = np.argmin(angles), np.argmax(angles)
             ref_max_vec = vecs[max_idx]
             ref_min_vec = vecs[min_idx]
+            logger.debug("Updating reference vectors.")
             logger.debug("ref_max_vec: {}.".format(ref_max_vec))
             logger.debug("ref_min_vec: {}.".format(ref_min_vec))
-            # sort_ids = np.argsort(angles)
-            min_a, max_a = np.min(angles), np.max(angles)
-            logger.debug("min_a: {}.".format(np.degrees(min_a)))
-            logger.debug("max_a: {}.".format(np.degrees(max_a)))
             # create bins
             bins = np.digitize(
                 angles, np.linspace(min_a*0.999, max_a*1.001, n_subsets+1))
+            logger.debug("Number of bins found: {}.".format(len(np.unique(bins))))
+            min_bin_id, max_bin_id = np.min(bins), np.max(bins)
+            logger.debug("Min, Max bin Ids: [{}, {}].".format(min_bin_id, max_bin_id))
             # update reference vectors (make sure we have extreme pts)
-            ref_last_bin_idx = np.argmax(bins)    
-            ref_first_bin_idx = np.argmin(bins)
+            min_mask = np.where(bins==min_bin_id)[0]
+            max_mask = np.where(bins==max_bin_id)[0]
+            ref_last_bin_idx = max_mask[np.argmax(angles[max_mask])]
+            ref_first_bin_idx = min_mask[np.argmin(angles[min_mask])]
+            logger.debug("ref_last_bin_idx: {}.".format(ref_last_bin_idx))
+            logger.debug("ref_first_bin_idx: {}.".format(ref_first_bin_idx))
             ref_last_vec = vecs[ref_last_bin_idx]
             ref_first_vec = vecs[ref_first_bin_idx] 
-            # compute vectors and angles for reversing bins
+            logger.debug("ref_last_vec: {}.".format(ref_last_vec))
+            logger.debug("ref_first_vec: {}.".format(ref_first_vec))
+            # compute vector normal and cross vectors
             first_cross_last = np.cross(unit_vector(ref_first_vec), unit_vector(ref_last_vec)) 
             cross_normal = np.degrees(angle_between(normal, first_cross_last, check_orientation=False)) 
             first_last_angle = np.degrees(angle_between(ref_first_vec, ref_last_vec, check_orientation=True, zaxis=normal))
@@ -439,51 +488,56 @@ class LV_Speckles(LV_RegionIdentifier):
             logger.debug("first_cross_last: {}.".format(first_cross_last))
             logger.debug("cross_normal: {}.".format(cross_normal))
             logger.debug("first_last_angle: {}.".format(first_last_angle))
-            angles = angle_between(vecs, vecs[max_idx], check_orientation=False)
-            # check if bins need to be recomputed (tsting shows that is normal ~ z axis, re-computing
-            # is necessary)
-            a_normal_Zaxis = np.degrees(angle_between(normal, [0.0,0.0,1.0], check_orientation=False))
-            logger.debug("Check for aligment with Z axis: {}.".format(a_normal_Zaxis))
-            if normal[2] < 45:
-                logger.debug("Re-computing bins as angle from normal to Z axis < 45: {}.".format(a_normal_Zaxis))
+            # recompute bins to ensure we have full range (min to max vecs)
+            # a_normal_Zaxis = np.degrees(angle_between(normal, [0.0,0.0,1.0], check_orientation=False))
+            if not check_orientation:# and a_normal_Zaxis < 45: 
+                # logger.debug("Re-computing bins as angle from normal to Z axis < 45: {}.".format(a_normal_Zaxis))
+                logger.debug("Recomputing bins based on new vecs.")
+                angles = angle_between(vecs, ref_last_vec, check_orientation=False)
                 min_a, max_a = np.min(angles), np.max(angles)
                 logger.debug("min_a: {}.".format(np.degrees(min_a)))
                 logger.debug("max_a: {}.".format(np.degrees(max_a)))
                 bins = np.digitize(
                     angles, np.linspace(min_a*0.999, max_a*1.001, n_subsets+1))
-            # check gradients between gradient centers -> angle between first to other bins
-            # we want ccw bins                
-            centers = np.asarray([np.mean(ppts[bins==bin_id], axis=0) for bin_id in sorted(np.unique(bins))], dtype=np.int64)
-            c_vecs = centers - p_center
-            c_angles = np.degrees(angle_between(c_vecs, c_vecs[0], check_orientation=True, zaxis=normal))
-            c_grads = np.gradient(c_angles[1:])
-            mean_c_grads = np.mean(c_grads)
-            logger.debug("mean_c_grads: {}.".format(mean_c_grads))
-            # check for reversion
-            should_reverse = True
-            a_normal_Xaxis = np.round(np.degrees(angle_between(normal, [1.0,0.0,0.0], check_orientation=False)), 3)
-            logger.debug("Checking for aligment with X axis: {}.".format(a_normal_Xaxis))   
-            if a_normal_Xaxis < 45:
-                should_reverse = not should_reverse
-                logger.debug("Flip should_reverse due normal orientation -> [{}]: a_normal_Xaxis: {}.".format(should_reverse, a_normal_Xaxis))   
-            if cross_normal < 90 and mean_c_grads > 0:
-                should_reverse = not should_reverse
-                logger.debug("bins should reverse [{}] as cross_normal < 90 and mean_c_grads > 0.".format(should_reverse))
-            elif cross_normal < 90 and first_last_angle > 180:
-                should_reverse = not should_reverse
-                logger.debug("bins should reverse [{}] as cross_normal < 0 and first_last_angle > 180.".format(should_reverse))
-            elif cross_normal > 90 and first_last_angle > 180 and mean_c_grads > 0:
-                should_reverse = not should_reverse
-                logger.debug("bins should reverse [{}] as cross_normal > 0, first_last_angle > 180 and mean_c_grads > 0.".format(should_reverse))
-            # if algorithm decided to reverse, reverse bins
-            if should_reverse:
-                logger.debug("reversing bins.")
-                uvals = np.unique(bins)
-                logger.debug("uvals: {}.".format(uvals))
-                new_bins = np.zeros(len(bins), dtype=np.int64)
-                for i, u in enumerate(uvals[::-1]):
-                    new_bins[bins==u] = i
-                bins = new_bins + 1
+                # check gradients between gradient centers -> angle between first to other bins
+                # we want ccw bins                
+                centers = np.asarray([np.mean(ppts[bins==bin_id], axis=0) for bin_id in sorted(np.unique(bins))], dtype=np.int64)
+                c_vecs = centers - p_center
+                c_angles = np.degrees(angle_between(c_vecs, c_vecs[0], check_orientation=True, zaxis=normal))
+                c_grads = np.gradient(c_angles[1:])
+                mean_c_grads = np.mean(c_grads)
+                logger.debug("mean_c_grads: {}.".format(mean_c_grads))
+                # check for reversion
+                should_reverse = False
+                a_normal_Xaxis = np.round(np.degrees(angle_between(normal, [1.0,0.0,0.0], check_orientation=False)), 3)
+                if a_normal_Xaxis < 45:
+                    should_reverse = not should_reverse
+                    logger.debug("Flip should_reverse due normal orientation -> [{}]: a_normal_Xaxis: {}.".format(should_reverse, a_normal_Xaxis))   
+                # a_normal_Zaxis = np.round(np.degrees(angle_between(normal, [0.0,0.0,1.0], check_orientation=False)), 3)
+                # if a_normal_Zaxis < 45:
+                #     should_reverse = not should_reverse
+                #     logger.debug("Flip should_reverse due normal orientation -> [{}]: a_normal_Zaxis: {}.".format(should_reverse, a_normal_Zaxis))   
+                # if cross_normal < 90 and mean_c_grads > 0:
+                #     should_reverse = not should_reverse
+                #     logger.debug("bins should reverse [{}] as cross_normal < 90 and mean_c_grads > 0.".format(should_reverse))
+                # if cross_normal < 90 and first_last_angle > 180:
+                #     should_reverse = not should_reverse
+                #     logger.debug("bins should reverse [{}] as cross_normal < 0 and first_last_angle > 180.".format(should_reverse))
+                # elif cross_normal > 90 and first_last_angle > 180: #:
+                #     should_reverse = not should_reverse
+                #     logger.debug("bins should reverse [{}] as cross_normal > 0, first_last_angle > 180 and mean_c_grads > 0.".format(should_reverse))
+                if first_last_angle > 180:
+                    should_reverse = not should_reverse
+                    logger.debug("bins should reverse [{}] as first_last_angle > 180 ".format(should_reverse))
+                # if algorithm decided to reverse, reverse bins
+                if should_reverse:
+                    logger.debug("reversing bins.")
+                    uvals = np.unique(bins)
+                    logger.debug("uvals: {}.".format(uvals))
+                    new_bins = np.zeros(len(bins), dtype=np.int64)
+                    for i, u in enumerate(uvals[::-1]):
+                        new_bins[bins==u] = i
+                    bins = new_bins + 1
             
         elif subsets_criteria == "kmeans":
             from sklearn.cluster import KMeans
