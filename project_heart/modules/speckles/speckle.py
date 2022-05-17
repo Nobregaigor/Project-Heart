@@ -117,6 +117,12 @@ class SpeckeDeque(deque):
                     grouped[spk.name] = SpeckeDeque([spk])
                 else:
                     grouped[spk.name].append(spk)
+        elif option == SPK_SETS.SUBSET.value:
+            for spk in list(self):
+                if spk.subset not in grouped:
+                    grouped[spk.subset] = SpeckeDeque([spk])
+                else:
+                    grouped[spk.subset].append(spk)
         elif option == SPK_SETS.GROUP_NAME.value:
             for spk in list(self):
                 if (spk.group, spk.name) not in grouped:

@@ -311,6 +311,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
@@ -342,6 +346,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
@@ -411,6 +419,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
@@ -442,6 +454,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
@@ -577,6 +593,11 @@ class LVBaseMetricsComputations(LV_Speckles):
             self._reduce_metric_by_name(endo_spks, key, **kwargs)
             self._reduce_metric_by_name(epi_spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(endo_spks, key, **kwargs)
+            self._reduce_metric_by_name(epi_spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(endo_spks, key, **kwargs)
@@ -618,6 +639,11 @@ class LVBaseMetricsComputations(LV_Speckles):
             self._reduce_metric_by_name(endo_spks, key, **kwargs)
             self._reduce_metric_by_name(epi_spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(endo_spks, key, **kwargs)
+            self._reduce_metric_by_name(epi_spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(endo_spks, key, **kwargs)
@@ -633,12 +659,21 @@ class LVBaseMetricsComputations(LV_Speckles):
     def compute_spk_longitudinal_length(self,
                                         spk,
                                         approach:str = "k_ids",
+                                        as_global=False,
                                         line_seg_filter_kwargs=None,
                                         dtype: np.dtype = np.float64,
+                                        log_level=logging.INFO,
                                         **kwargs):
         from functools import partial
+        if not as_global:
+            key = self.STATES.LONGITUDINAL_LENGTH
+        else:
+            key = self.STATES.GLOBAL_LONGITUDINAL_LENGTH
         # check for valid spk object
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle LONGITUDINAL_LENGTH  for spk: '{}'".format(spk))
+        logger.debug("Using approach: '{}'".format(approach))
         # check if xyz was computed, otherwise try to automatically compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
@@ -663,86 +698,116 @@ class LVBaseMetricsComputations(LV_Speckles):
         # compute response for given spk
         spk_res = np.array([fun(coords) for coords in xyz], dtype=dtype)
         # save to states
-        self.states.add_spk_data(spk, self.STATES.LONGITUDINAL_LENGTH, spk_res)
+        self.states.add_spk_data(spk, key, spk_res)
         # return pointer
-        return self.states.get_spk_data(spk, self.STATES.LONGITUDINAL_LENGTH)
+        return self.states.get_spk_data(spk, key)
 
-    def compute_longitudinal_length(self, spks, reduce_by={"group"}, as_global=False, **kwargs):
+    def compute_longitudinal_length(self, spks, reduce_by={"group"}, as_global=False, log_level=logging.INFO, **kwargs):
         # set key for this function
+        logger.setLevel(log_level)
         if not as_global:
             key = self.STATES.LONGITUDINAL_LENGTH
         else:
             key = self.STATES.GLOBAL_LONGITUDINAL_LENGTH
-            
         logger.info("Computing metric '{}'".format(key))
         # resolve spks (make sure you have a SpeckeDeque)
         spks = self._resolve_spk_args(spks)
         # compute metric for each speckle -> results in the length of each spk
-        res = [self.compute_spk_longitudinal_length(spk, **kwargs) for spk in spks]
-        # apply metric reduction -> Note: this is not longitudinal length, but instead
-        # the 'reduced' longitudinal length for each speckle. Default will be avg. spk length.
-        self.STATES, (_, sub_key) = add_to_enum(self.STATES, key, "SPK_REDUCED")
-        self._reduce_metric_and_save(res, sub_key, **kwargs) # reduction by all spks
-        # now let's reduce by group. This should apply reduction across similar regions.
-        res_group = self._reduce_metric_by_group_and_name(spks, key, method="sum")
-        # we now have the reduce value by similar regions, we need to get a 'single' 
-        # longitudinal length. We will do so by reduction across groups.
-        res_group_as_arr = np.array(list(res_group.values()))
-        self._reduce_metric_and_save(res_group_as_arr, key)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(spks, key)
-        # this function cannot use the same reduction method as other
-        # as the computation must sum each length in a different manner.
-        # this procedure is less expensive than re-computing using a combination
-        # of _reduce_metric_by_group_and_name and _reduce_metric_by_grou,
-        # for instance.
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by or "name" in reduce_by:
-            logger.debug("res_group.keys() '{}'".format(res_group.keys()))
-            # group computed values by respective group and name key
-            # we will do in a single loop so we have to have both dicts here
-            res_by_name = dict()
-            res_by_group = dict()
-            for (groupkey, namekey), res in res_group.items():
-                if not namekey in res_by_name:
-                    res_by_name[namekey] = deque([])
-                if not groupkey in res_by_group:
-                    res_by_group[groupkey] = deque([])
-                res_by_name[namekey].append(res)
-                res_by_group[groupkey].append(res)
-            logger.debug("res_by_name.keys() '{}'".format(res_by_name.keys()))
-            logger.debug("res_by_group.keys() '{}'".format(res_by_group.keys()))
-            # if user requested to compute length 'namewise'
+        res = [self.compute_spk_longitudinal_length(spk, as_global=as_global, 
+                                                    log_level=log_level, **kwargs) for spk in spks]
+        if not as_global:
+            # apply metric reduction -> Note: this is not longitudinal length, but instead
+            # the 'reduced' longitudinal length for each speckle. Default will be avg. spk length.
+            self.STATES, (_, sub_key) = add_to_enum(self.STATES, key, "SPK_REDUCED")
+            self._reduce_metric_and_save(res, sub_key, **kwargs) # reduction by all spks
+            # now let's reduce by group. This should apply reduction across similar regions.
+            res_group = self._reduce_metric_by_group_and_name(spks, key, method="sum")
+            # we now have the reduce value by similar regions, we need to get a 'single' 
+            # longitudinal length. We will do so by reduction across groups.
+            res_group_as_arr = np.array(list(res_group.values()))
+            self._reduce_metric_and_save(res_group_as_arr, key)
+            # set metric relationship with spks 
+            # so that we can reference which spks were used to compute this metric
+            self.states.set_data_spk_rel(spks, key)
+            # this function cannot use the same reduction method as other
+            # as the computation must sum each length in a different manner.
+            # this procedure is less expensive than re-computing using a combination
+            # of _reduce_metric_by_group_and_name and _reduce_metric_by_grou,
+            # for instance.
+            # Break down computation by each 'set of spks'
+            if "group" in reduce_by or "name" in reduce_by:
+                logger.debug("res_group.keys() '{}'".format(res_group.keys()))
+                # group computed values by respective group and name key
+                # we will do in a single loop so we have to have both dicts here
+                res_by_name = dict()
+                res_by_group = dict()
+                for (groupkey, namekey), res in res_group.items():
+                    if not namekey in res_by_name:
+                        res_by_name[namekey] = deque([])
+                    if not groupkey in res_by_group:
+                        res_by_group[groupkey] = deque([])
+                    res_by_name[namekey].append(res)
+                    res_by_group[groupkey].append(res)
+                logger.debug("res_by_name.keys() '{}'".format(res_by_name.keys()))
+                logger.debug("res_by_group.keys() '{}'".format(res_by_group.keys()))
+                # if user requested to compute length 'namewise'
+                if "name" in reduce_by:
+                    logger.debug("Reducing metric by name for '{}'".format(key))
+                    # compute reduced value for each 'name' in the grouped values
+                    for namekey, res in res_by_name.items():
+                        logger.debug("namekey '{}''".format(namekey, res))
+                        # select spks relate to 'name' and add new enum to states
+                        sel_spks = [spk for spk in spks if spk.name == namekey]
+                        self.STATES, (_, statekey) = add_to_enum(self.STATES, key, namekey)
+                        logger.debug("statekey '{}''".format(statekey))
+                        # save spk-data relationship for future reference
+                        self.states.set_data_spk_rel(sel_spks, statekey)
+                        # reduce subgroup
+                        self._reduce_metric_and_save(res, statekey, **kwargs)
+                    logger.debug("Metric '{}' has reduced values by names.".format(key))
+                # if user requested to compute length 'groupwise'
+                if "group" in reduce_by:
+                    logger.debug("Reducing metric by group and name for '{}'".format(key))
+                    # compute reduced value for each 'group' in the grouped values
+                    for groupkey, res in res_by_group.items():
+                        logger.debug("groupkey '{}''".format(groupkey, res))
+                        # select spks relate to 'group' and add new enum to states
+                        sel_spks = [spk for spk in spks if spk.group == groupkey]
+                        self.STATES, (_, statekey) = add_to_enum(self.STATES, key, groupkey)
+                        logger.debug("statekey '{}''".format(statekey))
+                        # save spk-data relationship for future reference
+                        self.states.set_data_spk_rel(sel_spks, statekey)
+                        # reduce subgroup
+                        self._reduce_metric_and_save(res, statekey, **kwargs)
+                    logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+            # reduce by subset
+            if "subset" in reduce_by:
+                logger.debug("Reducing metric by subset for '{}'".format(key))
+                self._reduce_metric_by_subset(spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by subsets.".format(key))
+        else:
+            # reduce metric (here we compute the mean radius across entire LV)
+            self._reduce_metric_and_save(res, key, **kwargs)
+            # set metric relationship with spks 
+            # so that we can reference which spks were used to compute this metric
+            self.states.set_data_spk_rel(spks, key)
+            # Break down computation by each 'set of spks'
+            if "group" in reduce_by:
+                logger.debug("Reducing metric by group for '{}'".format(key))
+                self._reduce_metric_by_group(spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by group.".format(key))
             if "name" in reduce_by:
                 logger.debug("Reducing metric by name for '{}'".format(key))
-                # compute reduced value for each 'name' in the grouped values
-                for namekey, res in res_by_name.items():
-                    logger.debug("namekey '{}''".format(namekey, res))
-                    # select spks relate to 'name' and add new enum to states
-                    sel_spks = [spk for spk in spks if spk.name == namekey]
-                    self.STATES, (_, statekey) = add_to_enum(self.STATES, key, namekey)
-                    logger.debug("statekey '{}''".format(statekey))
-                    # save spk-data relationship for future reference
-                    self.states.set_data_spk_rel(sel_spks, statekey)
-                    # reduce subgroup
-                    self._reduce_metric_and_save(res, statekey, **kwargs)
+                self._reduce_metric_by_name(spks, key, **kwargs)
                 logger.debug("Metric '{}' has reduced values by names.".format(key))
-            # if user requested to compute length 'groupwise'
-            if "group" in reduce_by:
+            if "subset" in reduce_by:
+                logger.debug("Reducing metric by subset for '{}'".format(key))
+                self._reduce_metric_by_subset(spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by subsets.".format(key))
+            if "group_name" in reduce_by:
                 logger.debug("Reducing metric by group and name for '{}'".format(key))
-                # compute reduced value for each 'group' in the grouped values
-                for groupkey, res in res_by_group.items():
-                    logger.debug("groupkey '{}''".format(groupkey, res))
-                    # select spks relate to 'group' and add new enum to states
-                    sel_spks = [spk for spk in spks if spk.group == groupkey]
-                    self.STATES, (_, statekey) = add_to_enum(self.STATES, key, groupkey)
-                    logger.debug("statekey '{}''".format(statekey))
-                    # save spk-data relationship for future reference
-                    self.states.set_data_spk_rel(sel_spks, statekey)
-                    # reduce subgroup
-                    self._reduce_metric_and_save(res, statekey, **kwargs)
-                logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+                self._reduce_metric_by_group_and_name(spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by group and name.".format(key))    
         return self.states.get(key)  # return pointer
 
     # ---------- Clinical metric
@@ -771,6 +836,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
@@ -784,10 +853,15 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     def compute_spk_circumferential_length(self, spk, 
                                            approach="k_ids",
+                                           as_global=False,
                                            line_seg_filter_kwargs=None,
                                            dtype: np.dtype = np.float64,
                                            **kwargs):
         from functools import partial
+        if not as_global:
+            key = self.STATES.CIRCUMFERENTIAL_LENGTH
+        else:
+            key = self.STATES.GLOBAL_CIRCUMFERENTIAL_LENGTH
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
         # check if xyz was computed, otherwise try to automatically compute it.
         if not self.states.check_key(self.STATES.XYZ):
@@ -813,86 +887,115 @@ class LVBaseMetricsComputations(LV_Speckles):
         # compute response for given spk
         spk_res = np.array([fun(coords) for coords in xyz], dtype=dtype)
         # save to states
-        self.states.add_spk_data(spk, self.STATES.CIRC_LENGTH, spk_res)
+        self.states.add_spk_data(spk, key, spk_res)
         # return pointer
-        return self.states.get_spk_data(spk, self.STATES.CIRC_LENGTH)
+        return self.states.get_spk_data(spk, key)
 
     def compute_circumferential_length(self, spks, reduce_by={"group"}, as_global=False, **kwargs):
         # set key for this function
         if not as_global:
-            key = self.STATES.CIRC_LENGTH
+            key = self.STATES.CIRCUMFERENTIAL_LENGTH
         else:
             key = self.STATES.GLOBAL_CIRCUMFERENTIAL_LENGTH
         logger.info("Computing metric '{}'".format(key))
         # resolve spks (make sure you have a SpeckeDeque)
         spks = self._resolve_spk_args(spks)
         # compute metric for each speckle -> results in the length of each spk
-        res = [self.compute_spk_circumferential_length(spk, **kwargs) for spk in spks]
-        # apply metric reduction -> Note: this is not circ. length, but instead
-        # the 'reduced' circ. length for each speckle. Default will be avg. spk length.
-        self.STATES, (_, sub_key) = add_to_enum(self.STATES, key, "SPK_REDUCED")
-        self._reduce_metric_and_save(res, sub_key, **kwargs) # reduction by all spks
-        # now let's reduce by group. This should apply reduction across similar regions.
-        res_group = self._reduce_metric_by_group_and_name(spks, key, method="sum")
-        logger.debug("res_group '{}'".format(res_group))
-        # we now have the reduce value by similar regions, we need to get a 'single' 
-        # circ. length. We will do so by reduction across groups.
-        res_group_as_arr = np.array(list(res_group.values()))
-        self._reduce_metric_and_save(res_group_as_arr, key)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(spks, key)
-        # this function cannot use the same reduction method as other
-        # as the computation must sum each length in a different manner.
-        # this procedure is less expensive than re-computing using a combination
-        # of _reduce_metric_by_group_and_name and _reduce_metric_by_grou,
-        # for instance.
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by or "name" in reduce_by:
-            logger.debug("res_group.keys() '{}'".format(res_group.keys()))
-            # group computed values by respective group and name key
-            # we will do in a single loop so we have to have both dicts here
-            res_by_name = dict()
-            res_by_group = dict()
-            for (groupkey, namekey), res in res_group.items():
-                if not namekey in res_by_name:
-                    res_by_name[namekey] = deque([])
-                if not groupkey in res_by_group:
-                    res_by_group[groupkey] = deque([])
-                res_by_name[namekey].append(res)
-                res_by_group[groupkey].append(res)
-            logger.debug("res_by_name.keys() '{}'".format(res_by_name.keys()))
-            logger.debug("res_by_group.keys() '{}'".format(res_by_group.keys()))
-            # if user requested to compute length 'namewise'
+        res = [self.compute_spk_circumferential_length(spk, as_global=as_global, **kwargs) for spk in spks]
+        if not as_global:
+            # apply metric reduction -> Note: this is not circ. length, but instead
+            # the 'reduced' circ. length for each speckle. Default will be avg. spk length.
+            self.STATES, (_, sub_key) = add_to_enum(self.STATES, key, "SPK_REDUCED")
+            self._reduce_metric_and_save(res, sub_key, **kwargs) # reduction by all spks
+            # now let's reduce by group. This should apply reduction across similar regions.
+            res_group = self._reduce_metric_by_group_and_name(spks, key, method="sum")
+            logger.debug("res_group '{}'".format(res_group))
+            # we now have the reduce value by similar regions, we need to get a 'single' 
+            # circ. length. We will do so by reduction across groups.
+            res_group_as_arr = np.array(list(res_group.values()))
+            self._reduce_metric_and_save(res_group_as_arr, key)
+            # set metric relationship with spks 
+            # so that we can reference which spks were used to compute this metric
+            self.states.set_data_spk_rel(spks, key)
+            # this function cannot use the same reduction method as other
+            # as the computation must sum each length in a different manner.
+            # this procedure is less expensive than re-computing using a combination
+            # of _reduce_metric_by_group_and_name and _reduce_metric_by_grou,
+            # for instance.
+            # Break down computation by each 'set of spks'
+            if "group" in reduce_by or "name" in reduce_by:
+                logger.debug("res_group.keys() '{}'".format(res_group.keys()))
+                # group computed values by respective group and name key
+                # we will do in a single loop so we have to have both dicts here
+                res_by_name = dict()
+                res_by_group = dict()
+                for (groupkey, namekey), res in res_group.items():
+                    if not namekey in res_by_name:
+                        res_by_name[namekey] = deque([])
+                    if not groupkey in res_by_group:
+                        res_by_group[groupkey] = deque([])
+                    res_by_name[namekey].append(res)
+                    res_by_group[groupkey].append(res)
+                logger.debug("res_by_name.keys() '{}'".format(res_by_name.keys()))
+                logger.debug("res_by_group.keys() '{}'".format(res_by_group.keys()))
+                # if user requested to compute length 'namewise'
+                if "name" in reduce_by:
+                    logger.debug("Reducing metric by name for '{}'".format(key))
+                    # compute reduced value for each 'name' in the grouped values
+                    for namekey, res in res_by_name.items():
+                        logger.debug("namekey '{}''".format(namekey, res))
+                        # select spks relate to 'name' and add new enum to states
+                        sel_spks = [spk for spk in spks if spk.name == namekey]
+                        self.STATES, (_, statekey) = add_to_enum(self.STATES, key, namekey)
+                        logger.debug("statekey '{}''".format(statekey))
+                        # save spk-data relationship for future reference
+                        self.states.set_data_spk_rel(sel_spks, statekey)
+                        # reduce subgroup
+                        self._reduce_metric_and_save(res, statekey, **kwargs)
+                    logger.debug("Metric '{}' has reduced values by names.".format(key))
+                # if user requested to compute length 'groupwise'
+                if "group" in reduce_by:
+                    logger.debug("Reducing metric by group and name for '{}'".format(key))
+                    # compute reduced value for each 'group' in the grouped values
+                    for groupkey, res in res_by_group.items():
+                        logger.debug("groupkey '{}''".format(groupkey, res))
+                        # select spks relate to 'group' and add new enum to states
+                        sel_spks = [spk for spk in spks if spk.group == groupkey]
+                        self.STATES, (_, statekey) = add_to_enum(self.STATES, key, groupkey)
+                        logger.debug("statekey '{}''".format(statekey))
+                        # save spk-data relationship for future reference
+                        self.states.set_data_spk_rel(sel_spks, statekey)
+                        # reduce subgroup
+                        self._reduce_metric_and_save(res, statekey, **kwargs)
+                    logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+            # reduce by subset
+            if "subset" in reduce_by:
+                logger.debug("Reducing metric by subset for '{}'".format(key))
+                self._reduce_metric_by_subset(spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by subsets.".format(key))
+        else:
+            # reduce metric (here we compute the mean radius across entire LV)
+            self._reduce_metric_and_save(res, key, **kwargs)
+            # set metric relationship with spks 
+            # so that we can reference which spks were used to compute this metric
+            self.states.set_data_spk_rel(spks, key)
+            # Break down computation by each 'set of spks'
+            if "group" in reduce_by:
+                logger.debug("Reducing metric by group for '{}'".format(key))
+                self._reduce_metric_by_group(spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by group.".format(key))
             if "name" in reduce_by:
                 logger.debug("Reducing metric by name for '{}'".format(key))
-                # compute reduced value for each 'name' in the grouped values
-                for namekey, res in res_by_name.items():
-                    logger.debug("namekey '{}''".format(namekey, res))
-                    # select spks relate to 'name' and add new enum to states
-                    sel_spks = [spk for spk in spks if spk.name == namekey]
-                    self.STATES, (_, statekey) = add_to_enum(self.STATES, key, namekey)
-                    logger.debug("statekey '{}''".format(statekey))
-                    # save spk-data relationship for future reference
-                    self.states.set_data_spk_rel(sel_spks, statekey)
-                    # reduce subgroup
-                    self._reduce_metric_and_save(res, statekey, **kwargs)
+                self._reduce_metric_by_name(spks, key, **kwargs)
                 logger.debug("Metric '{}' has reduced values by names.".format(key))
-            # if user requested to compute length 'groupwise'
-            if "group" in reduce_by:
+            if "subset" in reduce_by:
+                logger.debug("Reducing metric by subset for '{}'".format(key))
+                self._reduce_metric_by_subset(spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by subsets.".format(key))
+            if "group_name" in reduce_by:
                 logger.debug("Reducing metric by group and name for '{}'".format(key))
-                # compute reduced value for each 'group' in the grouped values
-                for groupkey, res in res_by_group.items():
-                    logger.debug("groupkey '{}''".format(groupkey, res))
-                    # select spks relate to 'group' and add new enum to states
-                    sel_spks = [spk for spk in spks if spk.group == groupkey]
-                    self.STATES, (_, statekey) = add_to_enum(self.STATES, key, groupkey)
-                    logger.debug("statekey '{}''".format(statekey))
-                    # save spk-data relationship for future reference
-                    self.states.set_data_spk_rel(sel_spks, statekey)
-                    # reduce subgroup
-                    self._reduce_metric_and_save(res, statekey, **kwargs)
-                logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+                self._reduce_metric_by_group_and_name(spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by group and name.".format(key))   
         return self.states.get(key)  # return pointer
 
     # ---------- Clinical metric
@@ -921,6 +1024,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
@@ -1005,6 +1112,10 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by name for '{}'".format(key))
             self._reduce_metric_by_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
@@ -1074,6 +1185,11 @@ class LVBaseMetricsComputations(LV_Speckles):
             self._reduce_metric_by_name(apex_spk, key, **kwargs)
             self._reduce_metric_by_name(base_spk, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(apex_spk, key, **kwargs)
+            self._reduce_metric_by_subset(base_spk, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(apex_spk, key, **kwargs)
@@ -1137,6 +1253,11 @@ class LVBaseMetricsComputations(LV_Speckles):
             self._reduce_metric_by_name(apex_spk, key, **kwargs)
             self._reduce_metric_by_name(base_spk, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(apex_spk, key, **kwargs)
+            self._reduce_metric_by_subset(base_spk, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
         if "group_name" in reduce_by:
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(apex_spk, key, **kwargs)
@@ -1250,6 +1371,28 @@ class LVBaseMetricsComputations(LV_Speckles):
                 all_res[res_key] = deque([])
             all_res[res_key].append(self._reduce_metric_and_save(res, key, **kwargs))
         return all_res
+    
+    def _reduce_metric_by_subset(self, spks, data_key, merge_subset=None, **kwargs):
+        all_res = dict()
+        should_merge = False
+        if merge_subset is not None:
+            assert isinstance(merge_subset, dict), (
+                "merge_subset must be dictionary with keys as which values to merge and "
+                "values as the corresponding merging value. ")
+            should_merge = True
+             
+        for _, values in spks.by("subset").items():
+            res_key = values[0].subset
+            if should_merge:
+                if res_key in merge_subset:
+                    res_key = merge_subset[res_key]
+            self.STATES, (_, key) = add_to_enum(self.STATES, data_key, res_key)
+            res = [self.states.get_spk_data(spk, data_key) for spk in values]
+            self.states.set_data_spk_rel(spks, key)
+            if res_key not in all_res:
+                all_res[res_key] = deque([])
+            all_res[res_key].append(self._reduce_metric_and_save(res, key, **kwargs))
+        return all_res
 
     def _reduce_metric_by_group_and_name(self, spks, data_key, **kwargs):
         all_res = dict()
@@ -1262,6 +1405,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                 all_res[res_key] = deque([])
             all_res[res_key].append(self._reduce_metric_and_save(res, key, **kwargs))
         return all_res
+
 
     def _compute_relative_error(self, d1, d2):
         return (d2 - d1) / (d1 + self.EPSILON) * 100.0

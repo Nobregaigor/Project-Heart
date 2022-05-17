@@ -22,14 +22,13 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
         endo_epi_args={"threshold":85, "br":1.25, "ba":100},
         recompute_apex_base=dict(ql=0.03, qh=0.75))
   
-    endo_long = []
-    epi_long = []
+
     for i, a in enumerate(np.linspace(0, np.pi, 6, endpoint=False)):
         
         spk = lv.create_speckles(
             collection="long-6",
             group="endo",
-            name=str(i),
+            name=str(np.round(np.degrees(a),3)),
             from_nodeset=LV_SURFS.ENDO,
             exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
             d=1.75,
@@ -41,18 +40,17 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             n_clusters=10,
             t=0.0,
             kmin=-1,
-            kmax=0.95,
+            kmax=0.92,
             log_level=logging.WARN,
         )
-        endo_long.append(spk)
 
         spk = lv.create_speckles(
             collection="long-6",
             group="epi",
-            name=str(i),
+            name=str(np.round(np.degrees(a),3)),
             from_nodeset=LV_SURFS.EPI,
             exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
-            d=2.4,
+            d=1.75,
             k=0.5,
             normal_to=[np.cos(a),np.sin(a),0.0],
             n_subsets=6,
@@ -61,14 +59,14 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             n_clusters=10,
             t=0.0,
             kmin=-1,
-            kmax=0.95,
+            kmax=0.92,
             log_level=logging.WARN,
         )
         
         spk = lv.create_speckles(
             collection="long-1",
             group="endo",
-            name=str(i),
+            name=str(np.round(np.degrees(a),3)),
             from_nodeset=LV_SURFS.ENDO,
             exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
             d=1.75,
@@ -80,17 +78,17 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             n_clusters=100,
             t=0.0,
             kmin=-1,
-            kmax=0.95,
+            kmax=0.92,
             log_level=logging.WARN,
         )
 
         spk = lv.create_speckles(
             collection="long-1",
             group="epi",
-            name=str(i),
+            name=str(np.round(np.degrees(a),3)),
             from_nodeset=LV_SURFS.EPI,
             exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
-            d=2.4,
+            d=1.75,
             k=0.5,
             normal_to=[np.cos(a),np.sin(a),0.0],
             n_subsets=0,
@@ -99,7 +97,7 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile):
             n_clusters=100,
             t=0.0,
             kmin=-1,
-            kmax=0.95,
+            kmax=0.92,
             log_level=logging.WARN,
         )
 

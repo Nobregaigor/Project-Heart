@@ -86,9 +86,9 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         return self.states.get(self.STATES.LONG_LENGTH, t=t) 
 
     def global_longitudinal_length(self, spks, t=None, recompute=False, **kwargs):
-        if not self.states.check_key(self.STATES.LONG_LENGTH) or recompute:
+        if not self.states.check_key(self.STATES.GLOBAL_LONG_LENGTH) or recompute:
             self.compute_longitudinal_length(spks, as_global=True, **kwargs)
-        return self.states.get(self.STATES.LONG_LENGTH, t=t) 
+        return self.states.get(self.STATES.GLOBAL_LONG_LENGTH, t=t) 
     
     def circumferential_length(self, spks, t=None, recompute=False, **kwargs):
         if not self.states.check_key(self.STATES.CIRC_LENGTH) or recompute:
@@ -319,11 +319,12 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             logger.debug("Initiate search for spk info.")
             try:
                 spks = self.states.get_spks_from_data(metric)
-                info = dict(group=df.copy(), name=df.copy(), group_name=df.copy())
-                info_cats = dict(name=set(), group=set(), group_name=set())
+                info = dict(group=df.copy(), name=df.copy(), subset=df.copy(), group_name=df.copy())
+                info_cats = dict(name=set(), group=set(), subset=set(), group_name=set())
                 for spk in spks:
                     info_cats[self.SPK_SETS.NAME.value].add(spk.name)
                     info_cats[self.SPK_SETS.GROUP.value].add(spk.group)
+                    info_cats[self.SPK_SETS.SUBSET.value].add(spk.subset)
                     info_cats[self.SPK_SETS.GROUP_NAME.value].add("{}_{}".format(spk.group, spk.name))
                 for cat, values in info_cats.items():
                     for suffix in values:
@@ -370,10 +371,12 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
     def plot_metric(self, 
         metric: str, 
         kind="line", 
-        from_ts=0.0, 
-        to_ts=-1,
+        from_ts:float=0.0, 
+        to_ts:float=-1,
         plot_infos:set=None,
         search_suffix:set=None,
+        plot_infos_only:bool=False,
+        plot_infos_only_on_info_plots:bool=False,
         **kwargs):
         # Check input arguments
         assert_iterable(plot_infos, accept_none=True)
@@ -393,7 +396,8 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         # make plot
         default_args = dict(grid=True, figsize=(15,7))
         default_args.update(kwargs)
-        df.plot(x="timesteps", y=metric, kind=kind, **default_args)
+        if not plot_infos_only:
+            df.plot(x="timesteps", y=metric, kind=kind, **default_args)
         # resolve info plots
         if plot_infos is None and search_suffix is not None:
             plot_infos = ["suffix"]
@@ -406,6 +410,8 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                     df = info[key]
                     y = list(df.columns)
                     y.remove("timesteps")
+                    if plot_infos_only_on_info_plots and len(y) > 1:
+                        y.remove(metric)
                     if from_ts > 0:
                         df = df.loc[df["timesteps"] >= from_ts]
                     if to_ts > 0:

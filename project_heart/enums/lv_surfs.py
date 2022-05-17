@@ -236,9 +236,12 @@ class LV_SPK_SETS(Enum):
     
     GROUP = "group"
     NAME = "name"
+    SUBSET = "subset"
 
     GROUP_NAME = "group_name"
     NAME_GROUP = "group_name"
+    
+    
 
 class LV_SPK_STATES(Enum):
     PLACEHOLDER = "placeholder"
