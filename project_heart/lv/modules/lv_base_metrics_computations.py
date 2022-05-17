@@ -149,6 +149,9 @@ class LVBaseMetricsComputations(LV_Speckles):
         # check if xyz was computed; If not, try to compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
+            
+        from project_heart.utils.enum_utils import check_for_enum_name
+        nodeset = check_for_enum_name(nodeset, self.REGIONS)
         # get node ids (index array) from nodeset
         nodeids = self.get_nodeset(nodeset)
         # get node positions from nodeset at specified state
@@ -1053,7 +1056,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
         # get nodal position for all timesteps for given spk
         xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
-        vecs = np.array(xyz - centers, dtype=dtype)
+        vecs = np.array([xyz[i] - centers[i] for i in range(len(xyz))], dtype=dtype)
         # save to states
         self.states.add_spk_data(spk, self.STATES.SPK_VECS, vecs)  
         # return pointer

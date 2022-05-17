@@ -10,6 +10,12 @@ def check_enum_name(name):
         name = name.name
     return name
 
+def check_for_enum_name(value, enum_holder):
+    if value in enum_holder.__members__.keys():
+        return enum_holder[value]
+    else:
+        return value
+
 def check_enum(arg):
     return check_enum_name(arg), check_enum_value(arg)
 

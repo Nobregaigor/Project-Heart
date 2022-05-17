@@ -163,11 +163,18 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                 search_suffix={self.REGIONS.ENDO, self.REGIONS.EPI},
                 merged_info=True)
             resolve_add_info(df, info, all_dfs)
-        # radius
-        key = valkeys.RADIUS.value
+        # radius 1
+        key = valkeys.RADIAL_DISTANCE.value
         if key in metrics:
             logger.info("Extracting {}.".format(key))
-            execute_w_spks(self.radius, key)
+            execute_w_spks(self.radial_distance, key)
+            df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
+            resolve_add_info(df, info, all_dfs)
+        # radius 2
+        key = valkeys.RADIAL_LENGTH.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            execute_w_spks(self.radial_length, key)
             df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
             resolve_add_info(df, info, all_dfs)
         # thickness
@@ -178,17 +185,31 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
             resolve_add_info(df, info, all_dfs)
         # longitudinal length
-        key = valkeys.LONG_LENGTH.value
+        key = valkeys.LONGITUDINAL_LENGTH.value
         if key in metrics:
             logger.info("Extracting {}.".format(key))
             execute_w_spks(self.longitudinal_length, key)
             df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
             resolve_add_info(df, info, all_dfs)
+        # global longitudinal length
+        key = valkeys.GLOBAL_LONGITUDINAL_LENGTH.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            execute_w_spks(self.global_longitudinal_length, key)
+            df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
+            resolve_add_info(df, info, all_dfs)
         # circumferential length
-        key = valkeys.CIRC_LENGTH.value
+        key = valkeys.CIRCUMFERENTIAL_LENGTH.value
         if key in metrics:
             logger.info("Extracting {}.".format(key))
             execute_w_spks(self.circumferential_length, key)
+            df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
+            resolve_add_info(df, info, all_dfs)
+        # global circumferential length
+        key = valkeys.GLOBAL_CIRCUMFERENTIAL_LENGTH.value
+        if key in metrics:
+            logger.info("Extracting {}.".format(key))
+            execute_w_spks(self.global_circumferential_length, key)
             df, info = self.get_metric_as_df(key, search_spk_info=True, merged_info=True)
             resolve_add_info(df, info, all_dfs)
         # rotation
