@@ -9,7 +9,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 1,
+   "execution_count": null,
    "metadata": {
     "nbsphinx": "hidden"
    },
@@ -42,7 +42,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "## Longitudinal Distance"
+    "## Longitudinal Length"
    ]
   },
   {
@@ -51,7 +51,9 @@
    "source": [
     "**Definition**: Curvature length from a set of points roughtly alinged in a plane normal to longitudinal axis.\n",
     "\n",
-    "..."
+    "The longitudinal length is computed as the length of a curve inscribed within a region of the myocardium along the longitudinal axis. In our implementation, we created these curves based on specified speckles, therefore, we are essentially computing the \"speckle length\". It is important to note that the normal of the plane of reference for these speckles must be perpendicular to the longitudinal axis to ensure this metric is aligned with its definition. \n",
+    "\n",
+    "Here is an example:"
    ]
   },
   {
@@ -69,42 +71,20 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "lv_ideal.plot_speckles(sample_spk_ideal[4], \n",
-    "                       cmap=\"Set1\", \n",
+    "lv_ideal.plot_speckles(sample_spk_ideal[0], \n",
+    "                       cmap=\"tab20\", \n",
     "                        point_size=200,\n",
     "                       add_k_centers=True, \n",
     "                       k_centers_as_line=True, \n",
-    "                       k_bins=True)"
+    "                       k_bins=True,\n",
+    "                       t=0.0)"
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": 5,
+   "cell_type": "markdown",
    "metadata": {},
-   "outputs": [
-    {
-     "data": {
-      "application/vnd.jupyter.widget-view+json": {
-       "model_id": "2b4a8f87bb5e4d039a8a181599af65c0",
-       "version_major": 2,
-       "version_minor": 0
-      },
-      "text/plain": [
-       "Renderer(camera=PerspectiveCamera(aspect=1.5, children=(DirectionalLight(position=(50000.000000000015, 70710.6…"
-      ]
-     },
-     "metadata": {},
-     "output_type": "display_data"
-    }
-   ],
    "source": [
-    "sample_spk_typeA = lv_typeA.get_speckles(spk_name=\"SAMPLE-LONG\", spk_group=\"epi\", spk_collection=\"SAMPLE\")\n",
-    "lv_typeA.plot_speckles(sample_spk_typeA[4], \n",
-    "                       cmap=\"jet\", \n",
-    "                        point_size=200,\n",
-    "                       add_k_centers=True, \n",
-    "                       k_centers_as_line=True, \n",
-    "                       k_bins=True)"
+    "As speckles are pre-defined during initialization, their corresponing mesh ids are fixed, which allows us to 'draw' a line between clusters inside a speckle and track their deformation throughout timesteps. "
    ]
   },
   {
@@ -113,9 +93,20 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "from project_heart.utils.vector_utils import angle_between\n",
-    "angle_y = angle_between(np.cross(lv_ideal._Z, [1,0,0])[:2], lv_ideal._Y[:2], check_orientation=False)\n",
-    "angle_y"
+    "lv_ideal.plot_speckles(sample_spk_ideal[0], \n",
+    "                       cmap=\"tab20\", \n",
+    "                        point_size=200,\n",
+    "                       add_k_centers=True, \n",
+    "                       k_centers_as_line=True, \n",
+    "                       k_bins=True,\n",
+    "                       t=0.5)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "TODO: Continue explanation"
    ]
   },
   {
@@ -124,12 +115,66 @@
    "metadata": {},
    "outputs": [],
    "source": [
+    "long_spks = lv_typeA.get_speckles(spk_collection=\"long-6\")\n",
+    "lv_typeA.longitudinal_length(\n",
+    "    long_spks, \n",
+    "    approach=\"k_ids\", \n",
+    "    recompute=True,\n",
+    "    reduce_by={\"group\"},\n",
+    "    log_level=logging.WARN,\n",
+    "    )\n",
+    "lv_typeA.plot_metric(lv_typeA.STATES.LONG_LENGTH, \n",
+    "    from_ts=0.0,\n",
+    "    plot_infos=[\"group\"],\n",
+    "    )"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "In our approach, the final computation of 'longitudinal length' is the result of the reduction of the sum of the reduced values of individual groups formed by 'group' and 'name', which essentially composes the target line for the given geometric metric. \n",
+    "\n",
+    "For instance, this is a sample group formed by speckles' 'group' and 'name' values:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample_spk_ideal = lv_ideal.get_speckles(spk_name=\"SAMPLE-LONG\", spk_group=\"epi\", spk_collection=\"SAMPLE\")\n",
+    "lv_ideal.plot_speckles(sample_spk_ideal, \n",
+    "                       cmap=\"tab20\", \n",
+    "                        point_size=200,\n",
+    "                       add_k_centers=True, \n",
+    "                       k_centers_as_line=True, \n",
+    "                       k_bins=False,\n",
+    "                       t=0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "At the end, the final result is the reduction of the length of each of these groups:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample_spk_ideal = lv_ideal.get_speckles(spk_collection=\"long-6\")\n",
     "lv_ideal.plot_speckles(sample_spk_ideal, \n",
     "                       cmap=\"jet\", \n",
     "                        point_size=200,\n",
     "                       add_k_centers=False, \n",
     "                       k_centers_as_line=False, \n",
-    "                       k_bins=False)"
+    "                       k_bins=False,\n",
+    "                       t=0)"
    ]
   },
   {
@@ -137,7 +182,26 @@
    "execution_count": null,
    "metadata": {},
    "outputs": [],
-   "source": []
+   "source": [
+    "sample_spk_ideal = lv_typeA.get_speckles(spk_name=\"150.0\", spk_group=\"endo\", spk_collection=\"long-6\")\n",
+    "lv_typeA.plot_speckles(sample_spk_ideal[0], \n",
+    "                       cmap=\"hot\", \n",
+    "                        point_size=200,\n",
+    "                       add_k_centers=False, \n",
+    "                       k_centers_as_line=False, \n",
+    "                       k_bins=False,\n",
+    "                       t=0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "However, considering that these lines are not fully connected, distorsions might occur at points of discontinuities and the full length of the desired line might not be achieved (depending on number of clusters and mesh size). Therefore, to account for possible errors, we define the 'global longitudinal length' separately. \n",
+    "\n",
+    "\n",
+    "Nonetheless, the described approach can be used to compute local longitudinal lengths by reducing subset values. Note that, by default, subsets are created and named continously, which might result in mutiple subset names for similar regions; therefore, we can 'merge' their result and apply a single reduction over multiple subsets."
+   ]
   },
   {
    "cell_type": "code",
@@ -145,12 +209,112 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "lv_typeA.plot_speckles(sample_spk_typeA[3], \n",
-    "                       cmap=\"Set1\", \n",
+    "long_spks = lv_typeA.get_speckles(spk_collection=\"long-6\")\n",
+    "lv_typeA.longitudinal_length(\n",
+    "    long_spks, \n",
+    "    approach=\"k_ids\", \n",
+    "    recompute=True,\n",
+    "    reduce_by={\"subset\"},\n",
+    "    merge_subset={\n",
+    "        5: 0, \n",
+    "        4: 1, \n",
+    "        3: 2\n",
+    "        },\n",
+    "    log_level=logging.WARN,\n",
+    "    )\n",
+    "lv_typeA.plot_metric(lv_typeA.STATES.LONG_LENGTH, \n",
+    "    from_ts=0.0,\n",
+    "    plot_infos={\"subset\"},\n",
+    "    plot_infos_only=True,\n",
+    "    plot_infos_only_on_info_plots=True\n",
+    "    )"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "TODO: \n",
+    "\n",
+    "* add reduction by subset and group (will result in same similar graph but with individual values for endo-epi) \n",
+    "* add option to save 'longitudinal length' as the reduction of subsets, instead of sum (might be useful for detailed explanations)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Global longitudinal length:"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "As previously explained, discontinuities between cluster centers within speckle subsets might lead to errors when computing the overall length of the desired curve. Although this error is reduced with finer meshes and increase number of clusters within speckles, we considered the concept of \"global longitudinal speckle\" as a separated method for clarity purposes. \n",
+    "\n",
+    "The global longitudinal length is defined as the length over an entire speckle and it is intended to be used with speckles that do not contain subsets. Essentially, we apply the previously described method for length computation over a single speckle that covers the entire region of interest. The final result is the reduction of all selected speckles. See example below:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample_spk_typeA = lv_typeA.get_speckles(spk_name=\"0.0\", spk_group=\"epi\", spk_collection=\"long-1\")\n",
+    "lv_typeA.plot_speckles(sample_spk_typeA, \n",
+    "                       cmap=\"hot\", \n",
     "                        point_size=200,\n",
-    "                       add_k_centers=True, \n",
-    "                       k_centers_as_line=True, \n",
-    "                       k_bins=True)"
+    "                        add_k_centers=True, \n",
+    "                        # k_centers_as_line=True, \n",
+    "                        k_bins=True,\n",
+    "                            #    k_center_filters=dict(\n",
+    "                            #    mfilter_ws=5, \n",
+    "                            #    sfilter_ws=9, \n",
+    "                            #    sfilter_or=1, \n",
+    "                            #    keep_first=False, \n",
+    "                            #    keep_last=False)\n",
+    "                        )"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The final metric is shown below:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "long_spks = lv_typeA.get_speckles(spk_collection=\"long-1\")\n",
+    "lv_typeA.global_longitudinal_length(\n",
+    "    long_spks, \n",
+    "    approach=\"k_ids\", \n",
+    "    recompute=True,\n",
+    "    reduce_by={\"group\"},\n",
+    "    log_level=logging.WARN,\n",
+    "    line_seg_filter_kwargs=dict(\n",
+    "                           mfilter_ws=3, \n",
+    "                           sfilter_ws=9, \n",
+    "                           sfilter_or=1, \n",
+    "                           keep_first=True, \n",
+    "                           keep_last=True)\n",
+    "    )\n",
+    "lv_typeA.plot_metric(lv_typeA.STATES.GLOBAL_LONGITUDINAL_LENGTH, \n",
+    "    from_ts=0.0,\n",
+    "    plot_infos=[\"group\"])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Although the computation of local speckles is helpful for detailed information about the myocardium, it is not often used in a clinical setting as values may vary from different vendors and different computation approaches. A recommended standard practice is to report values at Endocardium."
    ]
   }
  ],
