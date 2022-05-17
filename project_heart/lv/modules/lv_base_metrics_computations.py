@@ -684,6 +684,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                           clusters=spk.k_local_ids,
                           assume_sorted=True,
                           filter_args=line_seg_filter_kwargs,
+                          join_ends=False,
                           dtype=dtype,**kwargs)
         elif approach == "kmeans":
             from project_heart.utils.spatial_utils import compute_length_by_clustering
@@ -860,8 +861,10 @@ class LVBaseMetricsComputations(LV_Speckles):
         from functools import partial
         if not as_global:
             key = self.STATES.CIRCUMFERENTIAL_LENGTH
+            join_ends=False
         else:
             key = self.STATES.GLOBAL_CIRCUMFERENTIAL_LENGTH
+            join_ends=True
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
         # check if xyz was computed, otherwise try to automatically compute it.
         if not self.states.check_key(self.STATES.XYZ):
@@ -873,6 +876,7 @@ class LVBaseMetricsComputations(LV_Speckles):
                           clusters=spk.k_local_ids,
                           assume_sorted=True,
                           filter_args=line_seg_filter_kwargs,
+                          join_ends=join_ends,
                           dtype=dtype,**kwargs)
         elif approach == "kmeans":
             from project_heart.utils.spatial_utils import compute_length_by_clustering

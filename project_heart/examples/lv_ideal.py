@@ -17,11 +17,10 @@ def get_lv_ideal(filepath=filepath):
                             recompute_apex_base=dict(ql=0.05, qh=0.95)
                             )
 
-    endo_long = []
-    epi_long = []
+
     for i, a in enumerate(np.linspace(0, np.pi, 6, endpoint=False)):
         
-        spk = lv.create_speckles(
+        _ = lv.create_speckles(
             collection="long-6",
             group="endo",
             name=str(i),
@@ -39,9 +38,8 @@ def get_lv_ideal(filepath=filepath):
             kmax=0.95,
             log_level=logging.WARN,
         )
-        endo_long.append(spk)
 
-        spk = lv.create_speckles(
+        _ = lv.create_speckles(
             collection="long-6",
             group="epi",
             name=str(i),
@@ -59,54 +57,125 @@ def get_lv_ideal(filepath=filepath):
             kmax=0.95,
             log_level=logging.WARN,
         )
-        epi_long.append(spk)
+        
+        _ = lv.create_speckles(
+            collection="long-1",
+            group="endo",
+            name=str(np.round(np.degrees(a),3)),
+            from_nodeset=LV_SURFS.ENDO,
+            exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
+            d=1.75,
+            k=0.5,
+            normal_to=[np.cos(a),np.sin(a),0.0],
+            n_subsets=0,
+            subsets_criteria="z2",
+            cluster_criteria="angles3",
+            n_clusters=100,
+            t=0.0,
+            kmin=-1,
+            kmax=0.92,
+            log_level=logging.WARN,
+        )
 
-    endo_circ = []
-    epi_circ = []
+        _ = lv.create_speckles(
+            collection="long-1",
+            group="epi",
+            name=str(np.round(np.degrees(a),3)),
+            from_nodeset=LV_SURFS.EPI,
+            exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
+            d=1.75,
+            k=0.5,
+            normal_to=[np.cos(a),np.sin(a),0.0],
+            n_subsets=0,
+            subsets_criteria="z2",
+            cluster_criteria="angles3",
+            n_clusters=100,
+            t=0.0,
+            kmin=-1,
+            kmax=0.92,
+            log_level=logging.WARN,
+        )
 
     names = ["subapex", "apex", "superapex", "submid", "mid", "supermid", "subbase", "base", "superbase"]
-    for i, a in enumerate(np.linspace(0.25, 0.95, len(names), endpoint=False)):
+    for i, a in enumerate(np.linspace(0.1, 0.95, len(names), endpoint=False)):
         
-        spk = lv.create_speckles(
+        _ = lv.create_speckles(
             collection="circ-6",
             group="endo",
             name=names[i],
             from_nodeset=LV_SURFS.ENDO,
-            d=1.75,
+            d=2.25,
             k=a,
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
-            n_clusters=8,
+            cluster_criteria="angles3",
+            n_clusters=16,
             t=0.0,
             kmin=-1.0,
             kmax=-1.0,
             log_level=logging.WARN,
         )
-        endo_circ.append(spk)
 
-        spk = lv.create_speckles(
+        _ = lv.create_speckles(
             collection="circ-6",
             group="epi",
             name=names[i],
             from_nodeset=LV_SURFS.EPI,
-            d=1.75,
+            d=2.25,
             k=a,
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
-            n_clusters=8,
+            cluster_criteria="angles3",
+            n_clusters=16,
             t=0.0,
             kmin=-1.0,
             kmax=-1.0,
             log_level=logging.WARN,
         )
-        epi_circ.append(spk)
+        
+        _ = lv.create_speckles(
+            collection="circ-1",
+            group="endo",
+            name=names[i],
+            from_nodeset=LV_SURFS.ENDO,
+            d=2.25,
+            k=a,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=0,
+            subsets_criteria="angles",
+            cluster_criteria="angles3",
+            n_clusters=60,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
+
+
+        _ = lv.create_speckles(
+            collection="circ-1",
+            group="epi",
+            name=names[i],
+            from_nodeset=LV_SURFS.EPI,
+            d=2.25,
+            k=a,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=0,
+            subsets_criteria="angles",
+            cluster_criteria="angles3",
+            n_clusters=60,
+            t=0.0,
+            kmin=-1.0,
+            kmax=-1.0,
+            log_level=logging.WARN,
+        )
 
 
 
+    
+    
     _ = lv.create_speckles(
             collection="SAMPLE",
             group="epi",
@@ -117,7 +186,7 @@ def get_lv_ideal(filepath=filepath):
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
+            cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
             kmin=-1.0,
@@ -135,7 +204,7 @@ def get_lv_ideal(filepath=filepath):
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
+            cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
             kmin=-1.0,
@@ -153,7 +222,7 @@ def get_lv_ideal(filepath=filepath):
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
+            cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
             kmin=-1.0,
@@ -171,7 +240,7 @@ def get_lv_ideal(filepath=filepath):
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
+            cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
             kmin=-1.0,
@@ -189,7 +258,7 @@ def get_lv_ideal(filepath=filepath):
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
+            cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
             kmin=-1.0,
@@ -207,7 +276,7 @@ def get_lv_ideal(filepath=filepath):
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
+            cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
             kmin=-1.0,
@@ -225,7 +294,7 @@ def get_lv_ideal(filepath=filepath):
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
+            cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
             kmin=-1.0,
@@ -243,7 +312,7 @@ def get_lv_ideal(filepath=filepath):
             normal_to=[0.0, 0.0, 1.0],
             n_subsets=6,
             subsets_criteria="angles",
-            cluster_criteria="angles2",
+            cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
             kmin=-1.0,

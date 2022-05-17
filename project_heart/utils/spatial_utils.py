@@ -358,8 +358,12 @@ def swap_xy(xyz, ax1, ax2):
     return np.hstack((xyz[:, ax1].reshape((-1, 1)), xyz[:, ax2].reshape((-1, 1))))
 
 
-def line_sum(coords):
-    return np.sum(np.linalg.norm(coords[1:]-coords[:-1], axis=1))
+def line_sum(coords, join_ends=False):
+    if not join_ends:
+        return np.sum(np.linalg.norm(coords[1:]-coords[:-1], axis=1))
+    else:
+        _coords = np.vstack((coords, coords[0]))
+        return np.sum(np.linalg.norm(_coords[1:]-_coords[:-1], axis=1))
 
 # ==================================
 # 3D Seg. circunferential length
@@ -477,6 +481,7 @@ def compute_length_from_predefined_cluster_list(xyz:np.ndarray,
                                             assume_sorted:bool=False,
                                             use_centroid=False,
                                             filter_args=None,
+                                            join_ends=False,
                                             dtype=np.float64,
                                             **kwargs) -> float:
     assert clusters is not None, "clusters must be provided."
@@ -493,7 +498,6 @@ def compute_length_from_predefined_cluster_list(xyz:np.ndarray,
         rs = np.linalg.norm(centers, axis=1)
         thetas = np.arccos(centers[:, 2]/rs)
         phis = np.arctan2(centers[:, 1],centers[:, 0])
-
         # sort by columns
         ids = np.lexsort((phis, thetas,rs))
         centers = centers[ids]
@@ -501,7 +505,7 @@ def compute_length_from_predefined_cluster_list(xyz:np.ndarray,
     if filter_args is not None:
         centers = apply_filter_on_line_segment(centers, **filter_args)
     #compute length
-    return line_sum(centers)
+    return line_sum(centers, join_ends=join_ends)
 
 
 
