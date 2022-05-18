@@ -178,22 +178,6 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "sample_spk_ideal = lv_typeA.get_speckles(spk_name=\"150.0\", spk_group=\"endo\", spk_collection=\"long-6\")\n",
-    "lv_typeA.plot_speckles(sample_spk_ideal[0], \n",
-    "                       cmap=\"hot\", \n",
-    "                        point_size=200,\n",
-    "                       add_k_centers=False, \n",
-    "                       k_centers_as_line=False, \n",
-    "                       k_bins=False,\n",
-    "                       t=0)"
-   ]
-  },
-  {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
