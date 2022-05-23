@@ -1350,7 +1350,7 @@ class BaseContainerHandler():
              background_color='w',
              window_size=None,
              t=None,
-             notebook=False,
+             notebook=True,
              **kwargs):
         
         if window_size is None:
