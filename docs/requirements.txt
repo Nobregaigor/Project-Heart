@@ -15,7 +15,7 @@ pymeshfix==0.15.0
 appdirs==1.4.4
 Pillow==9.0.1
 scikit-learn==1.0.2
-scipy==1.8.0
+scipy
 widgetsnbextension==3.5.2
 pythreejs==2.3.0
 pandas
