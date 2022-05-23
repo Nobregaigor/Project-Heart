@@ -5,6 +5,8 @@ dependencies:
   - pandoc
   - ipykernel
   - pip
-  - libgcc
+  - numpy
+  - scipy
+  - libgcc==5.2.0
   - pip:
     - nbsphinx
