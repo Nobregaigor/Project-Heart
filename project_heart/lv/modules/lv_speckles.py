@@ -425,7 +425,7 @@ class LV_Speckles(LV_RegionIdentifier):
                 search_for_jumps = True
                 search_trial = 0
                 max_search_trials = 20
-                dist_step = 0.25
+                dist_step = 0.5
                 while search_for_jumps:
                     logger.debug("Searching for discontinuity... {}".format(search_trial+1))
                     sort_ids = np.argsort(angles)
@@ -433,7 +433,7 @@ class LV_Speckles(LV_RegionIdentifier):
                     dists_ppts = np.linalg.norm(ppts_sorted_by_angles[1:] - ppts_sorted_by_angles[:-1], axis=1)
                     dists_grad = np.gradient(dists_ppts)
                     d_mean, d_stdev = np.mean(dists_grad), np.std(dists_grad)
-                    dist_jump = np.where(np.abs(dists_grad - d_mean) > (8 + (search_trial*dist_step)) *d_stdev)[0]
+                    dist_jump = np.where(np.abs(dists_grad - d_mean) > (5 + (search_trial*dist_step)) *d_stdev)[0]
                     if len(dist_jump) > 0:
                         logger.debug("Discontinuity Found: {}".format(len(dist_jump)))
                         dist_jump_val = dists_grad[dist_jump]

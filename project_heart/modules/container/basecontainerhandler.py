@@ -1350,12 +1350,13 @@ class BaseContainerHandler():
              background_color='w',
              window_size=None,
              t=None,
+             notebook=False,
              **kwargs):
         
         if window_size is None:
             window_size = (600,400)
         # set plotter
-        plotter = pv.Plotter(lighting='three lights')
+        plotter = pv.Plotter(lighting='three lights', notebook=notebook)
         plotter.background_color = background_color
 
         # set mesh render arguments:
