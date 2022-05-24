@@ -54,7 +54,7 @@
    "outputs": [],
    "source": [
     "%%capture\n",
-    "lv.tetrahedralize(backend=TETRA_BACKEND.WILDMESHING, stop_quality=1000);"
+    "lv.tetrahedralize(backend=TETRA_BACKEND.WILDMESHING, stop_quality=500);"
    ]
   },
   {
@@ -99,7 +99,7 @@
    "outputs": [],
    "source": [
     "%%capture\n",
-    "lv.tetrahedralize(backend=TETRA_BACKEND.TETGEN, order=1, mindihedral=0.0, minratio=2.0)"
+    "lv.tetrahedralize(backend=TETRA_BACKEND.TETGEN, order=1, mindihedral=10.0, minratio=3.0)"
    ]
   },
   {
