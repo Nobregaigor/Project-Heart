@@ -425,7 +425,7 @@ class LV_Speckles(LV_RegionIdentifier):
                 search_for_jumps = True
                 search_trial = 0
                 max_search_trials = 20
-                dist_step = 0.5
+                dist_step = 0.25
                 while search_for_jumps:
                     logger.debug("Searching for discontinuity... {}".format(search_trial+1))
                     sort_ids = np.argsort(angles)
@@ -433,16 +433,19 @@ class LV_Speckles(LV_RegionIdentifier):
                     dists_ppts = np.linalg.norm(ppts_sorted_by_angles[1:] - ppts_sorted_by_angles[:-1], axis=1)
                     dists_grad = np.gradient(dists_ppts)
                     d_mean, d_stdev = np.mean(dists_grad), np.std(dists_grad)
-                    dist_jump = np.where(np.abs(dists_grad - d_mean) > (5 + (search_trial*dist_step)) *d_stdev)[0]
+                    dist_jump = np.where(np.abs(dists_grad - d_mean) > (4 + (search_trial*dist_step)) *d_stdev)[0]
                     if len(dist_jump) > 0:
                         logger.debug("Discontinuity Found: {}".format(len(dist_jump)))
                         dist_jump_val = dists_grad[dist_jump]
                         logger.debug("dist_jump: {} -> {}.".format(dist_jump, dist_jump_val))
                         if (search_trial % 2) == 0:
-                            look_at = 1
+                            look_at = 2
                         else:
                             look_at = 0
-                        new_max_pt = sort_ids[dist_jump[np.argmax(dist_jump_val)]+look_at]
+                        idx_to_look_at =dist_jump[np.argmax(dist_jump_val)]+look_at
+                        if idx_to_look_at >= len(sort_ids):
+                            idx_to_look_at = len(sort_ids) - idx_to_look_at
+                        new_max_pt = sort_ids[idx_to_look_at]
                         ref_max_vec = vecs[new_max_pt]
                         ref_max_pt = new_max_pt
                         angles = angle_between(vecs, ref_max_vec, check_orientation=True, zaxis=normal)
