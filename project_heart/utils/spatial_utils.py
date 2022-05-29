@@ -89,7 +89,7 @@ def radius(points, center=None):
     return np.mean(np.linalg.norm(points - center, axis=1))
 
 
-def get_p_along_line(k: float, line):
+def get_p_along_line(k: float, line, extrapolate=False):
     """
       Returns a point (x,y,z) at a relative distance k from the
       start of a line defined with two boundary points by interpolation. 
@@ -99,6 +99,7 @@ def get_p_along_line(k: float, line):
 
       Example: k=0.5 returns the midpoint of a given line.
     """
+    
     if not isinstance(k, float):
         raise TypeError('k must be a float')
     if not isinstance(line, np.ndarray):
@@ -106,13 +107,19 @@ def get_p_along_line(k: float, line):
         line = np.asarray(line)
 
     # allocate array data
-    data = np.zeros(3, dtype=np.float32)
+    data = np.zeros(3, dtype=np.float64)
     # interpolate x, y and z in k from 0 to 1 between two boundaries
     # for i in range(3):
     # data[i] = np.interp(k, [0.0, 1.0], [line[0][i], line[1][i]])
-    data[0] = np.interp(k, [0.0, 1.0], [line[0][0], line[1][0]])
-    data[1] = np.interp(k, [0.0, 1.0], [line[0][1], line[1][1]])
-    data[2] = np.interp(k, [0.0, 1.0], [line[0][2], line[1][2]])
+    if not extrapolate:
+        data[0] = np.interp(k, [0.0, 1.0], [line[0][0], line[1][0]])
+        data[1] = np.interp(k, [0.0, 1.0], [line[0][1], line[1][1]])
+        data[2] = np.interp(k, [0.0, 1.0], [line[0][2], line[1][2]])
+    else:
+        from scipy.interpolate import interp1d
+        data[0] = interp1d([0.0, 1.0], [line[0][0], line[1][0]], fill_value="extrapolate")(k)
+        data[1] = interp1d([0.0, 1.0], [line[0][1], line[1][1]], fill_value="extrapolate")(k)
+        data[2] = interp1d([0.0, 1.0], [line[0][2], line[1][2]], fill_value="extrapolate")(k)
     return data
 
 # ==================================

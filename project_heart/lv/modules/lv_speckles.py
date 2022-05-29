@@ -54,7 +54,7 @@ class LV_Speckles(LV_RegionIdentifier):
                         perpendicular_to=None,
                         normal_to=None,
                         k=1.0,
-                        kmin=0.1,
+                        kmin=0.05,
                         kmax=0.95,
                         n_subsets=0,
                         subsets_criteria="z",
@@ -66,6 +66,7 @@ class LV_Speckles(LV_RegionIdentifier):
                         cluster_criteria=None,
                         log_level=logging.WARNING,
                         ignore_unmatch_number_of_clusters=True,
+                        extrapolate_k=False,
                         **kwargs
                         ):
         """Creates Speckles
@@ -167,7 +168,11 @@ class LV_Speckles(LV_RegionIdentifier):
         logger.debug("long_line: {}".format(long_line))
 
         # determine point along longitudinal line to be used as reference
-        p = get_p_along_line(k, long_line)
+        if extrapolate_k is True:
+            assert k >= -0.1 and k <= 1.1, (
+                "For safety, extrapolation is not allowed for k values larger than 10%. "
+                "k range is [-0.1, 1.1]. k received: {}".format(k))
+        p = get_p_along_line(k, long_line, extrapolate=extrapolate_k)
         spk_center = p
         logger.debug("ref p (spk center): {}".format(p))
         # get points close to plane at height k (from p) and threshold d
@@ -179,18 +184,18 @@ class LV_Speckles(LV_RegionIdentifier):
         # check for k boundaries --> We assume the long-line
         if angle_between(self.get_normal(), self._Z) < np.radians(10):
             adjusted_due_normal_aligment = False
-            if kmin > 0:
+            if kmin > 0.0:
                 adjusted_due_normal_aligment = True
                 logger.debug(
                     "Adjusting for geometry aligned with normal. kmin: {}".format(kmin))
-                p = get_p_along_line(kmin, long_line)
+                p = get_p_along_line(kmin, long_line, extrapolate=extrapolate_k)
                 ioi = np.setdiff1d(ioi, np.where(nodes[:, 2] < p[2]))
                 pts = nodes[ioi]
-            if kmax > 0:
+            if kmax > 0.0:
                 adjusted_due_normal_aligment = True
                 logger.debug(
                     "Adjusting for geometry aligned with normal. kmax: {}".format(kmax))
-                p = get_p_along_line(kmax, long_line)
+                p = get_p_along_line(kmax, long_line, extrapolate=extrapolate_k)
                 ioi = np.setdiff1d(ioi, np.where(nodes[:, 2] > p[2]))
                 pts = nodes[ioi]
             if adjusted_due_normal_aligment:

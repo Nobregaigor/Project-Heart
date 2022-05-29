@@ -2,7 +2,7 @@
 import numpy as np
 from .lv_speckles import LV_Speckles
 # from project_heart.enums import CONTAINER, STATES, LV_SURFS
-from project_heart.utils.spatial_utils import radius
+from project_heart.utils.spatial_utils import centroid, radius
 from project_heart.modules.speckles.speckle import Speckle, SpeckeDeque
 from project_heart.utils.spatial_utils import compute_longitudinal_length, compute_circumferential_length, compute_length_by_clustering
 from project_heart.utils.vector_utils import angle_between
@@ -184,14 +184,95 @@ class LVBaseMetricsComputations(LV_Speckles):
         self.states.add(key, dists)  # save to states
         return self.states.get(key)  # return pointer
 
-    def compute_longitudinal_distance(self, nodesets:set=None, dtype: np.dtype = np.float64, **kwargs) -> np.ndarray:
-        # make sure we have endo and epi surface ids
-        if nodesets is None:
-            nodesets = {self.REGIONS.ENDO_EXCLUDE_BASE, self.REGIONS.EPI_EXCLUDE_BASE}
-        # compute long dists for each nodeset
-        res = [self.compute_nodeset_longitudinal_distance(key, dtype=dtype, **kwargs) for key in nodesets]
-        # reduce metric and return pointer
-        return self._reduce_metric_and_save(res, self.STATES.LONGITUDINAL_DISTANCE)
+    def compute_longitudinal_distances_between_speckles(self, apex_spk, base_spk, 
+                                                        approach="centroid",
+                                                        log_level=logging.INFO, 
+                                               apex_center_kwargs=None,base_center_kwargs=None, 
+                                               dtype=np.float64, **kwargs):
+        if approach == "along_longitudinal_axis":
+            # check if speckle centers were computed. If not, compute them.
+            # -- check for apex LA centers
+            if not self.states.check_spk_key(apex_spk, self.STATES.CENTERS):
+                if apex_center_kwargs is None:
+                    apex_center_kwargs = dict()
+                self.compute_spk_centers_over_timesteps(apex_spk, log_level=log_level, **apex_center_kwargs)
+            # -- check for base LA centers
+            if not self.states.check_spk_key(base_spk, self.STATES.CENTERS):
+                if base_center_kwargs is None:
+                    base_center_kwargs = dict()
+                self.compute_spk_centers_over_timesteps(base_spk, log_level=log_level, **base_center_kwargs)
+            # get centers data
+            apex_centers = self.states.get_spk_data(apex_spk, self.STATES.CENTERS)
+            base_centers = self.states.get_spk_data(base_spk, self.STATES.CENTERS)
+        elif approach == "centroid":
+            apex_centers = np.array([centroid(xyz) for xyz in self.get_speckles_xyz(apex_spk)], dtype=dtype)
+            base_centers = np.array([centroid(xyz) for xyz in self.get_speckles_xyz(base_spk)], dtype=dtype)
+        elif approach == "mean":
+            apex_centers = np.mean(self.get_speckles_xyz(apex_spk), 1)
+            base_centers = np.mean(self.get_speckles_xyz(base_spk), 1)
+        else:
+            raise ValueError("Invalid approach. Options are: 'along_longitudinal_axis'. 'centroid' or 'mean'. "
+                             "Received: {}".format(approach))
+        # compute distance
+        from project_heart.utils.spatial_utils import distance
+        spk_res = np.array([distance(a_c, b_c) for a_c, b_c in zip(apex_centers, base_centers)], 
+                            dtype=dtype)
+        self.states.add_spk_data(apex_spk, self.STATES.LONGITUDINAL_DISTANCE, spk_res)  # save to states
+        self.states.add_spk_data(base_spk, self.STATES.LONGITUDINAL_DISTANCE, spk_res)  # save to states
+        return self.states.get_spk_data(apex_spk, self.STATES.LONGITUDINAL_DISTANCE) # return pointer
+
+    def compute_longitudinal_distance(self, nodesets:set=None, apex_spks=None, base_spks=None,
+                                      reduce_by=None,
+                                      dtype: np.dtype = np.float64, **kwargs) -> np.ndarray:
+        # set key for this function
+        key = self.STATES.LONGITUDINAL_DISTANCE
+        # check if enough information is available for speckle computation
+        using_spks = True if apex_spks is not None and base_spks is not None else False
+        if using_spks: # if both apex and base speckles were provided, use this approach
+            logger.info("Computing metric '{}' using spks.".format(key))
+            # resolve spks (make sure you have a SpeckeDeque)
+            apex_spks = self._resolve_spk_args(apex_spks)
+            base_spks = self._resolve_spk_args(base_spks)
+            # compute metric
+            res = [self.compute_longitudinal_distances_between_speckles(apex_s, base_s, **kwargs) for (apex_s, base_s) in zip(apex_spks, base_spks)]
+            # reduce metric (here we compute the mean radius across entire LV)
+            self._reduce_metric_and_save(res, key, **kwargs)
+            # set metric relationship with spks 
+            # so that we can reference which spks were used to compute this metric
+            self.states.set_data_spk_rel(apex_spks, key)
+            self.states.set_data_spk_rel(base_spks, key)
+            # Break down computation by each 'set of spks'
+            if reduce_by is None:
+                reduce_by = {"group"}
+            if "group" in reduce_by:
+                logger.debug("Reducing metric by group for '{}'".format(key))
+                self._reduce_metric_by_group(apex_spks, key, **kwargs)
+                self._reduce_metric_by_group(base_spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by group.".format(key))
+            if "name" in reduce_by:
+                logger.debug("Reducing metric by name for '{}'".format(key))
+                self._reduce_metric_by_name(apex_spks, key, **kwargs)
+                self._reduce_metric_by_name(base_spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by names.".format(key))
+            if "subset" in reduce_by:
+                logger.debug("Reducing metric by subset for '{}'".format(key))
+                self._reduce_metric_by_subset(apex_spks, key, **kwargs)
+                self._reduce_metric_by_name(base_spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by subsets.".format(key))
+            if "group_name" in reduce_by:
+                logger.debug("Reducing metric by group and name for '{}'".format(key))
+                self._reduce_metric_by_group_and_name(apex_spks, key, **kwargs)
+                self._reduce_metric_by_group_and_name(base_spks, key, **kwargs)
+                logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+        else: # fall back to nodesets approach
+            # make sure we have endo and epi surface ids
+            if nodesets is None:
+                nodesets = {self.REGIONS.ENDO_EXCLUDE_BASE, self.REGIONS.EPI_EXCLUDE_BASE}
+            logger.info("Computing metric '{}' using nodesets: {}".format(key, nodesets))
+            # compute long dists for each nodeset
+            res = [self.compute_nodeset_longitudinal_distance(key, dtype=dtype, **kwargs) for key in nodesets]
+            # reduce metric and return pointer
+            return self._reduce_metric_and_save(res, self.STATES.LONGITUDINAL_DISTANCE)
 
     def compute_longitudinal_shortening(self, t_ed: float = 0.0, **kwargs) -> np.ndarray:
         if not self.states.check_key(self.STATES.LONG_DISTS):
