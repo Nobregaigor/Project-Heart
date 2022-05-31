@@ -162,14 +162,13 @@ class LVBaseMetricsComputations(LV_Speckles):
             for i, pts in enumerate(xyz):
                 dists[i] = abs(np.max(pts[:,2])) + abs(np.min(pts[:,2])) 
         elif approach == "estimate_apex_base":
-
             ab_info = self.est_apex_and_base_refs_iteratively(xyz[0], **kwargs)
             apex_mask = ab_info["apex_region"]
             base_mask = ab_info["base_region"]
             apex_pts = xyz[:, apex_mask]
             base_pts = xyz[:, base_mask]
 
-            for apts, bpts in zip(apex_pts, base_pts):
+            for i, (apts, bpts) in enumerate(zip(apex_pts, base_pts)):
                 ac = centroid(apts)
                 bc = centroid(bpts)
                 dists[i] = np.linalg.norm(bc - ac)
@@ -196,9 +195,11 @@ class LVBaseMetricsComputations(LV_Speckles):
 
     def compute_longitudinal_distances_between_speckles(self, apex_spk, base_spk, 
                                                         approach="centroid",
+                                                        use_axis_aligment=False,
                                                         log_level=logging.INFO, 
                                                apex_center_kwargs=None,base_center_kwargs=None, 
                                                dtype=np.float64, **kwargs):
+        logger.info("Using approach '{}' with axis aligment set to '{}'.".format(approach, use_axis_aligment))
         if approach == "along_longitudinal_axis":
             # check if speckle centers were computed. If not, compute them.
             # -- check for apex LA centers
@@ -224,9 +225,13 @@ class LVBaseMetricsComputations(LV_Speckles):
             raise ValueError("Invalid approach. Options are: 'along_longitudinal_axis'. 'centroid' or 'mean'. "
                              "Received: {}".format(approach))
         # compute distance
-        from project_heart.utils.spatial_utils import distance
-        spk_res = np.array([distance(a_c, b_c) for a_c, b_c in zip(apex_centers, base_centers)], 
-                            dtype=dtype)
+        if not use_axis_aligment:
+            from project_heart.utils.spatial_utils import distance
+            spk_res = np.array([distance(a_c, b_c) for a_c, b_c in zip(apex_centers, base_centers)], 
+                                dtype=dtype)
+        else:
+            spk_res = np.array([abs(b_c[2] - a_c[2]) for a_c, b_c in zip(apex_centers, base_centers)], 
+                                dtype=dtype)
         self.states.add_spk_data(apex_spk, self.STATES.LONGITUDINAL_DISTANCE, spk_res)  # save to states
         self.states.add_spk_data(base_spk, self.STATES.LONGITUDINAL_DISTANCE, spk_res)  # save to states
         return self.states.get_spk_data(apex_spk, self.STATES.LONGITUDINAL_DISTANCE) # return pointer
