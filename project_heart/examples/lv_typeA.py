@@ -343,6 +343,163 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile, save_spk_dict=False):
         )
 
 
+    apex_endo_spk = lv.create_speckles(
+            collection="LA",
+            group="endo",
+            name="apex",
+            from_nodeset=LV_SURFS.ENDO,
+            # exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
+            d=2.25,
+            k=0.0,
+            normal_to=[0.0, 0.0, 1.0],
+            n_subsets=0,
+            subsets_criteria="angles",
+            n_clusters=0,
+            cluster_criteria=None,
+            t=0.0,
+            kmin=-1,
+            kmax=-1,
+            log_level=logging.WARN,
+            extrapolate_k=True
+        )
+    spk_args.append(
+            dict(
+                collection="LA",
+                group="endo",
+                name="apex",
+                from_nodeset=LV_SURFS.ENDO,
+                # exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
+                d=2.25,
+                k=0.0,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=0,
+                subsets_criteria="angles",
+                n_clusters=0,
+                cluster_criteria=None,
+                t=0.0,
+                kmin=-1,
+                kmax=-1,
+                log_level=logging.WARN,
+                extrapolate_k=True
+            )
+        )
+
+    base_endo_spk = lv.create_speckles(
+                collection="LA",
+                group="endo",
+                name="base",
+                from_nodeset=LV_SURFS.ENDO,
+                d=2.75,
+                k=0.85,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=0,
+                subsets_criteria="angles",
+                n_clusters=0,
+                cluster_criteria=None,
+                t=0.0,
+                kmin=-1,
+                kmax=-1,
+                log_level=logging.WARN,
+                extrapolate_k=True
+            )
+    spk_args.append(
+            dict(
+                collection="LA",
+                group="endo",
+                name="base",
+                from_nodeset=LV_SURFS.ENDO,
+                d=2.75,
+                k=0.85,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=0,
+                subsets_criteria="angles",
+                n_clusters=0,
+                cluster_criteria=None,
+                t=0.0,
+                kmin=-1,
+                kmax=-1,
+                log_level=logging.WARN,
+                extrapolate_k=True
+            )
+        )
+
+    apex_epi_spk = lv.create_speckles(
+                collection="LA",
+                group="epi",
+                name="apex",
+                from_nodeset=LV_SURFS.EPI,
+                d=2.25,
+                k=-0.05,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=0,
+                subsets_criteria="angles",
+                n_clusters=0,
+                cluster_criteria=None,
+                t=0.0,
+                kmin=-1,
+                kmax=-1,
+                log_level=logging.WARN,
+                extrapolate_k=True
+            )
+    spk_args.append(
+            dict(
+                collection="LA",
+                group="epi",
+                name="apex",
+                from_nodeset=LV_SURFS.EPI,
+                d=2.25,
+                k=-0.05,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=0,
+                subsets_criteria="angles",
+                n_clusters=0,
+                cluster_criteria=None,
+                t=0.0,
+                kmin=-1,
+                kmax=-1,
+                log_level=logging.WARN,
+                extrapolate_k=True
+            )
+        )
+
+    base_epi_spk = lv.create_speckles(
+                collection="LA",
+                group="epi",
+                name="base",
+                from_nodeset=LV_SURFS.EPI,
+                d=2.75,
+                k=0.85,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=0,
+                subsets_criteria="angles",
+                n_clusters=0,
+                cluster_criteria=None,
+                t=0.0,
+                kmin=-1,
+                kmax=-1,
+                log_level=logging.WARN,
+                extrapolate_k=True
+            )
+    spk_args.append(
+            dict(
+                collection="LA",
+                group="epi",
+                name="base",
+                from_nodeset=LV_SURFS.EPI,
+                d=2.75,
+                k=0.85,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=0,
+                subsets_criteria="angles",
+                n_clusters=0,
+                cluster_criteria=None,
+                t=0.0,
+                kmin=-1,
+                kmax=-1,
+                log_level=logging.WARN,
+                extrapolate_k=True
+            )
+        )
 
 
     # SAMPLE SPECKLES
