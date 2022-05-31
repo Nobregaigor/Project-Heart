@@ -162,12 +162,22 @@ class LVBaseMetricsComputations(LV_Speckles):
             for i, pts in enumerate(xyz):
                 dists[i] = abs(np.max(pts[:,2])) + abs(np.min(pts[:,2])) 
         elif approach == "estimate_apex_base":
-            for i, pts in enumerate(xyz):
-                # because nodes can shift position, we need to re-estimate
-                # base and apex positions at each timestep.
-                (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+
+            ab_info = self.est_apex_and_base_refs_iteratively(xyz[0], **kwargs)
+            apex_mask = ab_info["apex_region"]
+            base_mask = ab_info["base_region"]
+            apex_pts = xyz[:, apex_mask]
+            base_pts = xyz[:, base_mask]
+
+            for apts, bpts in zip(apex_pts, base_pts):
+                ac = centroid(apts)
+                bc = centroid(bpts)
+                dists[i] = np.linalg.norm(bc - ac)
+            # for i, pts in enumerate(xyz):
+                # (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+
                 # dists[i] = abs(es_base[-1]) + abs(es_apex[-1])
-                dists[i] = np.linalg.norm(es_base - es_apex)
+                # dists[i] = np.linalg.norm(es_base - es_apex)
         else:
             raise ValueError("Unknown approach. Avaiable approaches are: "
                              "'extremes' and 'estimate_apex_base'. Received: '{}'."
