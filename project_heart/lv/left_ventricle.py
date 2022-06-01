@@ -159,7 +159,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
             logger.info("Extracting {}.".format(key))
             self.longitudinal_distances(**metrics[key])
             df, info = self.get_metric_as_df(key, 
-                search_spk_info=False, 
+                search_spk_info=True, 
                 search_suffix={self.REGIONS.ENDO, self.REGIONS.EPI},
                 merged_info=True)
             resolve_add_info(df, info, all_dfs)
