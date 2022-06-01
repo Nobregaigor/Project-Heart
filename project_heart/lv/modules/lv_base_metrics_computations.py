@@ -143,46 +143,80 @@ class LVBaseMetricsComputations(LV_Speckles):
     def compute_nodeset_longitudinal_distance(self,
                                       nodeset: str,
                                       approach: str = "extremes",
+                                      use_base_region:str=None,
                                       dtype: np.dtype = np.float64,
+                                      log_level=logging.INFO,
                                       **kwargs,
                                       ) -> np.ndarray:            
         # check if xyz was computed; If not, try to compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
-            
+        logger.setLevel(log_level)
+        logger.debug("Computing longitudinal distance for nodeset: '{}' "
+                     "with approach: '{}'.".format(nodeset, approach))
         from project_heart.utils.enum_utils import check_for_enum_name
         nodeset = check_for_enum_name(nodeset, self.REGIONS)
         # get node ids (index array) from nodeset
         nodeids = self.get_nodeset(nodeset)
         # get node positions from nodeset at specified state
         xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
+        # get base region nodes if requested
+        should_use_base_nodes = False
+        if use_base_region is not None:
+            from enum import Enum
+            if isinstance(use_base_region, bool):
+                if use_base_region is True:
+                  should_use_base_nodes = True
+                  logger.debug("Using default base region for base centroid estimation: {}"
+                               .format(self.REGIONS.BASE.value))
+                  base_mask = self.get_nodeset(self.REGIONS.BASE)
+            elif isinstance(use_base_region, (str, Enum)):
+                should_use_base_nodes = True
+                logger.debug("Using base user-provided region for base centroid estimation: {}"
+                               .format(use_base_region))
+                base_mask = self.get_nodeset(self.REGIONS.BASE)
+            else:
+              should_use_base_nodes = False
+              raise ValueError("use_base_region should be bool or str or Enum-like. Received: {}"
+                               .format(use_base_region))
+            if should_use_base_nodes is True:
+              xyz_base = self.states.get(self.STATES.XYZ, mask=base_mask)
+          
         # compute distances for each timesteps
         dists = np.zeros(len(xyz), dtype=dtype)
         if approach == "extremes":
-            for i, pts in enumerate(xyz):
-                dists[i] = np.max(pts[:,2]) - np.min(pts[:,2])
+            if not should_use_base_nodes:
+              for i, pts in enumerate(xyz):
+                  dists[i] = np.max(pts[:,2]) - np.min(pts[:,2])
+                  logger.debug("[{}] --> max: {}, min: {}, dist: {}"
+                               .format(i, np.max(pts[:,2]), np.min(pts[:,2]), dists[i]))
+            else:
+              for i, (pts, pts_base) in enumerate(zip(xyz, xyz_base)):
+                  dists[i] = np.max(pts_base[:,2]) - np.min(pts[:,2])
+                  logger.debug("[{}] --> max: {}, min: {}, dist: {}"
+                               .format(i, np.max(pts_base[:,2]), np.min(pts[:,2]), dists[i]))
         elif approach == "estimate_apex_base":
             ab_info = self.est_apex_and_base_refs_iteratively(xyz[0], **kwargs)
             apex_mask = ab_info["apex_region"]
             base_mask = ab_info["base_region"]
             apex_pts = xyz[:, apex_mask]
             base_pts = xyz[:, base_mask]
-
-            for i, (apts, bpts) in enumerate(zip(apex_pts, base_pts)):
+            if not should_use_base_nodes:
+              zipped = zip(apex_pts, base_pts)
+            else:
+              zipped = zip(apex_pts, xyz_base)
+            for i, (apts, bpts) in enumerate(zipped):
                 ac = centroid(apts)
                 bc = centroid(bpts)
                 dists[i] = np.linalg.norm(bc - ac)
-            # for i, pts in enumerate(xyz):
-                # (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
-
-                # dists[i] = abs(es_base[-1]) + abs(es_apex[-1])
-                # dists[i] = np.linalg.norm(es_base - es_apex)
+                logger.debug("[{}] --> base: {}, apex: {}, dist: {}"
+                               .format(i, bc, ac, dists[i]))
         else:
             raise ValueError("Unknown approach. Avaiable approaches are: "
                              "'extremes' and 'estimate_apex_base'. Received: '{}'."
                              "Please, check documentation for further details."
                              .format(approach))
-        # resolve reference key
+        # resolve reference key (save as endo-epi)
         nodeset = self.check_enum(nodeset)
         if nodeset == self.REGIONS.EPI_EXCLUDE_BASE.value:
             nodeset = self.REGIONS.EPI.value
