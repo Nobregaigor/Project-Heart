@@ -14,7 +14,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
     lv = LV.from_file(Path(filepath)) 
     lv.identify_regions(geo_type=LV_GEO_TYPES.IDEAL,
                             apex_base_args=dict(ab_ql=0.05, ab_qh=0.97),
-                            recompute_apex_base=dict(ql=0.05, qh=0.95)
+                            recompute_apex_base=dict(ql=0.01, qh=0.99)
                             )
 
     spk_args = list()
