@@ -160,7 +160,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         dists = np.zeros(len(xyz), dtype=dtype)
         if approach == "extremes":
             for i, pts in enumerate(xyz):
-                dists[i] = abs(np.max(pts[:,2])) + abs(np.min(pts[:,2])) 
+                dists[i] = np.max(pts[:,2]) - np.min(pts[:,2])
         elif approach == "estimate_apex_base":
             ab_info = self.est_apex_and_base_refs_iteratively(xyz[0], **kwargs)
             apex_mask = ab_info["apex_region"]
