@@ -28,7 +28,7 @@ logger = logging.getLogger('LV')
 
 class LV_Base(BaseContainerHandler):
     def __init__(self, enums={}, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(LV_Base, self).__init__(*args, **kwargs)
 
         self._rot_chain = deque()
         self._normal = None

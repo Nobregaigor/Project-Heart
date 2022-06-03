@@ -18,7 +18,7 @@ import os
 
 class LV_RegionIdentifier(LV_Base):
     def __init__(self, geo_type=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(LV_RegionIdentifier, self).__init__(*args, **kwargs)
         self.geo_type = geo_type
         
         
