@@ -69,8 +69,8 @@ class LV_Speckles(LV_RegionIdentifier):
                         ignore_unmatch_number_of_clusters=True,
                         **kwargs
                         ):
-        """Creates Speckles
-
+        """
+            Creates Speckles
         """
 
         # set logger
