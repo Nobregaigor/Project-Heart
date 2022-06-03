@@ -10,3 +10,5 @@ from .set_jupyter_backend import set_jupyter_backend
 from .json_encoders import *
 
 from .pickle_io import *
+
+from .extended_classes import *

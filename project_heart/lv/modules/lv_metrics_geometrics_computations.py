@@ -7,26 +7,35 @@ from project_heart.modules.speckles.speckle import Speckle, SpeckeDeque
 from project_heart.utils.spatial_utils import compute_longitudinal_length, compute_circumferential_length, compute_length_by_clustering
 from project_heart.utils.vector_utils import angle_between
 from project_heart.utils.enum_utils import add_to_enum
+
+from project_heart.utils.extended_classes import ExtendedDict
+
 import logging
 
 logger = logging.getLogger('LV.BaseMetricsComputations')
 
 from collections import deque
 
-# class ExplainableMetric():
-#     self.key = None      # str/enum
-#     self.approach = None # str
-#     self.speckle_args = None # speckle args
-#     self.nodeset = None  # reference to nodeset
-#     self.apex = None     # reference to apex
-#     self.base = None     # reference to base
+
+
+class ExplainableMetric():
+    def __init__(self):
+        self.key = None       # str/enum
+        self.approach = None  # str
+        self.speckles = None  # speckle args
+        self.nodesets = None  # reference to nodesets
+
+        # wheter metric used default approach to compute apex/base
+        self.used_reference_apex_base = True
+        self.apex = None     # reference to apex
+        self.base = None     # reference to base
 
 
 class LVGeometricsComputations(LV_Speckles):
     def __init__(self, log_level=logging.INFO, *args, **kwargs):
         super(LVGeometricsComputations, self).__init__(log_level=log_level, *args, **kwargs)
         self.EPSILON = 1e-10
-        self.explainable_metrics = dict() # stores methods and approach used for metric computations
+        self.explainable_metrics = ExtendedDict() # stores methods and approach used for metric computations
         logger.setLevel(log_level)
 
     # =============================
@@ -55,49 +64,7 @@ class LVGeometricsComputations(LV_Speckles):
         self.states.add(self.STATES.XYZ, pos)  # save to states
         return self.states.get(self.STATES.XYZ)  # return pointer
 
-    # ---- Volume and volumetric fraction (ejection fraction)
-
-    def compute_volume_based_on_nodeset(self,
-                                        nodeset: str = None,
-                                        dtype: np.dtype = np.float64
-                                        ) -> np.ndarray:
-        # try to import required module
-        try:
-            from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
-        except ImportError:
-            raise ImportError(
-                "scipy.spatial is required for volume computation.")
-        # check if xyz was computed, otherwise try to automatically compute it.
-        if not self.states.check_key(self.STATES.XYZ):
-            self.compute_xyz_from_displacement()
-        # get node ids (index array) from nodeset
-        nodeset = self.REGIONS.ENDO if nodeset is None else nodeset
-        nodeids = self.get_nodeset(nodeset)
-        # apply nodeids mask for position data
-        positions = self.states.get(self.STATES.XYZ, mask=nodeids)
-        vols = np.zeros(len(positions), dtype=dtype)
-        for i, xyz in enumerate(positions):
-            vols[i] = ConvexHull(xyz, qhull_options="Qt Qx Qv Q4 Q14").volume
-        self.states.add(self.STATES.VOLUME, vols)  # save to states
-        return self.states.get(self.STATES.VOLUME)  # return pointer
-
-    def compute_volumetric_fraction(self,  t_ed: float = 0.0, **kwargs):
-        if not self.states.check_key(self.STATES.VOLUME):
-            try:
-                self.compute_volume_based_on_nodeset(**kwargs)
-            except:
-                raise RuntimeError(
-                    "Unable to compute volumes. Please, either verify required data or add state data for 'VOLUME' manually.")
-        vol1 = self.states.get(self.STATES.VOLUME)
-        vol2 = self.states.get(self.STATES.VOLUME, t=t_ed)
-        # compute % shortening
-        vf = (vol2 - vol1) / (vol2 + self.EPSILON) * 100.0
-        self.states.add(self.STATES.VF, vf)  # save to states
-        return self.states.get(self.STATES.VF)  # return pointer
-
-    # =============================
-    # 'Simple' computations
-    # =============================
+    # ---- Apex and Base ref over timesteps
 
     def compute_base_apex_ref_over_timesteps(self,
                                              nodeset: str = None,
@@ -148,7 +115,73 @@ class LVGeometricsComputations(LV_Speckles):
         # return pointers
         return (self.states.get(self.STATES.BASE_REF), self.states.get(self.STATES.APEX_REF))
 
-    # ---- Longitudinal shortening
+    # ---- Speckle centers at longitudinal axis
+
+    def compute_spk_la_centers_over_timesteps(self, spk, 
+                                           apex_base_kwargs=None, 
+                                           log_level=logging.INFO,
+                                           **kwargs):
+        from project_heart.utils.spatial_utils import project_pt_on_line
+        # check for speckle input
+        assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle center for spk: '{}'".format(spk))
+        # check if apex and base references were computed
+        if not self.states.check_key(self.STATES.BASE_REF) or \
+            not self.states.check_key(self.STATES.APEX_REF):
+            if apex_base_kwargs is None:
+                apex_base_kwargs = {}
+            self.compute_base_apex_ref_over_timesteps(**apex_base_kwargs)
+        # compute spk centers over timesteps based on 'k' height
+        # from project_heart.utils.spatial_utils import get_p_along_line
+        apex_ts = self.states.get(self.STATES.APEX_REF)
+        base_ts = self.states.get(self.STATES.BASE_REF)
+        # xs = np.mean((apex_ts[:, 0], base_ts[:, 0]), axis=0).reshape((-1,1))
+        # ys = np.mean((apex_ts[:, 1], base_ts[:, 1]), axis=0).reshape((-1,1))
+        # zs = np.mean(self.get_speckles_xyz(spk), 1)[:, 2].reshape((-1,1))
+        spk_center = np.mean(self.get_speckles_xyz(spk), 1)
+        p_pt = project_pt_on_line(spk_center, apex_ts, base_ts)
+        
+        spk_res = p_pt#np.hstack((xs,ys,zs)) #[get_p_along_line(k, [apex,base]) for apex, base in zip(apex_ts, base_ts)]
+                                        #spk_res = np.vstack(spk_res)
+        logger.debug("\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
+                     format(apex_ts, base_ts, spk_res))
+        self.states.add_spk_data(spk, self.STATES.LA_CENTERS, spk_res)  # save to states
+        return self.states.get_spk_data(spk, self.STATES.LA_CENTERS) # return pointer
+    
+    # =============================
+    #   Geometric computations
+    # =============================
+
+    # ----------------
+    # ---- Volume ----
+
+    def compute_volume_based_on_nodeset(self,
+                                        nodeset: str = None,
+                                        dtype: np.dtype = np.float64
+                                        ) -> np.ndarray:
+        # try to import required module
+        try:
+            from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
+        except ImportError:
+            raise ImportError(
+                "scipy.spatial is required for volume computation.")
+        # check if xyz was computed, otherwise try to automatically compute it.
+        if not self.states.check_key(self.STATES.XYZ):
+            self.compute_xyz_from_displacement()
+        # get node ids (index array) from nodeset
+        nodeset = self.REGIONS.ENDO if nodeset is None else nodeset
+        nodeids = self.get_nodeset(nodeset)
+        # apply nodeids mask for position data
+        positions = self.states.get(self.STATES.XYZ, mask=nodeids)
+        vols = np.zeros(len(positions), dtype=dtype)
+        for i, xyz in enumerate(positions):
+            vols[i] = ConvexHull(xyz, qhull_options="Qt Qx Qv Q4 Q14").volume
+        self.states.add(self.STATES.VOLUME, vols)  # save to states
+        return self.states.get(self.STATES.VOLUME)  # return pointer
+
+    # -------------------------------
+    # ---- Longitudinal distance ----
 
     def compute_nodeset_longitudinal_distance(self,
                                       nodeset: str,
@@ -332,47 +365,9 @@ class LVGeometricsComputations(LV_Speckles):
             res = [self.compute_nodeset_longitudinal_distance(key, dtype=dtype, **kwargs) for key in nodesets]
             # reduce metric and return pointer
             return self._reduce_metric_and_save(res, self.STATES.LONGITUDINAL_DISTANCE)
-
-    # ===============================
-    # Spk computations
-    # ===============================
     
-    def compute_spk_la_centers_over_timesteps(self, spk, 
-                                           apex_base_kwargs=None, 
-                                           log_level=logging.INFO,
-                                           **kwargs):
-        from project_heart.utils.spatial_utils import project_pt_on_line
-        # check for speckle input
-        assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
-        logger.setLevel(log_level)
-        logger.debug("Computing speckle center for spk: '{}'".format(spk))
-        # check if apex and base references were computed
-        if not self.states.check_key(self.STATES.BASE_REF) or \
-            not self.states.check_key(self.STATES.APEX_REF):
-            if apex_base_kwargs is None:
-                apex_base_kwargs = {}
-            self.compute_base_apex_ref_over_timesteps(**apex_base_kwargs)
-        # compute spk centers over timesteps based on 'k' height
-        # from project_heart.utils.spatial_utils import get_p_along_line
-        apex_ts = self.states.get(self.STATES.APEX_REF)
-        base_ts = self.states.get(self.STATES.BASE_REF)
-        # xs = np.mean((apex_ts[:, 0], base_ts[:, 0]), axis=0).reshape((-1,1))
-        # ys = np.mean((apex_ts[:, 1], base_ts[:, 1]), axis=0).reshape((-1,1))
-        # zs = np.mean(self.get_speckles_xyz(spk), 1)[:, 2].reshape((-1,1))
-        spk_center = np.mean(self.get_speckles_xyz(spk), 1)
-        p_pt = project_pt_on_line(spk_center, apex_ts, base_ts)
-        
-        spk_res = p_pt#np.hstack((xs,ys,zs)) #[get_p_along_line(k, [apex,base]) for apex, base in zip(apex_ts, base_ts)]
-                                        #spk_res = np.vstack(spk_res)
-        logger.debug("\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
-                     format(apex_ts, base_ts, spk_res))
-        self.states.add_spk_data(spk, self.STATES.LA_CENTERS, spk_res)  # save to states
-        return self.states.get_spk_data(spk, self.STATES.LA_CENTERS) # return pointer
-    
-    # ---------------------------
-    # ---- Radial shortening ---- 
-
-    # ---------- Geo metric
+    # -------------------------
+    # ---- Radial distance ---- 
 
     def compute_spk_radial_distance(self, spk: object, 
                            dtype: np.dtype = np.float64, 
@@ -447,10 +442,8 @@ class LVGeometricsComputations(LV_Speckles):
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
-    # ---------------------------
-    # ---- Radial strain ---- 
-
-    # ---------- Geo metric
+    # -----------------------
+    # ---- Radial length ---- 
 
     def compute_spk_radial_length(self, spk: object, 
                            dtype: np.dtype = np.float64, 
@@ -519,10 +512,8 @@ class LVGeometricsComputations(LV_Speckles):
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
-    # ---------------------------
-    # ---- Wall thickneing ---- 
-
-    # ---------- Geo metric
+    # ------------------------
+    # ---- Wall thickness ---- 
 
     def compute_spk_thickness(self, endo_spk, epi_spk, 
                               approach="radial_distance",
@@ -659,10 +650,8 @@ class LVGeometricsComputations(LV_Speckles):
             self._reduce_metric_by_group_and_name(epi_spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
-    # ---------------------------
-    # ---- Longitudinal Strain ---- 
-
-    # ---------- Geo metric 
+    # -----------------------------
+    # ---- Longitudinal length ----  
 
     def compute_spk_longitudinal_length(self,
                                         spk,
@@ -819,10 +808,8 @@ class LVGeometricsComputations(LV_Speckles):
                 logger.debug("Metric '{}' has reduced values by group and name.".format(key))    
         return self.states.get(key)  # return pointer
 
-    # ---------------------------
-    # ---- Circumferential Strain 
-
-    # ---------- Geo metric
+    # --------------------------------
+    # ---- Circumferential length ----
 
     def compute_spk_circumferential_length(self, spk, 
                                            approach="k_ids",
@@ -974,7 +961,7 @@ class LVGeometricsComputations(LV_Speckles):
                 logger.debug("Metric '{}' has reduced values by group and name.".format(key))   
         return self.states.get(key)  # return pointer
 
-    # ---------------------------
+    # -------------------
     # ----- Rotation ---- 
 
     def compute_spk_vectors(self, spk, dtype: np.dtype = np.float64, **kwargs):
@@ -1061,7 +1048,7 @@ class LVGeometricsComputations(LV_Speckles):
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
-    # ---------------------------
+    # ----------------------------
     # ----- Twist and torsion ---- 
 
     def compute_spk_twist(self, apex_spk, base_spk, t_ed: float = 0.0, **kwargs):
