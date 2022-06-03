@@ -13,20 +13,20 @@ logger = logging.getLogger('LV.BaseMetricsComputations')
 
 from collections import deque
 
-class LVBaseMetricsComputations(LV_Speckles):
+# class ExplainableMetric():
+#     self.key = None      # str/enum
+#     self.approach = None # str
+#     self.speckle_args = None # speckle args
+#     self.nodeset = None  # reference to nodeset
+#     self.apex = None     # reference to apex
+#     self.base = None     # reference to base
+
+
+class LVGeometricsComputations(LV_Speckles):
     def __init__(self, log_level=logging.INFO, *args, **kwargs):
-        super(LVBaseMetricsComputations, self).__init__(log_level=log_level, *args, **kwargs)
+        super(LVGeometricsComputations, self).__init__(log_level=log_level, *args, **kwargs)
         self.EPSILON = 1e-10
-        # self.metric_geochar_map = {
-        #     self.STATES.LONGITUDINAL_SHORTENING.value: self.STATES.LONGITUDINAL_DISTANCE.value,
-        #     self.STATES.RADIAL_SHORTENING.value: self.STATES.RADIUS.value,
-        #     self.STATES.WALL_THICKENING.value: self.STATES.THICKNESS.value,
-        #     self.STATES.LONG_STRAIN.value: self.STATES.LONG_LENGTH.value,
-        #     self.STATES.CIRC_STRAIN.value: self.STATES.CIRC_LENGTH.value,
-        #     self.STATES.TWIST.value: self.STATES.ROTATION.value,
-        #     self.STATES.TORSION.value: self.STATES.ROTATION.value,
-        #     self.STATES.ROTATION.value: self.STATES.ROTATION.value # required just for spk computation
-        # }
+        self.explainable_metrics = dict() # stores methods and approach used for metric computations
         logger.setLevel(log_level)
 
     # =============================
@@ -102,6 +102,8 @@ class LVBaseMetricsComputations(LV_Speckles):
     def compute_base_apex_ref_over_timesteps(self,
                                              nodeset: str = None,
                                              check_preset_nodeset=True,
+                                             use_reference_ab_regions=False,
+                                             use_base_region=False,
                                              dtype: np.dtype = np.float64,
                                              **kwargs
                                              ) -> np.ndarray:
@@ -125,12 +127,20 @@ class LVBaseMetricsComputations(LV_Speckles):
         # compute distances for each timesteps
         base = np.zeros((len(xyz), 3), dtype=dtype)
         apex = np.zeros((len(xyz), 3), dtype=dtype)
-        for i, pts in enumerate(xyz):
-            # because nodes can shift position, we need to re-estimate
-            # base and apex positions at each timestep.
-            (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
-            base[i] = es_base
-            apex[i] = es_apex
+
+        if use_reference_ab_regions:
+            base_region = self.get_nodeset(self.REGIONS.BASE_REGION)
+            apex_region = self.get_nodeset(self.REGIONS.APEX_REGION)
+            for i, pts in enumerate(xyz):
+                base[i] = centroid(pts[base_region])
+                apex[i] = centroid(pts[apex_region])
+        else:
+            for i, pts in enumerate(xyz):
+                # because nodes can shift position, we need to re-estimate
+                # base and apex positions at each timestep.
+                (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+                base[i] = es_base
+                apex[i] = es_apex
 
         self.states.add(self.STATES.BASE_REF, base)  # save to states
         self.states.add(self.STATES.APEX_REF, apex)  # save to states
@@ -240,12 +250,12 @@ class LVBaseMetricsComputations(LV_Speckles):
             if not self.states.check_spk_key(apex_spk, self.STATES.CENTERS):
                 if apex_center_kwargs is None:
                     apex_center_kwargs = dict()
-                self.compute_spk_centers_over_timesteps(apex_spk, log_level=log_level, **apex_center_kwargs)
+                self.compute_spk_la_centers_over_timesteps(apex_spk, log_level=log_level, **apex_center_kwargs)
             # -- check for base LA centers
             if not self.states.check_spk_key(base_spk, self.STATES.CENTERS):
                 if base_center_kwargs is None:
                     base_center_kwargs = dict()
-                self.compute_spk_centers_over_timesteps(base_spk, log_level=log_level, **base_center_kwargs)
+                self.compute_spk_la_centers_over_timesteps(base_spk, log_level=log_level, **base_center_kwargs)
             # get centers data
             apex_centers = self.states.get_spk_data(apex_spk, self.STATES.CENTERS)
             base_centers = self.states.get_spk_data(base_spk, self.STATES.CENTERS)
@@ -323,26 +333,11 @@ class LVBaseMetricsComputations(LV_Speckles):
             # reduce metric and return pointer
             return self._reduce_metric_and_save(res, self.STATES.LONGITUDINAL_DISTANCE)
 
-    def compute_longitudinal_shortening(self, t_ed: float = 0.0, **kwargs) -> np.ndarray:
-        if not self.states.check_key(self.STATES.LONG_DISTS):
-            try:
-                self.compute_longitudinal_distance(**kwargs)
-            except:
-                raise RuntimeError(
-                    "Unable to compute londitudinal distances. Please, either verify required data or add state data for 'LONG_DISTS' manually.")
-
-        d2 = self.states.get(self.STATES.LONG_DISTS)
-        d1 = self.states.get(self.STATES.LONG_DISTS, t=t_ed)
-        # compute % shortening
-        ls = (d1 - d2) / (d1 + self.EPSILON) * 100.0
-        self.states.add(self.STATES.LS, ls)  # save to states
-        return self.states.get(self.STATES.LS)  # return pointer
-
     # ===============================
     # Spk computations
     # ===============================
     
-    def compute_spk_centers_over_timesteps(self, spk, 
+    def compute_spk_la_centers_over_timesteps(self, spk, 
                                            apex_base_kwargs=None, 
                                            log_level=logging.INFO,
                                            **kwargs):
@@ -359,7 +354,6 @@ class LVBaseMetricsComputations(LV_Speckles):
             self.compute_base_apex_ref_over_timesteps(**apex_base_kwargs)
         # compute spk centers over timesteps based on 'k' height
         # from project_heart.utils.spatial_utils import get_p_along_line
-
         apex_ts = self.states.get(self.STATES.APEX_REF)
         base_ts = self.states.get(self.STATES.BASE_REF)
         # xs = np.mean((apex_ts[:, 0], base_ts[:, 0]), axis=0).reshape((-1,1))
@@ -372,8 +366,8 @@ class LVBaseMetricsComputations(LV_Speckles):
                                         #spk_res = np.vstack(spk_res)
         logger.debug("\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
                      format(apex_ts, base_ts, spk_res))
-        self.states.add_spk_data(spk, self.STATES.CENTERS, spk_res)  # save to states
-        return self.states.get_spk_data(spk, self.STATES.CENTERS) # return pointer
+        self.states.add_spk_data(spk, self.STATES.LA_CENTERS, spk_res)  # save to states
+        return self.states.get_spk_data(spk, self.STATES.LA_CENTERS) # return pointer
     
     # ---------------------------
     # ---- Radial shortening ---- 
@@ -453,42 +447,6 @@ class LVBaseMetricsComputations(LV_Speckles):
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
-    # ---------- Clinical metric
-
-    def compute_radial_shortening(self, spks, t_ed=0.0, reduce_by={"group"}, **kwargs):
-        # set key for this function
-        key = self.STATES.RADIAL_SHORTENING
-        logger.info("Computing metric '{}'".format(key))
-        # resolve spks (make sure you have a SpeckeDeque)
-        spks = self._resolve_spk_args(spks)
-        # compute metric for all spks
-        res = [self._compute_spk_relative_error(spk, 
-                    self.STATES.RADIAL_DISTANCE, key,
-                    t_ed=t_ed, reduce_by=reduce_by, **kwargs) for spk in spks]
-        # reduce metric (here we compute the mean data across entire LV)
-        self._reduce_metric_and_save(res, key, **kwargs)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(spks, key)
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by:
-            logger.debug("Reducing metric by group for '{}'".format(key))
-            self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group.".format(key))
-        if "name" in reduce_by:
-            logger.debug("Reducing metric by name for '{}'".format(key))
-            self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by names.".format(key))
-        if "subset" in reduce_by:
-            logger.debug("Reducing metric by subset for '{}'".format(key))
-            self._reduce_metric_by_subset(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
-        if "group_name" in reduce_by:
-            logger.debug("Reducing metric by group and name for '{}'".format(key))
-            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-        return self.states.get(key, t=t_ed)
-    
     # ---------------------------
     # ---- Radial strain ---- 
 
@@ -511,7 +469,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         if approach == "moving_centers":
             # check if speckle centers were computed. If not, compute them.
             if not self.states.check_spk_key(spk, self.STATES.CENTERS):
-                self.compute_spk_centers_over_timesteps(spk, log_level=log_level, **kwargs)
+                self.compute_spk_la_centers_over_timesteps(spk, log_level=log_level, **kwargs)
             # get centers data
             centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
             spk_res = np.array([radius(coords, center=center) for coords, center in zip(xyz, centers)], 
@@ -560,42 +518,6 @@ class LVBaseMetricsComputations(LV_Speckles):
             logger.debug("Reducing metric by group and name for '{}'".format(key))
             self._reduce_metric_by_group_and_name(spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-
-    # ---------- Clinical metric
-
-    def compute_radial_strain(self, spks, t_ed=0.0, reduce_by={"group"}, **kwargs):
-        # set key for this function
-        key = self.STATES.RADIAL_SHORTENING
-        logger.info("Computing metric '{}'".format(key))
-        # resolve spks (make sure you have a SpeckeDeque)
-        spks = self._resolve_spk_args(spks)
-        # compute metric for all spks
-        res = [self._compute_spk_relative_error(spk, 
-                    self.STATES.RADIAL_LENGTH, key,
-                    t_ed=t_ed, reduce_by=reduce_by, **kwargs) for spk in spks]
-        # reduce metric (here we compute the mean data across entire LV)
-        self._reduce_metric_and_save(res, key, **kwargs)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(spks, key)
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by:
-            logger.debug("Reducing metric by group for '{}'".format(key))
-            self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group.".format(key))
-        if "name" in reduce_by:
-            logger.debug("Reducing metric by name for '{}'".format(key))
-            self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by names.".format(key))
-        if "subset" in reduce_by:
-            logger.debug("Reducing metric by subset for '{}'".format(key))
-            self._reduce_metric_by_subset(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
-        if "group_name" in reduce_by:
-            logger.debug("Reducing metric by group and name for '{}'".format(key))
-            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-        return self.states.get(key, t=t_ed)
 
     # ---------------------------
     # ---- Wall thickneing ---- 
@@ -736,53 +658,6 @@ class LVBaseMetricsComputations(LV_Speckles):
             self._reduce_metric_by_group_and_name(endo_spks, key, **kwargs)
             self._reduce_metric_by_group_and_name(epi_spks, key, **kwargs)
             logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-
-    # ---------- Clinical metric
-
-    def compute_thicknening(self, endo_spks, epi_spks, t_ed=0.0, reduce_by={"name"}, **kwargs):
-        # set key for this function
-        key = self.STATES.WALL_THICKENING
-        logger.info("Computing metric '{}'".format(key))
-        # resolve spks (make sure you have a SpeckeDeque)
-        endo_spks = self._resolve_spk_args(endo_spks)
-        epi_spks = self._resolve_spk_args(epi_spks)
-        # compute metric for all spks
-        res = [self._compute_spk_relative_error(spk, 
-                    self.STATES.WALL_THICKNESS, key,
-                    t_ed=t_ed, reduce_by=reduce_by, 
-                    switch_es=True, **kwargs) for spk in endo_spks]
-        _ = [self._compute_spk_relative_error(spk, 
-                    self.STATES.WALL_THICKNESS, key,
-                    t_ed=t_ed, reduce_by=reduce_by, 
-                    switch_es=True, **kwargs) for spk in epi_spks]
-        # reduce metric (here we compute the mean data across entire LV)
-        self._reduce_metric_and_save(res, key, **kwargs)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(endo_spks, key)
-        self.states.set_data_spk_rel(epi_spks, key)
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by:
-            logger.debug("Reducing metric by group for '{}'".format(key))
-            self._reduce_metric_by_group(endo_spks, key, **kwargs)
-            self._reduce_metric_by_group(epi_spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group.".format(key))
-        if "name" in reduce_by:
-            logger.debug("Reducing metric by name for '{}'".format(key))
-            self._reduce_metric_by_name(endo_spks, key, **kwargs)
-            self._reduce_metric_by_name(epi_spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by names.".format(key))
-        if "subset" in reduce_by:
-            logger.debug("Reducing metric by subset for '{}'".format(key))
-            self._reduce_metric_by_subset(endo_spks, key, **kwargs)
-            self._reduce_metric_by_name(epi_spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
-        if "group_name" in reduce_by:
-            logger.debug("Reducing metric by group and name for '{}'".format(key))
-            self._reduce_metric_by_group_and_name(endo_spks, key, **kwargs)
-            self._reduce_metric_by_group_and_name(epi_spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-        return self.states.get(key, t=t_ed)
 
     # ---------------------------
     # ---- Longitudinal Strain ---- 
@@ -944,42 +819,6 @@ class LVBaseMetricsComputations(LV_Speckles):
                 logger.debug("Metric '{}' has reduced values by group and name.".format(key))    
         return self.states.get(key)  # return pointer
 
-    # ---------- Clinical metric
-
-    def compute_longitudinal_strain(self, spks, t_ed=0.0, reduce_by={"group"}, **kwargs):
-        # set key for this function
-        key = self.STATES.LONGITUDINAL_STRAIN
-        logger.info("Computing metric '{}'".format(key))
-        # resolve spks (make sure you have a SpeckeDeque)
-        spks = self._resolve_spk_args(spks)
-        # compute metric for all spks
-        res = [self._compute_spk_relative_error(spk, 
-                    self.STATES.LONG_LENGTH, key,
-                    t_ed=t_ed, reduce_by=reduce_by, **kwargs) for spk in spks]
-        # reduce metric (here we compute the mean data across entire LV)
-        self._reduce_metric_and_save(res, key, **kwargs)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(spks, key)
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by:
-            logger.debug("Reducing metric by group for '{}'".format(key))
-            self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group.".format(key))
-        if "name" in reduce_by:
-            logger.debug("Reducing metric by name for '{}'".format(key))
-            self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by names.".format(key))
-        if "subset" in reduce_by:
-            logger.debug("Reducing metric by subset for '{}'".format(key))
-            self._reduce_metric_by_subset(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
-        if "group_name" in reduce_by:
-            logger.debug("Reducing metric by group and name for '{}'".format(key))
-            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-        return self.states.get(key, t=t_ed)
-
     # ---------------------------
     # ---- Circumferential Strain 
 
@@ -1135,42 +974,6 @@ class LVBaseMetricsComputations(LV_Speckles):
                 logger.debug("Metric '{}' has reduced values by group and name.".format(key))   
         return self.states.get(key)  # return pointer
 
-    # ---------- Clinical metric
-    
-    def compute_circumferential_strain(self, spks, t_ed=0.0, reduce_by={"group"}, **kwargs):
-        # set key for this function
-        key = self.STATES.CIRCUMFERENTIAL_STRAIN
-        logger.info("Computing metric '{}'".format(key))
-        # resolve spks (make sure you have a SpeckeDeque)
-        spks = self._resolve_spk_args(spks)
-        # compute metric for all spks
-        res = [self._compute_spk_relative_error(spk, 
-                    self.STATES.CIRC_LENGTH, key,
-                    t_ed=t_ed, reduce_by=reduce_by, **kwargs) for spk in spks]
-        # reduce metric (here we compute the mean data across entire LV)
-        self._reduce_metric_and_save(res, key, **kwargs)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(spks, key)
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by:
-            logger.debug("Reducing metric by group for '{}'".format(key))
-            self._reduce_metric_by_group(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group.".format(key))
-        if "name" in reduce_by:
-            logger.debug("Reducing metric by name for '{}'".format(key))
-            self._reduce_metric_by_name(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by names.".format(key))
-        if "subset" in reduce_by:
-            logger.debug("Reducing metric by subset for '{}'".format(key))
-            self._reduce_metric_by_subset(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
-        if "group_name" in reduce_by:
-            logger.debug("Reducing metric by group and name for '{}'".format(key))
-            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-        return self.states.get(key, t=t_ed)
-
     # ---------------------------
     # ----- Rotation ---- 
 
@@ -1181,7 +984,7 @@ class LVBaseMetricsComputations(LV_Speckles):
             self.compute_xyz_from_displacement()
         # check if speckle centers were computed. If not, compute them.
         if not self.states.check_spk_key(spk, self.STATES.CENTERS):
-            self.compute_spk_centers_over_timesteps(spk, **kwargs)
+            self.compute_spk_la_centers_over_timesteps(spk, **kwargs)
         # get centers data
         centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
         # get nodal position for all timesteps for given spk
@@ -1296,43 +1099,6 @@ class LVBaseMetricsComputations(LV_Speckles):
         # return pointer
         return self.states.get_spk_data(apex_spk, self.STATES.TWIST)
 
-    def compute_twist(self,  apex_spk, base_spk, t_ed: float = 0.0, reduce_by={"name"}, **kwargs):
-        # set key for this function
-        key = self.STATES.TWIST
-        logger.info("Computing metric '{}'".format(key))
-        # resolve spks (make sure you have a SpeckeDeque)
-        apex_spk = self._resolve_spk_args(apex_spk)
-        base_spk = self._resolve_spk_args(base_spk)
-        # compute metric
-        res = [self.compute_spk_twist(apex_s, base_s, **kwargs) for (apex_s, base_s) in zip(apex_spk, base_spk)]
-        # reduce metric (here we compute the mean radius across entire LV)
-        self._reduce_metric_and_save(res, key, **kwargs)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(apex_spk, key)
-        self.states.set_data_spk_rel(base_spk, key)
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by:
-            logger.debug("Reducing metric by group for '{}'".format(key))
-            self._reduce_metric_by_group(apex_spk, key, **kwargs)
-            self._reduce_metric_by_group(base_spk, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group.".format(key))
-        if "name" in reduce_by:
-            logger.debug("Reducing metric by name for '{}'".format(key))
-            self._reduce_metric_by_name(apex_spk, key, **kwargs)
-            self._reduce_metric_by_name(base_spk, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by names.".format(key))
-        if "subset" in reduce_by:
-            logger.debug("Reducing metric by subset for '{}'".format(key))
-            self._reduce_metric_by_subset(apex_spk, key, **kwargs)
-            self._reduce_metric_by_subset(base_spk, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
-        if "group_name" in reduce_by:
-            logger.debug("Reducing metric by group and name for '{}'".format(key))
-            self._reduce_metric_by_group_and_name(apex_spk, key, **kwargs)
-            self._reduce_metric_by_group_and_name(base_spk, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-
     def compute_spk_torsion(self, apex_spk, base_spk, t_ed: float = 0.0, relative=False, **kwargs):
         assert self.check_spk(
             apex_spk), "apex_spk must be a valid 'Speckle' object."
@@ -1364,43 +1130,6 @@ class LVBaseMetricsComputations(LV_Speckles):
             base_spk, self.STATES.TORSION, torsion)  # save to states
         return self.states.get_spk_data(base_spk, self.STATES.TORSION)
 
-    def compute_torsion(self, apex_spk, base_spk, t_ed: float = 0.0, reduce_by={"name"}, **kwargs):
-        # set key for this function
-        key = self.STATES.TORSION
-        logger.info("Computing metric '{}'".format(key))
-        # resolve spks (make sure you have a SpeckeDeque)
-        apex_spk = self._resolve_spk_args(apex_spk)
-        base_spk = self._resolve_spk_args(base_spk)
-        # compute metric
-        res = [self.compute_spk_torsion(apex_s, base_s, **kwargs) for (apex_s, base_s) in zip(apex_spk, base_spk)]
-        # reduce metric (here we compute the mean radius across entire LV)
-        self._reduce_metric_and_save(res, key, **kwargs)
-        # set metric relationship with spks 
-        # so that we can reference which spks were used to compute this metric
-        self.states.set_data_spk_rel(apex_spk, key)
-        self.states.set_data_spk_rel(base_spk, key)
-        # Break down computation by each 'set of spks'
-        if "group" in reduce_by:
-            logger.debug("Reducing metric by group for '{}'".format(key))
-            self._reduce_metric_by_group(apex_spk, key, **kwargs)
-            self._reduce_metric_by_group(base_spk, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group.".format(key))
-        if "name" in reduce_by:
-            logger.debug("Reducing metric by name for '{}'".format(key))
-            self._reduce_metric_by_name(apex_spk, key, **kwargs)
-            self._reduce_metric_by_name(base_spk, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by names.".format(key))
-        if "subset" in reduce_by:
-            logger.debug("Reducing metric by subset for '{}'".format(key))
-            self._reduce_metric_by_subset(apex_spk, key, **kwargs)
-            self._reduce_metric_by_subset(base_spk, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
-        if "group_name" in reduce_by:
-            logger.debug("Reducing metric by group and name for '{}'".format(key))
-            self._reduce_metric_by_group_and_name(apex_spk, key, **kwargs)
-            self._reduce_metric_by_group_and_name(base_spk, key, **kwargs)
-            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-
     # ===============================
     # Other
     # ===============================
@@ -1430,7 +1159,7 @@ class LVBaseMetricsComputations(LV_Speckles):
         return new_ts
 
     # ===============================
-    # Generic spk compilation
+    # Generic methods
     # ===============================
     
     def _resolve_spk_args(self, spk_args):
@@ -1542,7 +1271,6 @@ class LVBaseMetricsComputations(LV_Speckles):
                 all_res[res_key] = deque([])
             all_res[res_key].append(self._reduce_metric_and_save(res, key, **kwargs))
         return all_res
-
 
     def _compute_relative_error(self, d1, d2):
         return (d2 - d1) / (d1 + self.EPSILON) * 100.0

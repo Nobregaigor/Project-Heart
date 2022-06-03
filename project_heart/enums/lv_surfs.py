@@ -176,11 +176,10 @@ class LV_STATES(Enum):
     VF = "volumetric_fraction"
     EF = "volumetric_fraction"
     
-    
     BASE_REF = "base_ref"
     APEX_REF = "apex_ref"
     
-    CENTERS = "centers" # used for spk centers
+    LA_CENTERS = "la_centers" # used for spk centers
 
     LONGITUDINAL_DISTANCE = "longitudinal_distance"
     LONG_DISTS = "longitudinal_distance"

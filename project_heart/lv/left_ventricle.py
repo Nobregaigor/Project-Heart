@@ -1,4 +1,4 @@
-from .modules import LV_FiberEstimator, LV_Speckles, LVBaseMetricsComputations
+from .modules import LV_FiberEstimator, LV_Speckles, LVClinicalMetricsComputations
 import numpy as np
 # from project_heart.enums import CONTAINER, STATES, LV_SURFS
 from project_heart.utils.enum_utils import check_enum
@@ -13,7 +13,7 @@ from copy import copy
 import pandas as pd
 
 
-class LV(LV_FiberEstimator, LVBaseMetricsComputations):
+class LV(LV_FiberEstimator, LVClinicalMetricsComputations):
     def __init__(self, log_level=logging.INFO, *args, **kwargs):
         super(LV, self).__init__(log_level=log_level, *args, **kwargs)
 
@@ -99,7 +99,6 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
         if not self.states.check_key(self.STATES.GLOBAL_CIRCUMFERENTIAL_LENGTH) or recompute:
             self.compute_circumferential_length(spks, as_global=True, **kwargs)
         return self.states.get(self.STATES.GLOBAL_CIRCUMFERENTIAL_LENGTH, t=t)
-    
     
     def rotation(self, spks, t=None,  recompute=False, **kwargs):
         if not self.states.check_key(self.STATES.ROTATION) or recompute:
@@ -798,6 +797,7 @@ class LV(LV_FiberEstimator, LVBaseMetricsComputations):
                                    plotter=None, 
                                    window_size=None, 
                                    plot_kwargs=None,
+                                   
                                    **kwargs):
         # Set default values
         if window_size is None:
