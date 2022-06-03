@@ -44,6 +44,7 @@ class LV_Speckles(LV_RegionIdentifier):
         if len(enums) > 0:
             self.config_enums(enums, check_keys=default_lvSpeckles_enums.keys())
         
+        
     def create_speckles(self,
                         name=None,
                         group=None,
@@ -55,48 +56,21 @@ class LV_Speckles(LV_RegionIdentifier):
                         perpendicular_to=None,
                         d=3.0,
                         k=1.0,
-                        kmin=0.05,
-                        kmax=0.95,
-                        n_subsets=0,
-                        subsets_criteria="z",
-                        subsets_names=[],
+                        kmin=None,
+                        kmax=None,
+                        extrapolate_k=False,
+                        n_subsets=0, 
+                        subsets_criteria=None,
+                        subsets_names=None,
                         t=0.0,
-                        include_elmask=False,
-                        _use_long_line=False,
-                        n_clusters=None,
+                        n_clusters=0,
                         cluster_criteria=None,
                         log_level=logging.WARNING,
                         ignore_unmatch_number_of_clusters=True,
-                        extrapolate_k=False,
                         **kwargs
                         ):
         """Creates Speckles
 
-        Args:
-            name (_type_, optional): _description_. Defaults to None.
-            group (_type_, optional): _description_. Defaults to None.
-            collection (_type_, optional): _description_. Defaults to None.
-            d (float, optional): _description_. Defaults to 3.0.
-            from_nodeset (_type_, optional): _description_. Defaults to None.
-            perpendicular_to (_type_, optional): _description_. Defaults to None.
-            normal_to (_type_, optional): _description_. Defaults to None.
-            k (float, optional): _description_. Defaults to 1.0.
-            kmin (float, optional): _description_. Defaults to 0.1.
-            kmax (float, optional): _description_. Defaults to 0.95.
-            n_subsets (int, optional): _description_. Defaults to 0.
-            subsets_criteria (str, optional): _description_. Defaults to "z".
-            subsets_names (list, optional): _description_. Defaults to [].
-            t (float, optional): _description_. Defaults to 0.0.
-            include_elmask (bool, optional): _description_. Defaults to False.
-            _use_long_line (bool, optional): _description_. Defaults to False.
-            log_level (_type_, optional): _description_. Defaults to logging.WARNING.
-
-        Raises:
-            RuntimeError: _description_
-            ValueError: _description_
-
-        Returns:
-            _type_: _description_
         """
 
         # set logger
@@ -107,27 +81,27 @@ class LV_Speckles(LV_RegionIdentifier):
                     .format(name, group, collection))
 
         # apply checks
-        if n_subsets > 0 and len(subsets_names) > 0:
+        if n_subsets > 0:
+            assert subsets_criteria is not None, ("If speckle subsets is requested, "
+                "must provide subset criteria")
+            if subsets_names is None:
+                subsets_names = list()
+            if len(subsets_names) > 0:
                 assert len(subsets_names) == n_subsets, AssertionError(
                     "If list of prefixes was provided, its length must be "
                     "equal to the number of subsets.")
-        elif n_subsets > 0 and len(subsets_names) == 0:
-            subsets_names = list(range(n_subsets))
-            
-        # # remove any existing speckle with same references
-        # self.speckles.remove(
-        #     spk_name=name,
-        #     spk_group=group,
-        #     spk_collection=collection,
-        # )
+            elif len(subsets_names) == 0:
+                subsets_names = list(range(n_subsets))
         
-        # assume default values
+        # Assume default values
         cluster_criteria = subsets_criteria if cluster_criteria is None else cluster_criteria
-        n_clusters = 3 * n_subsets if n_clusters is None else n_clusters
+        assert cluster_criteria is None, ("If speckle cluster is requested, "
+                "must provide subset criteria. No default value was found.")
         
-        # determine nodes to use
+        # ------ Resolve nodes to use as reference ---------------------
+        # determine nodes to use (entire mesh or specified nodeset)
         if from_nodeset is None: 
-            logger.debug("Using all avaiable nodes.")
+            logger.debug("Using all avaiable nodes in mesh.")
             # keep track of nodes data
             nodes = self.nodes()
             # keep track of nodes ids
@@ -136,7 +110,7 @@ class LV_Speckles(LV_RegionIdentifier):
             logger.debug("Using nodes from nodeset %s" % from_nodeset)
             ids = self.get_nodeset(from_nodeset)
             nodes = self.nodes(mask=ids)
-        
+        # exclude nodes from other nodeset
         if exclude_nodeset is not None:
             logger.debug("Excluding nodes from nodeset %s" % exclude_nodeset)
             if isinstance(exclude_nodeset, (list, tuple)):
@@ -148,66 +122,88 @@ class LV_Speckles(LV_RegionIdentifier):
                 ids_to_exclude = self.get_nodeset(exclude_nodeset)
                 ids = np.setdiff1d(ids, ids_to_exclude)
                 nodes = self.nodes(mask=ids)
-
-        
-        # Determine which normal to use
-        if perpendicular_to is not None:
-            assert len(perpendicular_to) == 3, ValueError(
-                'Perpendicular vector length must be 3 -> [x,y,z]')
-            normal = np.cross(self.get_normal(), perpendicular_to)
-        # if user provided 'normal_to' overwrite normal value to match user's requested value
-        elif normal_to is not None:
-            assert len(normal_to) == 3, ValueError(
-                'Normal vector length must be 3 -> [x,y,z]')
-            normal = np.array(normal_to, dtype=np.float32)
-        else:
-            normal = self.get_normal()
-        logger.debug("Normal: {}".format(normal))
-
-        # get longitudinal line
+            # check for possible errors when exluding nodes (empty)
+            if len(ids) == 0:
+                raise RuntimeError("No aviable nodes found after excluding nodeset(s) '{}'."
+                                   .format(exclude_nodeset))
+        # ------  get longitudinal line -----------------------------------
         long_line = self.get_long_line()
         logger.debug("long_line: {}".format(long_line))
 
-        # determine point along longitudinal line to be used as reference
+        # ------- Compute speckle LA center --------------------------------
+        # LA center defines speckle position along longitudinal axis.
+        # Determine point along longitudinal line to be used as reference
         if extrapolate_k is True:
-            assert k >= -0.1 and k <= 1.1, (
+            assert k >= -0.2 and k <= 1.12, (
                 "For safety, extrapolation is not allowed for k values larger than 10%. "
-                "k range is [-0.1, 1.1]. k received: {}".format(k))
+                "k range is [-0.2, 1.2]. k received: {}".format(k))
         p = get_p_along_line(k, long_line, extrapolate=extrapolate_k)
         spk_center = p
         logger.debug("ref p (spk center): {}".format(p))
-        # get points close to plane at height k (from p) and threshold d
-        ioi = get_pts_close_to_plane(
-            nodes, d, normal, p)
-        pts = nodes[ioi]
-        logger.debug("pts close to plane: {}".format(len(pts)))
+        
+        
+        # ----- Resolve nodes and speckle normal -------------------------
+        if not use_all_nodes:
+            logger.debug("Using nodes close to plane [k={}] at p={} with d={}."
+                         .format(k,p,d))
+            # Determine which normal to use
+            if perpendicular_to is not None:
+                assert len(perpendicular_to) == 3, ValueError(
+                    'Perpendicular vector length must be 3 -> [x,y,z]')
+                normal = np.cross(self.get_normal(), perpendicular_to)
+            # if user provided 'normal_to' overwrite normal value to match user's requested value
+            elif normal_to is not None:
+                assert len(normal_to) == 3, ValueError(
+                    'Normal vector length must be 3 -> [x,y,z]')
+                normal = np.array(normal_to, dtype=np.float32)
+            else:
+                normal = self.get_normal()
+            logger.debug("Normal: {}".format(normal))
+                    
+            # get points close to plane at height k (from p) and threshold d
+            ioi = get_pts_close_to_plane(
+                nodes, d, normal, p)
+            pts = nodes[ioi]
+            logger.debug("pts close to plane: {}".format(len(pts)))
+        else:
+            logger.debug("Using all nodes in mesh OR nodeset (not computing plane).")
+            pts = nodes
+            normal, _ = fit_plane(pts)
+            ioi = np.arange(0, len(pts), dtype=np.int32)
 
-        # check for k boundaries --> We assume the long-line
-        if angle_between(self.get_normal(), self._Z) < np.radians(10):
-            adjusted_due_normal_aligment = False
-            if kmin > 0.0:
-                adjusted_due_normal_aligment = True
+        # ------- Check for k boundaries --------------------------------
+        # kmin and kmax limit speckle regions based on apex and base
+        adjusted_due_to_k_bounds = False # this flag is used for debug purposes
+        if kmin is not None:
+            assert isinstance(kmin, (int, float)), "kmin must be an integer or float."
+            if kmin != -1.0:
+                adjusted_due_to_k_bounds = True
                 logger.debug(
-                    "Adjusting for geometry aligned with normal. kmin: {}".format(kmin))
+                    "Adjusting avaiable nodes based on kmin: {}".format(kmin))
                 p = get_p_along_line(kmin, long_line, extrapolate=extrapolate_k)
                 ioi = np.setdiff1d(ioi, np.where(nodes[:, 2] < p[2]))
                 pts = nodes[ioi]
-            if kmax > 0.0:
-                adjusted_due_normal_aligment = True
+        if kmax is not None:
+            assert isinstance(kmax, (int, float)), "kmax must be an integer or float."
+            if kmax != -1.0:
+                adjusted_due_to_k_bounds = True
                 logger.debug(
-                    "Adjusting for geometry aligned with normal. kmax: {}".format(kmax))
+                    "Adjusting avaiable nodes based on kmax: {}".format(kmax))
                 p = get_p_along_line(kmax, long_line, extrapolate=extrapolate_k)
                 ioi = np.setdiff1d(ioi, np.where(nodes[:, 2] > p[2]))
                 pts = nodes[ioi]
-            if adjusted_due_normal_aligment:
-                logger.debug(
-                    "New spk center and pts found after adjustment.")
-                logger.debug("ref p (spk center): {}".format(p))
-                logger.debug("pts close to plane: {}".format(len(pts)))
-
+        # show debug text if adjustment occured.
+        if adjusted_due_to_k_bounds:
+            logger.debug(
+                "New spk center and pts found after adjustment.")
+            logger.debug("ref p (spk center): {}".format(p))
+            logger.debug("pts close to plane: {}".format(len(pts)))
+        # check number of points found.
         if len(pts) == 0:
-            raise RuntimeError("Found number of points is zero.")
+            raise RuntimeError("Found number of points is zero. Try checking kmin and kmax.")
 
+        # --------------------------------
+        
         valid_ids = ids[ioi]  # get valid ids
         mask = ioi   # global mask
         

@@ -896,6 +896,44 @@ class LV_RegionIdentifier(LV_Base):
 
         return self.set_region_from_mesh_ids(region_key, region)
 
+    def set_region_from_intersections(self, 
+                                      key: str, 
+                                      region_val: int, 
+                                      intersection_regions: list, 
+                                      n:int=1,
+                                      add_as_nodeset=True,
+                                      overwrite_nodeset=True,                              
+                                      ):
+        
+        mesh = self.mesh.copy()
+        pdata = np.zeros(mesh.n_points, dtype=np.float64)
+        for i, nset in enumerate(intersection_regions):
+            pdata[self.get_nodeset(nset)] = (i+1.0)*10
+        invalid_nodes = np.where(pdata == 0)[0]       
+        pdata[invalid_nodes] = 10.0 # min value is equal to first provided region
+
+        mesh.point_data["region_from_intersections_grads"] = pdata
+        mesh = mesh.compute_derivative("region_from_intersections_grads")
+        
+        if n > 1:
+            for _ in range(n):
+                mesh = mesh.compute_derivative("gradient")
+        grads = mesh.get_array("gradient")
+        grads_mag = np.linalg.norm(grads, axis=1)
+        ioi = np.where(grads_mag > 0)[0]
+        ioi = np.setdiff1d(ioi, invalid_nodes)
+        
+        
+        region = np.zeros(mesh.n_points, dtype=np.float64)
+        region[ioi] = region_val
+        
+        if add_as_nodeset:
+            self.add_nodeset(key, ioi, overwrite=overwrite_nodeset)
+        
+        return self.set_region_from_mesh_ids(key, region)
+        
+    
+    
     # ----------------------------------------------------------------
     # Check methods
 

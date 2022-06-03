@@ -100,7 +100,7 @@ def get_p_along_line(k: float, line, extrapolate=False):
       Example: k=0.5 returns the midpoint of a given line.
     """
     
-    if not isinstance(k, float):
+    if not isinstance(k, (int, float)):
         raise TypeError('k must be a float')
     if not isinstance(line, np.ndarray):
         # raise TypeError('line must be a numpy array')
