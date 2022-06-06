@@ -198,14 +198,14 @@ class LVGeometricsComputations(LV_Speckles):
         if approach == "along_longitudinal_axis":
             # check if speckle centers were computed. If not, compute them.
             # -- check for apex LA centers
-            if not self.states.check_spk_key(apex_spk, self.STATES.CENTERS):
+            if not self.states.check_spk_key(apex_spk, self.STATES.LA_CENTERS):
                 self.compute_spk_la_centers_over_timesteps(apex_spk, log_level=log_level)
             # -- check for base LA centers
-            if not self.states.check_spk_key(base_spk, self.STATES.CENTERS):
+            if not self.states.check_spk_key(base_spk, self.STATES.LA_CENTERS):
                 self.compute_spk_la_centers_over_timesteps(base_spk, log_level=log_level)
             # get centers data
-            apex_centers = self.states.get_spk_data(apex_spk, self.STATES.CENTERS)
-            base_centers = self.states.get_spk_data(base_spk, self.STATES.CENTERS)
+            apex_centers = self.states.get_spk_data(apex_spk, self.STATES.LA_CENTERS)
+            base_centers = self.states.get_spk_data(base_spk, self.STATES.LA_CENTERS)
         elif approach == "centroid":
             apex_centers = np.array([centroid(xyz) for xyz in self.get_speckles_xyz(apex_spk)], dtype=dtype)
             base_centers = np.array([centroid(xyz) for xyz in self.get_speckles_xyz(base_spk)], dtype=dtype)
@@ -290,6 +290,7 @@ class LVGeometricsComputations(LV_Speckles):
                            log_level=logging.INFO,
                            **kwargs):
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+        key = self.STATES.RADIAL_DISTANCE
         logger.setLevel(log_level)
         logger.debug("Computing speckle RADIAL_DISTANCE for spk: '{}'".format(spk))
         logger.debug("Using approach: '{}'".format(approach))
@@ -320,11 +321,19 @@ class LVGeometricsComputations(LV_Speckles):
                              "'moving_vector', 'fixed_vector'.Received: '{}'. "
                              "Please, check documentation for further details."
                              .format(approach))
-            
-        logger.debug("-mean_coords:'{}\n-RADIAL_DISTANCE:'{}'".
-                     format(np.mean(xyz, axis=0), spk_res))
-        self.states.add_spk_data(spk, self.STATES.RADIAL_DISTANCE, spk_res)  # save to states
-        return self.states.get_spk_data(spk, self.STATES.RADIAL_DISTANCE) # return pointer
+        logger.debug("-mean_coords:'{}\n-RADIAL_DISTANCE:'{}'"
+                     .format(np.mean(xyz, axis=0), spk_res))
+        
+        # record explainable_metrics
+        exm = ExplainableMetric()
+        exm.key = key
+        exm.approach = approach
+        exm.speckles = spk
+        exm.used_reference_apex_base=True
+        self.explainable_metrics[self.states.get_spk_state_key(spk, key)] = exm
+        
+        self.states.add_spk_data(spk, key, spk_res)  # save to states
+        return self.states.get_spk_data(spk, key) # return pointer
 
     def compute_radial_distance(self, spks, reduce_by={"group"}, **kwargs):
         # set key for this function
@@ -365,6 +374,7 @@ class LVGeometricsComputations(LV_Speckles):
                            approach="moving_centers",
                            log_level=logging.INFO,
                            **kwargs):
+        key = self.STATES.RADIAL_LENGTH
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
         logger.setLevel(log_level)
         logger.debug("Computing speckle RADIAL_LENGTH for spk: '{}'".format(spk))
@@ -376,10 +386,10 @@ class LVGeometricsComputations(LV_Speckles):
         xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
         if approach == "moving_centers":
             # check if speckle centers were computed. If not, compute them.
-            if not self.states.check_spk_key(spk, self.STATES.CENTERS):
+            if not self.states.check_spk_key(spk, self.STATES.LA_CENTERS):
                 self.compute_spk_la_centers_over_timesteps(spk, log_level=log_level, **kwargs)
             # get centers data
-            centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
+            centers = self.states.get_spk_data(spk, self.STATES.LA_CENTERS)
             spk_res = np.array([radius(coords, center=center) for coords, center in zip(xyz, centers)], 
                             dtype=dtype)
         elif approach == "fixed_centers":
@@ -393,8 +403,16 @@ class LVGeometricsComputations(LV_Speckles):
             
         logger.debug("-mean_coords:'{}\n-RADIAL_LENGTH:'{}'".
                      format(np.mean(xyz, axis=0), spk_res))
-        self.states.add_spk_data(spk, self.STATES.RADIAL_LENGTH, spk_res)  # save to states
-        return self.states.get_spk_data(spk, self.STATES.RADIAL_LENGTH) # return pointer
+        # record explainable_metrics
+        exm = ExplainableMetric()
+        exm.key = key
+        exm.approach = approach
+        exm.speckles = spk
+        exm.used_reference_apex_base=True
+        self.explainable_metrics[self.states.get_spk_state_key(spk, key)] = exm
+        
+        self.states.add_spk_data(spk, key, spk_res)  # save to states
+        return self.states.get_spk_data(spk, key) # return pointer
 
     def compute_radial_length(self, spks, reduce_by={"group"}, **kwargs):
         # set key for this function
@@ -885,10 +903,10 @@ class LVGeometricsComputations(LV_Speckles):
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
         # check if speckle centers were computed. If not, compute them.
-        if not self.states.check_spk_key(spk, self.STATES.CENTERS):
+        if not self.states.check_spk_key(spk, self.STATES.LA_CENTERS):
             self.compute_spk_la_centers_over_timesteps(spk, **kwargs)
         # get centers data
-        centers = self.states.get_spk_data(spk, self.STATES.CENTERS)
+        centers = self.states.get_spk_data(spk, self.STATES.LA_CENTERS)
         # get nodal position for all timesteps for given spk
         xyz = self.states.get(self.STATES.XYZ, mask=spk.ids)
         vecs = np.array([xyz[i] - centers[i] for i in range(len(xyz))], dtype=dtype)

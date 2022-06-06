@@ -373,7 +373,11 @@ class LV_Speckles(LV_RegionIdentifier):
             except:
                 raise RuntimeError("Speckle '{}' LA centers were not computed.".format(spk.str))
             centers.append(c)
-        return np.vstack(centers)
+        if t is None:
+            centers = np.asarray(centers)
+            return np.swapaxes(centers,0,1)
+        else:
+            return np.vstack(centers)
     
     def get_speckles_c_centers(self, spk_args, t=None, use_centroid=True, **kwargs) -> np.ndarray:
         

@@ -160,6 +160,21 @@ class LV3DMetricsPlotter(LVGeometricsComputations):
                                "Only metrics compute with this package can be used for 3D plot.")
         return all_exm
     
+    def _resolve_ss_sa(self, exms, key):
+        approaches = set()
+        speckles = deque()
+        for exm in exms.values():
+            approaches.add(exm.approach)
+            speckles.append(exm.speckles)
+        
+        if len(approaches) > 1:
+            raise RuntimeError("Multiple approaches found for '{}'."
+                               "Currently, only one approach must be selected to plot."
+                               .format(key))
+        approach = list(approaches)[0]
+        spk_deque = SpeckeDeque(speckles)
+        return approach, spk_deque
+    
     def plot_longitudinal_distance(self, t=0.0, colors=None, 
                                    window_size=None, plot_kwargs=None, log_level=logging.INFO):
         from project_heart.utils import lines_from_points
@@ -205,5 +220,98 @@ class LV3DMetricsPlotter(LVGeometricsComputations):
         plotter.add_mesh(line, color="magenta")
         # add points
         plotter.add_points(np.vstack([apex_reduced, base_reduced]), color="magenta", point_size=400)
+        # show plot
+        plotter.show(window_size=window_size)
+    
+    def plot_radial_distance(self,
+                             t=0.0,
+                             window_size=None,
+                             plotter=None,
+                             plot_kwargs=None,
+                             log_level=logging.INFO,
+                             ):
+        
+        from project_heart.utils import project_pt_on_line
+        log = logger.getChild("plot_radial_distance")
+        log.setLevel(log_level)
+        # set key
+        key = self.STATES.RADIAL_DISTANCE
+        all_exm = self._resolve_exm(key)
+        # resolve plotter and window size
+        window_size = self._reolve_window_size(window_size)
+        plotter = self._resolve_plotter(None, plot_kwargs, t=t)
+        # resolve simple speckle and singular approach 
+        approach, spk_deque = self._resolve_ss_sa(all_exm, key)
+        # reolved variables to plot
+        if approach == "moving_vector":
+            fla=False
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=t)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=t)
+        elif approach == "fixed_vector":
+            fla=True
+            apex_ts = self.states.get(self.STATES.APEX_REF, t=0)
+            base_ts = self.states.get(self.STATES.BASE_REF, t=0)
+        else:
+            raise RuntimeError("Invalid approach found: {}".format(approach))
+        # plot radial distance
+        spk_pts = self.get_speckles_xyz(spk_deque, t=t)                
+        for pt in spk_pts:
+            p_pt = project_pt_on_line(pt, apex_ts, base_ts)
+            plotter.add_lines(np.vstack((pt, p_pt)), color="magenta")
+        # plot speckles
+        plotter = self.plot_speckles(spk_deque, 
+                                     t=t,
+                                     show_longitudinal_line=True, 
+                                     fix_longitudinal_line=fla,
+                                     plotter=plotter,
+                                     re=True,
+                                     )
+        # show plot
+        plotter.show(window_size=window_size)
+    
+    def plot_radial_length(self,
+                             t=0.0,
+                             window_size=None,
+                             plotter=None,
+                             plot_kwargs=None,
+                             log_level=logging.INFO,
+                             ):
+
+        log = logger.getChild("plot_radial_length")
+        log.setLevel(log_level)
+        # set key
+        key = self.STATES.RADIAL_LENGTH
+        all_exm = self._resolve_exm(key)
+        # resolve plotter and window size
+        window_size = self._reolve_window_size(window_size)
+        plotter = self._resolve_plotter(None, plot_kwargs, t=t)
+        # resolve simple speckle and singular approach 
+        approach, spk_deque = self._resolve_ss_sa(all_exm, key)
+        # reolved variables to plot
+        if approach == "moving_centers":
+            fla=False
+        elif approach == "fixed_centers":
+            fla=True
+        else:
+            raise RuntimeError("Invalid approach found: {}".format(approach))
+        
+        # plot radial distance
+        # spk_pts = self.get_speckles_xyz(spk_deque, t=t)
+        la_centers = self.get_speckles_la_centers(spk_deque, t=t)
+        
+        for spk, lapt in zip(spk_deque, la_centers):
+            xyz = self.states.get(self.STATES.XYZ, t=t, mask=spk.ids)
+            for pt in xyz:
+                plotter.add_lines(np.vstack((pt, lapt)), color="magenta")
+            
+        # plot speckles
+        plotter = self.plot_speckles(spk_deque, 
+                                     t=t,
+                                     show_longitudinal_line=True, 
+                                     show_la_centers=True,
+                                     fix_longitudinal_line=fla,
+                                     plotter=plotter,
+                                     re=True,
+                                     )
         # show plot
         plotter.show(window_size=window_size)
