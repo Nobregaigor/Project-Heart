@@ -5,4 +5,4 @@ from .lv_speckles import LV_Speckles
 
 from .lv_metrics_geometrics_computations import LVGeometricsComputations
 from .lv_metrics_clinical_computation import LVClinicalMetricsComputations
-
+from .lv_metrics_3d_plotter import LV3DMetricsPlotter

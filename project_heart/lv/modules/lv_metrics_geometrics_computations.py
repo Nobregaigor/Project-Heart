@@ -22,9 +22,18 @@ class ExplainableMetric():
     def __init__(self):
         self.key = None       # str/enum
         self.approach = None  # str
-        self.speckles = None  # speckle args
-        self.nodesets = None  # reference to nodesets
-
+        
+        # generic speckles
+        self.speckles = None 
+        
+        # speckles at base or apex
+        self.base_speckles = None
+        self.apex_speckles = None
+        
+        # speckles at endo or epi
+        self.endo_speckles = None
+        self.epi_speckles = None
+        
         # wheter metric used default approach to compute apex/base
         self.used_reference_apex_base = True
         self.apex = None     # reference to apex
@@ -141,10 +150,7 @@ class LVGeometricsComputations(LV_Speckles):
           
     # ---- Speckle centers at longitudinal axis
 
-    def compute_spk_la_centers_over_timesteps(self, spk, 
-                                           apex_base_kwargs=None, 
-                                           log_level=logging.INFO,
-                                           **kwargs):
+    def compute_spk_la_centers_over_timesteps(self, spk, apex_base_kwargs=None, log_level=logging.INFO, **kwargs):
         from project_heart.utils.spatial_utils import project_pt_on_line
         # check for speckle input
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
@@ -153,21 +159,15 @@ class LVGeometricsComputations(LV_Speckles):
         # check if apex and base references were computed
         if not self.states.check_key(self.STATES.BASE_REF) or \
             not self.states.check_key(self.STATES.APEX_REF):
-            if apex_base_kwargs is None:
-                apex_base_kwargs = {}
-            self.compute_base_apex_ref_over_timesteps(**apex_base_kwargs)
+            raise RuntimeError("States not found for BASE_REF or APEX_REF."
+                               "Please, either set them manually or try using "
+                               "'compute_base_apex_ref_over_timesteps'.")
         # compute spk centers over timesteps based on 'k' height
         # from project_heart.utils.spatial_utils import get_p_along_line
         apex_ts = self.states.get(self.STATES.APEX_REF)
         base_ts = self.states.get(self.STATES.BASE_REF)
-        # xs = np.mean((apex_ts[:, 0], base_ts[:, 0]), axis=0).reshape((-1,1))
-        # ys = np.mean((apex_ts[:, 1], base_ts[:, 1]), axis=0).reshape((-1,1))
-        # zs = np.mean(self.get_speckles_xyz(spk), 1)[:, 2].reshape((-1,1))
         spk_center = np.mean(self.get_speckles_xyz(spk), 1)
-        p_pt = project_pt_on_line(spk_center, apex_ts, base_ts)
-        
-        spk_res = p_pt#np.hstack((xs,ys,zs)) #[get_p_along_line(k, [apex,base]) for apex, base in zip(apex_ts, base_ts)]
-                                        #spk_res = np.vstack(spk_res)
+        spk_res = project_pt_on_line(spk_center, apex_ts, base_ts)
         logger.debug("\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
                      format(apex_ts, base_ts, spk_res))
         self.states.add_spk_data(spk, self.STATES.LA_CENTERS, spk_res)  # save to states
@@ -182,7 +182,9 @@ class LVGeometricsComputations(LV_Speckles):
                                                         log_level=logging.INFO, 
                                                apex_center_kwargs=None,base_center_kwargs=None, 
                                                dtype=np.float64, **kwargs):
-        logger.info("Using approach '{}' with axis aligment set to '{}'.".format(approach, use_axis_aligment))
+        key = self.STATES.LONGITUDINAL_DISTANCE
+        logger.info("Computing '{}' with approach '{}' with axis aligment set to '{}'."
+                    .format(key, approach, use_axis_aligment))        
         if approach == "along_longitudinal_axis":
             # check if speckle centers were computed. If not, compute them.
             # -- check for apex LA centers
@@ -215,9 +217,23 @@ class LVGeometricsComputations(LV_Speckles):
         else:
             spk_res = np.array([abs(b_c[2] - a_c[2]) for a_c, b_c in zip(apex_centers, base_centers)], 
                                 dtype=dtype)
-        self.states.add_spk_data(apex_spk, self.STATES.LONGITUDINAL_DISTANCE, spk_res)  # save to states
-        self.states.add_spk_data(base_spk, self.STATES.LONGITUDINAL_DISTANCE, spk_res)  # save to states
-        return self.states.get_spk_data(apex_spk, self.STATES.LONGITUDINAL_DISTANCE) # return pointer
+        
+        # record explainable_metrics
+        exm = ExplainableMetric()
+        exm.key = key
+        exm.approach = approach
+        exm.apex_speckles = apex_spk
+        exm.base_speckles = base_spk
+        exm.used_reference_apex_base=False
+        exm.apex = apex_centers
+        exm.base = base_centers
+        self.explainable_metrics[self.states.get_spk_state_key(apex_spk, key)] = exm
+        self.explainable_metrics[self.states.get_spk_state_key(base_spk, key)] = exm
+        
+        
+        self.states.add_spk_data(apex_spk, key, spk_res)  # save to states
+        self.states.add_spk_data(base_spk, key, spk_res)  # save to states
+        return self.states.get_spk_data(apex_spk, key) # return pointer
 
     def compute_longitudinal_distance(self, apex_spks, base_spks, reduce_by=None,
                                       dtype: np.dtype = np.float64, **kwargs) -> np.ndarray:

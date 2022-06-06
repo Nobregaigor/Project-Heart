@@ -9,7 +9,7 @@ class SpeckleStates(States):
         super(SpeckleStates, self).__init__(*args, **kwargs)
         self.data_spks_rel = dict()
 
-    def set_spk_state_key(self, spk: object, key: str, join="all"):
+    def get_spk_state_key(self, spk: object, key: str, join="all"):
         self.check_spk(spk)
         try:
             key = STATES(key).value
@@ -49,14 +49,14 @@ class SpeckleStates(States):
 
     def add_spk_data(self, spk: object, key: str, data: np.ndarray, join="all"):
         self.check_spk(spk)
-        state_key = self.set_spk_state_key(spk, key, join=join)
+        state_key = self.get_spk_state_key(spk, key, join=join)
         self.data[state_key] = data
         self.data_format[state_key] = DATA_FORMAT.SPK
         self.set_data_spk_rel(spk, state_key)
     
     def get_spk_data(self, spk: object, key: str, join="all", **kwargs):
         self.check_spk(spk)
-        state_key = self.set_spk_state_key(spk, key, join=join)
+        state_key = self.get_spk_state_key(spk, key, join=join)
         return self.get(key=state_key, **kwargs)
 
     def check_spk(self, spk: object):
@@ -65,5 +65,5 @@ class SpeckleStates(States):
                             "Received: {}".format(spk.__class__))
 
     def check_spk_key(self, spk: object, key: str, join="all"):
-        state_key = self.set_spk_state_key(spk, key, join=join)
+        state_key = self.get_spk_state_key(spk, key, join=join)
         return self.check_key(state_key)

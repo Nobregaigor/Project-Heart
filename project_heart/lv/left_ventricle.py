@@ -1,4 +1,4 @@
-from .modules import LV_FiberEstimator, LV_Speckles, LVClinicalMetricsComputations
+from .modules import LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter
 import numpy as np
 # from project_heart.enums import CONTAINER, STATES, LV_SURFS
 from project_heart.utils.enum_utils import check_enum
@@ -13,7 +13,7 @@ from copy import copy
 import pandas as pd
 
 
-class LV(LV_FiberEstimator, LVClinicalMetricsComputations):
+class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
     def __init__(self, log_level=logging.INFO, *args, **kwargs):
         super(LV, self).__init__(log_level=log_level, *args, **kwargs)
 
@@ -441,63 +441,6 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations):
                     raise ValueError("info '{}' not found. "
                     "Options are: {}".format(key, list(info.keys())))
     
-    def plot_longitudinal_line(self, 
-                               re=False, 
-                               plot_kwargs=None, 
-                               window_size=None, 
-                               plotter=None,
-                               **kwargs):
-        if window_size is None:
-            window_size = (600,400)
-        # set plot_kwargs as empty dict if not specified
-        if plot_kwargs is None:
-            plot_kwargs = dict()
-        # set default plot args
-        if plotter is None:
-            d_plotkwargs = dict(
-                
-                    style='wireframe', 
-                    color="gray", 
-                    opacity=0.6,
-                    vnodes=[
-                        (
-                            self.VIRTUAL_NODES.BASE, 
-                            {
-                                "color": "red",
-                                "point_size": 600.0,
-                            }
-                        ),
-                        (
-                            self.VIRTUAL_NODES.APEX, 
-                            {
-                                "color": "orange",
-                                "point_size": 600.0,
-                            }
-                        ),
-                        ],
-                    window_size=window_size
-                )
-            d_plotkwargs.update(plot_kwargs)
-            # plot mesh and virtual nodes
-            plotter = self.plot(re=True, **d_plotkwargs)
-        # create long line for plot
-        from project_heart.utils import lines_from_points
-        apex = self.get_virtual_node(self.VIRTUAL_NODES.APEX)
-        base = self.get_virtual_node(self.VIRTUAL_NODES.BASE)
-        line = lines_from_points((apex, base))
-        # set default args for long line and update if user provided
-        # new args.
-        d_kwargs = dict(color="cyan")
-        d_kwargs.update(kwargs)
-        # add line mesh
-        plotter.add_mesh(line, **d_kwargs)
-        # if requested, return plotter
-        if re:
-            return plotter
-        # if not requested, show plot
-        else:
-            plotter.show(window_size=window_size)
-        
     def plot_speckles(self, 
                         spk_args, 
                         t=0, 
@@ -790,88 +733,6 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations):
         
         return np.mean(line_lengths)
     
-    def plot_longitudinal_distance(self, nodesets, 
-                                   t=0, 
-                                   nodeset_colors=None,
-                                   approach="estimate_apex_base",
-                                   plotter=None, 
-                                   window_size=None, 
-                                   plot_kwargs=None,
-                                   
-                                   **kwargs):
-        # Set default values
-        if window_size is None:
-            window_size = (600,400)
-        if plot_kwargs is None:
-            plot_kwargs = dict()
-        
-        if nodeset_colors is None:
-            nodeset_colors = ["blue", "green", "brown"]
-        
-        if plotter is None:
-            d_plotkwargs = dict(
-                    style='points', 
-                    color="gray", 
-                    opacity=0.4,
-                    window_size=window_size,
-                    pretty=False,
-                )
-            d_plotkwargs.update(plot_kwargs)
-            plotter = self.plot("mesh", t=t, re=True, **d_plotkwargs)
-            
-            
-        dists = []
-        bases = []
-        apexes = []
-        for i, nodeset in enumerate(nodesets):
-            # get node positions from nodeset at specified state
-            xyz = self.states.get(self.STATES.XYZ,mask=self.get_nodeset(nodeset), t=t)
- 
-            if approach == "extremes":
-                zs = xyz[:,2]
-                min_idx = np.argmin(zs) 
-                max_idx = np.argmax(zs)
-                es_base = xyz[max_idx]
-                es_apex = xyz[min_idx]
-                dist = abs(zs[max_idx]) + abs(zs[min_idx])
-                es_base[1] = 0.5*(i+1)
-                es_base[0] = 0.0
-                es_apex[1] = 0.5*(i+1)
-                es_apex[0] = 0.0
-                
-            elif approach == "estimate_apex_base":
-                (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(xyz, **kwargs)["long_line"]
-                dist = np.linalg.norm(es_base - es_apex)
-            else:
-                raise ValueError("Unknown approach. Avaiable approaches are: "
-                                "'extremes' and 'estimate_apex_base'. Received: '{}'."
-                                "Please, check documentation for further details."
-                                .format(approach))
-                
-            plotter.add_lines(np.vstack((es_apex, es_base)), width=20, color=nodeset_colors[i])
-            bases.append(es_base)
-            apexes.append(es_apex)
-            dists.append(dist)
-        
-        if approach == "extremes":            
-            mean_apex = np.mean(apexes, axis=0)
-            mean_base = np.mean(bases, axis=0)
-            mean_base[0] = 0.0
-            mean_base[1] = 0.0
-            mean_apex[0] = 0.0
-            mean_apex[1] = 0.0
-            
-            
-        elif approach == "estimate_apex_base":
-            mean_apex = np.mean(apexes, axis=0)
-            mean_base = np.mean(bases, axis=0)
-             
-        plotter.add_lines(np.vstack((mean_apex, mean_base)), color="magenta")
-        plotter.enable_anti_aliasing()
-        
-        plotter.show(window_size=window_size)
-        return np.mean(dists)
-                
     # ===============================
     # exports to FEA solvers
     # ===============================   
