@@ -167,7 +167,8 @@ class LVGeometricsComputations(LV_Speckles):
         base_ts = self.states.get(self.STATES.BASE_REF)
         # spk_center = np.mean(self.get_speckles_xyz(spk), 1)
         xyz_ts = self.states.get(self.STATES.XYZ, mask=spk.ids)
-        spk_center = np.asarray([centroid(xyz) for xyz in xyz_ts], dtype=np.float64)
+        # spk_center = np.asarray([centroid(xyz) for xyz in xyz_ts], dtype=np.float64)
+        spk_center = np.mean(xyz_ts, axis=0)
         spk_res = np.zeros((len(xyz_ts),3), dtype=np.float64)
         for i, (sc, at, bt) in enumerate(zip(spk_center, apex_ts, base_ts)):
             spk_res[i] = project_pt_on_line(sc, at, bt)
@@ -611,7 +612,7 @@ class LVGeometricsComputations(LV_Speckles):
         if approach == "k_ids":
             from project_heart.utils.spatial_utils import compute_length_from_predefined_cluster_list
             fun = partial(compute_length_from_predefined_cluster_list, 
-                          clusters=spk.k_local_ids,
+                          clusters=spk.c_local_ids,
                           assume_sorted=True,
                           filter_args=line_seg_filter_kwargs,
                           join_ends=False,
@@ -765,7 +766,7 @@ class LVGeometricsComputations(LV_Speckles):
         if approach == "k_ids":
             from project_heart.utils.spatial_utils import compute_length_from_predefined_cluster_list
             fun = partial(compute_length_from_predefined_cluster_list, 
-                          clusters=spk.k_local_ids,
+                          clusters=spk.c_local_ids,
                           assume_sorted=True,
                           filter_args=line_seg_filter_kwargs,
                           join_ends=join_ends,

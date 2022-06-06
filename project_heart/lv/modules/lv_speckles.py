@@ -379,7 +379,7 @@ class LV_Speckles(LV_RegionIdentifier):
         else:
             return np.vstack(centers)
     
-    def get_speckles_c_centers(self, spk_args, t=None, use_centroid=True, **kwargs) -> np.ndarray:
+    def get_speckles_c_centers(self, spk_args, t=None, use_centroid=False, **kwargs) -> np.ndarray:
         
         if self.states.check_key(self.STATES.XYZ) and t is not None:
             xyz = self.states.get(self.STATES.XYZ, t=t)

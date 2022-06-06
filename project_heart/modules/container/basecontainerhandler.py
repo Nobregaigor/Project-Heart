@@ -279,8 +279,6 @@ class BaseContainerHandler():
             return cls.from_feb(filepath, **kwargs)
         else:
             try:
-                if read_args is None:
-                    read_args = dict()
                 return cls.from_pyvista_read(filepath, **kwargs)
             except FileNotFoundError:
                 raise FileNotFoundError("Could not find file: {}. Check if file exists and is readable.".format(filepath))

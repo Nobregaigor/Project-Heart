@@ -125,7 +125,7 @@ class LV3DMetricsPlotter(LVGeometricsComputations):
             bins = spk_deque.binarize()
             plotter.add_points(spk_pts, scalars=bins, cmap=subsets_cmap, point_size=200)
         else:
-            klabels = spk_deque.binarize_k_clusters()
+            klabels = spk_deque.binarize_clusters()
             kl_ids = spk_deque.enumerate_ids()
             bins = np.zeros(len(klabels))
             bins[kl_ids] = klabels + 1

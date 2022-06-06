@@ -151,7 +151,7 @@ class SpeckeDeque(deque):
         return np.hstack(arr)
 
     def stack_c_local_ids(self) -> np.ndarray:
-        arr = np.asarray([spk.c_local_ids for spk in list(self)], dtype=object)
+        arr = np.asarray([spk.stack_c_local_ids() for spk in list(self)], dtype=object)
         return np.hstack(arr)
 
     def binarize_clusters(self) -> np.ndarray:
