@@ -28,8 +28,8 @@ class Speckle():
                  elmask:np.ndarray=None,
                  ids:np.ndarray=None,
                  normal:np.ndarray=None,
-                 k_ids:list=None,
-                 k_local_ids:list=None,
+                 c_ids:list=None,
+                 c_local_ids:list=None,
                  ):
         
         # check for valid keys
@@ -48,8 +48,8 @@ class Speckle():
         elmask = elmask if elmask is not None else np.asarray([])
         ids = ids if ids is not None else np.asarray([])
         normal = normal if normal is not None else np.asarray([])       
-        k_ids = k_ids if k_ids is not None else np.asarray([])       
-        k_local_ids = k_local_ids if k_local_ids is not None else np.asarray([])       
+        c_ids = c_ids if c_ids is not None else np.asarray([])       
+        c_local_ids = c_local_ids if c_local_ids is not None else np.asarray([])       
         
         # reference keys
         self.subset = subset
@@ -68,8 +68,8 @@ class Speckle():
         self.mask = mask     
         self.elmask = elmask
         self.ids = np.array(ids, dtype=np.int64)
-        self.k_ids = k_ids  # spk cluster ids (array of ids arrays -> (k,n))
-        self.k_local_ids = k_local_ids  # spk cluster ids local (array of ids arrays -> (k,n))
+        self.c_ids = c_ids  # spk cluster ids (array of ids arrays -> (k,n))
+        self.c_local_ids = c_local_ids  # spk cluster ids local (array of ids arrays -> (k,n))
         
         # conversion to string (just to facilitate parts of the code).
         self.str = "{}_{}_{}_{}".format(
@@ -89,11 +89,11 @@ class Speckle():
     def key(self):
         return hash((self.t, self.subset, self.name, self.group, self.collection))
 
-    def stack_k_local_ids(self) -> np.ndarray:
-        return np.hstack(self.k_local_ids)
+    def stack_c_local_ids(self) -> np.ndarray:
+        return np.hstack(self.c_local_ids)
     
     def binarize_local_ids(self) -> np.ndarray:
-        return np.hstack([np.zeros(len(ids), np.int64)+i for i, ids in enumerate(self.k_local_ids)])
+        return np.hstack([np.zeros(len(ids), np.int64)+i for i, ids in enumerate(self.c_local_ids)])
 
 class SpeckeDeque(deque):
     def __init__(self, *args, **kwargs):
@@ -144,14 +144,14 @@ class SpeckeDeque(deque):
     def binarize(self) -> np.ndarray:
         return np.hstack([np.zeros(len(spk.ids), np.int64)+i for i, spk in enumerate(list(self))])
 
-    def stack_k_local_ids(self) -> np.ndarray:
-        return np.hstack([spk.stack_k_local_ids() for spk in list(self)])
+    def stack_c_local_ids(self) -> np.ndarray:
+        return np.hstack([spk.stack_c_local_ids() for spk in list(self)])
 
-    def binarize_k_clusters(self) -> np.ndarray:
+    def binarize_clusters(self) -> np.ndarray:
         return np.hstack([spk.binarize_local_ids() for spk in list(self)])
     
     def enumerate_ids(self) -> np.ndarray:
-        ids = self.stack_k_local_ids()
+        ids = self.stack_c_local_ids()
         offset = 0
         for spk in list(self):
             new_offset = offset + len(spk.ids)

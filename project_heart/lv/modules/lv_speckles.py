@@ -235,11 +235,11 @@ class LV_Speckles(LV_RegionIdentifier):
         if n_subsets <= 1:
             logger.debug("Adding single subset.")
             
-            k_ids = None
+            c_ids = None
             non_empty_buckets_l = None
             if n_clusters > 0:
                 sub_pts = self.nodes()[valid_ids]
-                k_ids, non_empty_buckets_l = self._subdivide_speckles(sub_pts, n_clusters, 
+                c_ids, non_empty_buckets_l = self._subdivide_speckles(sub_pts, n_clusters, 
                                                         cluster_criteria, 
                                                         normal, valid_ids,
                                                         spk_la_center,
@@ -257,8 +257,8 @@ class LV_Speckles(LV_RegionIdentifier):
                 ids=valid_ids,
                 normal=normal,
                 la_center=spk_la_center,
-                k_ids=k_ids,
-                k_local_ids=non_empty_buckets_l
+                c_ids=c_ids,
+                c_local_ids=non_empty_buckets_l
             )
         else:
             logger.debug("pts: {}".format(len(pts)))
@@ -276,13 +276,13 @@ class LV_Speckles(LV_RegionIdentifier):
             for subname, sub_ids in zip(subsets_names, non_empty_buckets):
                 logger.debug("Subname: {}".format(subname))
 
-                k_ids = None
+                c_ids = None
                 non_empty_buckets_l = None
                 if n_clusters > 0:
                     logger.debug("len(pts): {}".format(len(pts)))
                     logger.debug("sub_ids[:5]: {}".format(np.array(sub_ids)[:5]))
                     sub_pts = self.nodes()[sub_ids]
-                    k_ids, non_empty_buckets_l= self._subdivide_speckles(sub_pts, 
+                    c_ids, non_empty_buckets_l= self._subdivide_speckles(sub_pts, 
                                                      n_clusters,
                                                      cluster_criteria, 
                                                      normal, sub_ids,
@@ -303,8 +303,8 @@ class LV_Speckles(LV_RegionIdentifier):
                     ids=sub_ids,
                     normal=normal,
                     la_center=spk_la_center,
-                    k_ids=k_ids,
-                    k_local_ids=non_empty_buckets_l
+                    c_ids=c_ids,
+                    c_local_ids=non_empty_buckets_l
                 )
 
         return self.speckles.get(
@@ -600,7 +600,7 @@ class LV_Speckles(LV_RegionIdentifier):
         if len(non_empty_buckets) != len(buckets) and not ignore_unmatch_number_of_clusters:
             logger.warn("Found empty buckels when performing "
                         "speckle subdivition, which might lead "
-                        "to unexpected number of subsets or k_ids. "
+                        "to unexpected number of subsets or c_ids. "
                         "You may want to tweak speckle parameters. "
                         "Expected: '{}', Found: '{}'"
                         .format(len(buckets), len(non_empty_buckets)))
@@ -680,7 +680,7 @@ class LV_Speckles(LV_RegionIdentifier):
         spk_deque = self._resolve_spk_args(spk_args)
         centers = deque() 
         for spk in spk_deque:
-            for kids in spk.k_ids:
+            for kids in spk.c_ids:
                 centers.append(np.mean(xyz[kids], axis=0))
         
         centers = np.asarray(centers)
@@ -712,3 +712,111 @@ class LV_Speckles(LV_RegionIdentifier):
                             "Received type: {}".format(type(spk_args))
                             )
         return spks
+    
+    
+    def plot_speckles(self, 
+                        spk_args, 
+                        t=0, 
+                        k_bins=False,
+                        add_centers=False,
+                        add_k_centers=False,
+                        add_la_centers=False,
+                        plot_kwargs=None, 
+                        centers_kwargs=None,
+                        la_centers_kwargs=None,
+                        k_centers_kwargs=None,
+                        k_centers_as_line=False,
+                        k_center_filters=None,
+                        window_size=None, 
+                        re=False,
+                        plotter=None,
+                        **kwargs):
+        
+        
+        # Set default values
+        if window_size is None:
+            window_size = (600,400)
+        if plot_kwargs is None:
+            plot_kwargs = dict()
+        if centers_kwargs is None:
+            centers_kwargs = dict()
+        if k_centers_kwargs is None:
+            k_centers_kwargs = dict()
+        if la_centers_kwargs is None:
+            la_centers_kwargs = dict()
+        if k_center_filters is None:
+            k_center_filters = dict()
+        
+        if plotter is None:
+            d_plotkwargs = dict(
+                    style='points', 
+                    color="gray", 
+                    opacity=0.7,
+                    window_size=window_size
+                )
+            d_plotkwargs.update(plot_kwargs)
+            plotter = self.plot("mesh", t=t, re=True, **d_plotkwargs)
+        
+        # get spk data
+        spk_deque = self._resolve_spk_args(spk_args) 
+        spk_pts = self.get_speckles_xyz(spk_deque, t=t) # spk locations
+        
+        # resolve default args based on specifications
+        d_kwargs = dict()
+        if not add_centers and not add_k_centers:
+            d_kwargs.update(
+                dict(
+                point_size=275,
+                cmap="tab20"
+                )
+            )
+        else:
+            d_kwargs.update(
+                dict(
+                point_size=200,
+                opacity=0.60,
+                cmap="tab20"
+                )
+            )
+        d_kwargs.update(kwargs)
+        # resolze spke color palette
+        if k_bins:
+            klabels = spk_deque.binarize_k_clusters()
+            kl_ids = spk_deque.enumerate_ids()
+            bins = np.zeros(len(klabels))
+            bins[kl_ids] = klabels + 1
+        else:
+            bins = spk_deque.binarize()
+        # add speckle plot        
+        plotter.add_points(spk_pts, scalars=bins, **d_kwargs)
+        
+        # add additional info
+        if add_centers:
+            centers = self.get_speckles_centers(spk_deque, t=t)
+            if not add_k_centers:
+                d_centers_args = dict(point_size=300,color="red")
+            else:
+                d_centers_args = dict(point_size=300,color="orange",opacity=0.90)
+            d_centers_args.update(centers_kwargs)
+            plotter.add_points(centers, **d_centers_args)
+        if add_k_centers:
+            k_centers = self.get_speckles_k_centers(spk_deque, t=t, **k_center_filters)
+            d_k_centers_args = dict(point_size=300,color="blue")
+            d_k_centers_args.update(k_centers_kwargs)
+            plotter.add_points(k_centers, **d_k_centers_args)
+            if k_centers_as_line:
+                d_k_centers_args = dict(color="magenta", width=10)
+                d_k_centers_args.update(k_centers_kwargs)
+                plotter.add_lines(k_centers, **d_k_centers_args)
+        if add_la_centers:
+            la_centers = self.get_speckles_la_centers(spk_deque, t=t)
+            d_la_k_centers_args = dict(point_size=300,color="green")
+            d_la_k_centers_args.update(la_centers_kwargs)
+            plotter.add_points(la_centers, **d_la_k_centers_args)
+        
+        # resolve plotter return
+        if re:
+            return plotter
+        else:
+            plotter.show(window_size=window_size)
+        
