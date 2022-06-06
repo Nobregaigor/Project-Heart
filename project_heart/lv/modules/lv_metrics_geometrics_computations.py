@@ -377,7 +377,7 @@ class LVGeometricsComputations(LV_Speckles):
             spk_res = np.array([radius(coords, center=center) for coords, center in zip(xyz, centers)], 
                             dtype=dtype)
         elif approach == "fixed_centers":
-            spk_res = np.array([radius(coords, center=spk.center) for coords in xyz], 
+            spk_res = np.array([radius(coords, center=spk.la_center) for coords in xyz], 
                             dtype=dtype)
         else:
             raise ValueError("Unknown approach. Avaiable approaches are: "
@@ -441,8 +441,8 @@ class LVGeometricsComputations(LV_Speckles):
         
         # safety assertions
         if dist_tol_between_spks_la_center >= 0:
-            endo_center = endo_spk.center
-            epi_center = epi_spk.center
+            endo_center = endo_spk.la_center
+            epi_center = epi_spk.la_center
             dist = np.linalg.norm(endo_center - epi_center)
             assert dist <= dist_tol_between_spks_la_center, (""
                     "Distance between endo and epi speckles is greater than allowed tolerance. "
@@ -1014,7 +1014,7 @@ class LVGeometricsComputations(LV_Speckles):
                     .format(apex_spk.str, base_spk.str))
 
         twist = self.states.get_spk_data(apex_spk, self.STATES.TWIST)
-        D = np.linalg.norm(apex_spk.center - base_spk.center)
+        D = np.linalg.norm(apex_spk.la_center - base_spk.la_center)
         torsion = twist / D  # units = angle/mm
         if relative:  # relative will multiply by the mean radius of base and apex -> units: angle
             c = 0.5 * (r_apex + r_base)

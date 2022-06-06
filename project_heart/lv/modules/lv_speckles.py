@@ -163,7 +163,7 @@ class LV_Speckles(LV_RegionIdentifier):
                 "For safety, extrapolation is not allowed for k values larger than 10%. "
                 "k range is [-0.2, 1.2]. k received: {}".format(k))
         p = get_p_along_line(k, long_line, extrapolate=extrapolate_k)
-        spk_center = p
+        spk_la_center = p
         logger.debug("ref p (spk center): {}".format(p))
         
         
@@ -242,7 +242,7 @@ class LV_Speckles(LV_RegionIdentifier):
                 k_ids, non_empty_buckets_l = self._subdivide_speckles(sub_pts, n_clusters, 
                                                         cluster_criteria, 
                                                         normal, valid_ids,
-                                                        spk_center,
+                                                        spk_la_center,
                                                         True, #check for orientation
                                                         log_level,
                                                         ignore_unmatch_number_of_clusters)
@@ -256,7 +256,7 @@ class LV_Speckles(LV_RegionIdentifier):
                 elmask=None,
                 ids=valid_ids,
                 normal=normal,
-                center=spk_center,
+                la_center=spk_la_center,
                 k_ids=k_ids,
                 k_local_ids=non_empty_buckets_l
             )
@@ -269,7 +269,7 @@ class LV_Speckles(LV_RegionIdentifier):
             non_empty_buckets, _ = self._subdivide_speckles(pts, n_subsets, 
                                                          subsets_criteria, 
                                                          normal, valid_ids,
-                                                         spk_center,
+                                                         spk_la_center,
                                                          False, # dont check for orientation
                                                          log_level)
                         
@@ -286,7 +286,7 @@ class LV_Speckles(LV_RegionIdentifier):
                                                      n_clusters,
                                                      cluster_criteria, 
                                                      normal, sub_ids,
-                                                     spk_center,
+                                                     spk_la_center,
                                                      False, # dont check for orientation
                                                      log_level,
                                                      ignore_unmatch_number_of_clusters,
@@ -302,7 +302,7 @@ class LV_Speckles(LV_RegionIdentifier):
                     elmask=None,
                     ids=sub_ids,
                     normal=normal,
-                    center=spk_center,
+                    la_center=spk_la_center,
                     k_ids=k_ids,
                     k_local_ids=non_empty_buckets_l
                 )
@@ -665,7 +665,7 @@ class LV_Speckles(LV_RegionIdentifier):
         centers = deque()
         for spk in spk_deque:
             if not self.states.check_spk_key(spk, self.STATES.CENTERS):
-                self.compute_spk_centers_over_timesteps(spk)
+                self.compute_spk_la_centers_over_timesteps(spk)
             c = self.states.get_spk_data(spk, self.STATES.CENTERS, t=t)
             centers.append(c)
         return np.vstack(centers)
