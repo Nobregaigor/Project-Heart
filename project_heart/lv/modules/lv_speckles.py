@@ -43,8 +43,12 @@ class LV_Speckles(LV_RegionIdentifier):
         
         if len(enums) > 0:
             self.config_enums(enums, check_keys=default_lvSpeckles_enums.keys())
-        
-        
+            
+    def _capture_spk_creation_args(self, kwargs):
+        if "self" in kwargs:
+            kwargs.pop('self', None)
+        return {k: self.check_enum(v) for k,v in kwargs.items()}
+    
     def create_speckles(self,
                         name:str=None,
                         group:str=None,
@@ -73,6 +77,7 @@ class LV_Speckles(LV_RegionIdentifier):
         """
             Creates Speckles
         """
+        self.speckles._args.append(self._capture_spk_creation_args(locals()))
 
         # set logger
         logger = logging.getLogger('create_speckles')
@@ -685,7 +690,6 @@ class LV_Speckles(LV_RegionIdentifier):
 
     def check_spk(self, spk):
         return isinstance(spk, Speckle)
-
     
     def _resolve_spk_args(self, spk_args):
         from collections.abc import Iterable

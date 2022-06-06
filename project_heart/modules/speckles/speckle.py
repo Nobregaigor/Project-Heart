@@ -167,6 +167,8 @@ class SpecklesDict():
         self._groups = set((DEFAULT_GROUP_KEY,))
         self._names = set((DEFAULT_NAME_KEY,))
         self._subsets = set((DEFAULT_SUBSET_KEY,))
+        
+        self._args = deque()
 
     def __repr__(self):
         to_print = ""
@@ -333,3 +335,8 @@ class SpecklesDict():
             else:
                 raise ValueError("Invalid data type loaded for speckles.")
         self.n_groups = len(self._speckles)
+
+    def to_json(self, filepath):
+        import json
+        with open(filepath, "w") as jfile:
+            json.dump(list(self._args), jfile)
