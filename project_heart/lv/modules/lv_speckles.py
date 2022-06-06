@@ -59,6 +59,7 @@ class LV_Speckles(LV_RegionIdentifier):
                         kmin=None,
                         kmax=None,
                         extrapolate_k=False,
+                        use_local_k_ref=False,
                         n_subsets=0, 
                         subsets_criteria=None,
                         subsets_names=None,
@@ -128,8 +129,26 @@ class LV_Speckles(LV_RegionIdentifier):
                 raise RuntimeError("No aviable nodes found after excluding nodeset(s) '{}'."
                                    .format(exclude_nodeset))
         # ------  get longitudinal line -----------------------------------
-        long_line = self.get_long_line()
-        logger.debug("long_line: {}".format(long_line))
+        if not use_local_k_ref:
+            long_line = self.get_long_line()
+            logger.debug("long_line: \n{}".format(long_line))
+        else:
+            logger.warn("Using local k reference (not LV long_line). "
+                        "Only use speckles created with this approach for region-independent computations.")
+            from project_heart.utils.cloud_ops import relate_closest
+
+            _, rel_d = relate_closest(nodes, [self.get_virtual_node(self.VIRTUAL_NODES.BASE)])
+            idx_kmin = np.argmax(rel_d)
+            _, rel_d = relate_closest(nodes, [self.get_virtual_node(self.VIRTUAL_NODES.APEX)])
+            idx_kmax = np.argmax(rel_d)
+            _kmin = nodes[idx_kmin]
+            _kmax = nodes[idx_kmax]
+            long_line = np.asarray([_kmin, _kmax], np.float64)
+            if kmin is not None:
+                kmin = _kmin
+            if kmax is not None:
+                kmax = _kmax
+            logger.debug("long_line: \n{}".format(long_line))
 
         # ------- Compute speckle LA center --------------------------------
         # LA center defines speckle position along longitudinal axis.

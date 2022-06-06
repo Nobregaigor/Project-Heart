@@ -804,7 +804,7 @@ class LV_RegionIdentifier(LV_Base):
     def identify_regions_ideal(self, 
         base_vn_nodeset=None, # default = "base_endo"
         apex_vn_nodeset=None, # default = "endo"
-        d_apex=5,
+        d_apex=2.5,
         apex_base_args=None, 
         endo_epi_args=None, 
         base_args=None,
