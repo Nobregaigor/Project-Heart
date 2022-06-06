@@ -9,12 +9,9 @@ from project_heart.utils.extended_classes import ExtendedDict
 
 import logging
 
-logger = logging.getLogger('LV.BaseMetricsComputations')
+logger = logging.getLogger('LV3DMetricsPlotter')
 
 from collections import deque
-
-
-
 
 
 class LV3DMetricsPlotter(LVGeometricsComputations):
@@ -91,18 +88,27 @@ class LV3DMetricsPlotter(LVGeometricsComputations):
     # metrics
     
     def _resolve_exm(self, key):
-        all_exm = self.explainable_metrics.all(key).all("base")
+        all_exm = self.explainable_metrics.all(key)
         if len(all_exm) == 0:
             raise RuntimeError("No explainable metric for longitudinal distance was found. "
                                "Did you compute it or loaded from a file? "
                                "Only metrics compute with this package can be used for 3D plot.")
         return all_exm
     
-    def plot_longitudinal_distance(self, t=0.0, colors=None, window_size=None, plot_kwargs=None):
+    def plot_longitudinal_distance(self, t=0.0, colors=None, 
+                                   window_size=None, plot_kwargs=None, log_level=logging.INFO):
         from project_heart.utils import lines_from_points
+        log = logger.getChild("plot_longitudinal_distance")
+        log.setLevel(log_level)
         
         key = self.STATES.LONGITUDINAL_DISTANCE
         all_exm = self._resolve_exm(key)
+        
+        use_exm = all_exm.all("base")
+        if len(use_exm) == 0:
+            log.warn("No 'base' explainable metric was found. Will use all values found, "
+                     "but lines might be duplicated during plot.")
+            use_exm = all_exm
         
         # resolve plotter and window size
         window_size = self._reolve_window_size(window_size)
@@ -113,7 +119,7 @@ class LV3DMetricsPlotter(LVGeometricsComputations):
         idx = self.states.get_timestep_index(t)
         apex_ts = deque()
         base_ts = deque()
-        for i, exm in enumerate(all_exm.values()):
+        for i, exm in enumerate(use_exm.values()):
             # get apex and base at given timestep
             apex = exm.apex[idx]
             base = exm.base[idx]
