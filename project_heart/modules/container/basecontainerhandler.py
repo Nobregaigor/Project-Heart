@@ -111,12 +111,12 @@ class BaseContainerHandler():
 
     @classmethod
     def from_pyvista_dataset(cls, dataset):
-        return cls(mesh=dataset)
+        return cls(mesh=dataset, **kwargs)
 
     @classmethod
     def from_pyvista_read(cls, filename, identifier=None, threshold=None, 
                             log_level=logging.INFO, **kwargs):
-        geo = cls(mesh=pv.read(filename, **kwargs), log_level=log_level)
+        geo = cls(mesh=pv.read(filename), log_level=log_level, **kwargs)
         if identifier is not None:
             geo.filter_mesh_by_scalar(identifier, threshold)
         # save reference file info
@@ -126,7 +126,7 @@ class BaseContainerHandler():
 
     @classmethod
     def from_pyvista_wrap(cls, arr, **kwargs):
-        return cls(mesh=pv.wrap(arr, **kwargs))
+        return cls(mesh=pv.wrap(arr), **kwargs)
 
     @staticmethod
     def set_pv_UnstructuredGrid_from_nodes_and_elements(
@@ -185,7 +185,7 @@ class BaseContainerHandler():
             e_dtype=e_dtype,
         )
         # create mesh
-        return cls(mesh=mesh)
+        return cls(mesh=mesh, **kwargs)
 
     @classmethod
     def from_xplt(cls, xplt, **kwargs):
@@ -249,7 +249,7 @@ class BaseContainerHandler():
 
         surfaces = feb.get_surfaces()
         # create object
-        obj = cls.from_nodes_elements(nodes=nodes, elements=elems)
+        obj = cls.from_nodes_elements(nodes=nodes, elements=elems, **kwargs)
 
         # add nodesets
         try:
@@ -269,7 +269,7 @@ class BaseContainerHandler():
         return obj
 
     @classmethod
-    def from_file(cls, filepath, log_level=logging.INFO, **kwargs):
+    def from_file(cls, filepath, log_level=logging.INFO,**kwargs):
         if isinstance(filepath, Path):
             filepath = str(filepath)
         ext = os.path.splitext(filepath)[-1]
@@ -279,6 +279,8 @@ class BaseContainerHandler():
             return cls.from_feb(filepath, **kwargs)
         else:
             try:
+                if read_args is None:
+                    read_args = dict()
                 return cls.from_pyvista_read(filepath, **kwargs)
             except FileNotFoundError:
                 raise FileNotFoundError("Could not find file: {}. Check if file exists and is readable.".format(filepath))
@@ -661,8 +663,8 @@ class BaseContainerHandler():
         assert len(nodesets) == 2, ("Up to now, we only accept two nodesets. "
                                     "Future implementation will support multiple nodesets")
         assert len(nodesets) == len(thresh_vals), "There must be one threshold value for each nodeset."
-        assert np.all(np.asarray(thresh_vals) >= 0), ("Threshold values must be positive as they represent distance "
-                                        "between nodesets.")
+        # assert np.all(np.asarray(thresh_vals) >= 0), ("Threshold values must be positive as they represent distance "
+        #                                 "between nodesets.")
         
         # get threshold values
         thresh_a = thresh_vals[0]
@@ -677,17 +679,23 @@ class BaseContainerHandler():
         b = self.nodes(mask=mb)
 
         # relate closests points from a to b
-        c, d = relate_closest(a, b)
-        md = d <= thresh_a
-        ioi_a = np.union1d(ma[md], mb[c[:, 1][md]])
+        ioi_a = []
+        if thresh_a is not None:
+            assert thresh_a >= 0, "Threshold values must be positive as they represent distance between nodesets."
+            c, d = relate_closest(a, b)
+            md = d <= thresh_a
+            ioi_a = np.union1d(ma[md], mb[c[:, 1][md]])
 
         # relate closests points from b to a
-        c, d = relate_closest(b, a)
-        md = d <= thresh_b
-        ioi_b = np.union1d(mb[md], ma[c[:, 1][md]])
+        ioi_b = []
+        if thresh_b is not None:
+            assert thresh_b >= 0, "Threshold values must be positive as they represent distance between nodesets."
+            c, d = relate_closest(b, a)
+            md = d <= thresh_b
+            ioi_b = np.union1d(mb[md], ma[c[:, 1][md]])
 
         # final match
-        ioi = np.union1d(ioi_a, ioi_b)
+        ioi = np.union1d(ioi_a, ioi_b).astype(np.int64)
 
         if len(ioi) == 0:
             raise RuntimeError("No close boundary found. Try adjusting threshold values.")
@@ -1401,7 +1409,7 @@ class BaseContainerHandler():
         if window_size is None:
             window_size = (600,400)
         # set plotter
-        plotter = pv.Plotter(lighting='three lights', notebook=notebook)
+        plotter = pv.Plotter(notebook=notebook)
         plotter.background_color = background_color
 
         # set mesh render arguments:

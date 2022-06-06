@@ -33,7 +33,7 @@ class LV_Speckles(LV_RegionIdentifier):
     """
 
     def __init__(self, enums={}, *args, **kwargs):
-        super(LV_RegionIdentifier, self).__init__(*args, **kwargs)
+        super(LV_Speckles, self).__init__(*args, **kwargs)
         self.speckles = SpecklesDict()
         self.states = SpeckleStates()
 

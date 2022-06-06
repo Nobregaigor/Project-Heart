@@ -19,11 +19,10 @@ import logging
 logger = logging.getLogger('LV_RegionIdentifier')
 
 class LV_RegionIdentifier(LV_Base):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, geo_type=None, *args, **kwargs):
         super(LV_RegionIdentifier, self).__init__(*args, **kwargs)
-        self.geo_type = None
-        
-        
+        self.geo_type = geo_type
+                
         self.apex_and_base_from_nodeset = None
         self._apex_from_nodeset = None
         self._base_from_nodeset = None
@@ -249,7 +248,6 @@ class LV_RegionIdentifier(LV_Base):
         # filter by angle w.r.t. orientation axis
         ioi = ioi[np.where(base_angles <= np.radians(ba))[0]]
         log.debug("Number of ioi found: {}".format(len(ioi)))
-        
         # filter by endo (don't overlap endo values)
         log.debug("Filtering selection based on surface endo region (no overlap).")
         ioi = ioi[np.where(endo_epi[ioi] != LV_SURFS.ENDO)]
@@ -258,7 +256,21 @@ class LV_RegionIdentifier(LV_Base):
         endo_epi_base = np.copy(endo_epi)
         endo_epi_base[ioi] = LV_SURFS.BASE
         self.set_region_from_surface_ids(LV_MESH_DATA.SURFS, endo_epi_base)
-
+        log.debug("Adding edge information to detailed surface")
+        from project_heart.utils.cloud_ops import relate_closest
+        rel_map, d = relate_closest(pts, edge_pts)
+        edge_ioi = rel_map[:, 0][np.where(d==0)[0]]
+        log.debug("Number of edge ids found: {} (expected: {})".format(len(edge_ioi), len(edge_pts)))
+        rel_map, d = relate_closest(edge_pts, pts[endo_epi == LV_SURFS.ENDO])
+        endo_edge = edge_ioi[rel_map[:, 0][np.where(d<=np.mean(d))[0]]]
+        epi_edge = edge_ioi[rel_map[:, 0][np.where(d>np.mean(d))[0]]]
+        log.debug("Number of edge ids found at ENDO: {}".format(len(endo_edge)))
+        log.debug("Number of edge ids found at EPI: {}".format(len(epi_edge)))
+        endo_epi_base_detailed = np.copy(endo_epi_base)
+        endo_epi_base_detailed[endo_edge] = self.REGIONS.BASE_BORDER_ENDO
+        endo_epi_base_detailed[epi_edge] = self.REGIONS.BASE_BORDER_EPI
+        self.set_region_from_surface_ids(LV_MESH_DATA.SURFS_DETAILED, endo_epi_base_detailed)
+        
         return (self.get(self.CONTAINERS.SURF_POINT_DATA, LV_MESH_DATA.SURFS),
                 self.get(self.CONTAINERS.MESH_POINT_DATA, LV_MESH_DATA.SURFS))
 
@@ -790,9 +802,6 @@ class LV_RegionIdentifier(LV_Base):
     # COMPILED METHODS
 
     def identify_regions_ideal(self, 
-        border_thresh_base=1, 
-        border_thresh_endo=1, 
-        border_thresh_epi=1,
         base_vn_nodeset=None, # default = "base_endo"
         apex_vn_nodeset=None, # default = "endo"
         d_apex=5,
@@ -828,12 +837,6 @@ class LV_RegionIdentifier(LV_Base):
             mesh_data=LV_MESH_DATA.EPI_ENDO, overwrite=False)
         self.create_nodesets_from_regions(
             mesh_data=LV_MESH_DATA.SURFS, overwrite=True)
-        
-        # Compute endo-epi base borders (adds base_endo and base_epi)
-        self.identify_endo_epi_base_borders_from_nodesets(thresh_base=border_thresh_base, 
-                                                          thresh_endo=border_thresh_endo, 
-                                                          thresh_epi=border_thresh_epi,
-                                                          log_level=log_level)
         self.create_nodesets_from_regions(
             mesh_data=LV_MESH_DATA.SURFS_DETAILED, overwrite=False)
 
@@ -935,6 +938,8 @@ class LV_RegionIdentifier(LV_Base):
         self.compute_long_line()
         self.compute_normal()
 
+    def identify_regions_typeB(self):
+        raise NotImplementedError("Working on it.")
 
     def identify_regions(self,
                          geo_type=None,
@@ -962,8 +967,7 @@ class LV_RegionIdentifier(LV_Base):
         if geo_type == LV_GEO_TYPES.IDEAL:
             self.identify_regions_ideal(**kwargs)
         elif geo_type == LV_GEO_TYPES.TYPE_A:
-            raise NotImplementedError("Working on it.")
-
+            self.identify_regions_typeA(**kwargs)
         elif geo_type == LV_GEO_TYPES.TYPE_B:
             raise NotImplementedError("Working on fix.")
             # self._identify_typeB_regions(
