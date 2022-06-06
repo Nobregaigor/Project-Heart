@@ -191,8 +191,7 @@ class LVGeometricsComputations(LV_Speckles):
                                                         approach="centroid",
                                                         use_axis_aligment=False,
                                                         log_level=logging.INFO, 
-                                               apex_center_kwargs=None,base_center_kwargs=None, 
-                                               dtype=np.float64, **kwargs):
+                                                        dtype=np.float64, **kwargs):
         key = self.STATES.LONGITUDINAL_DISTANCE
         logger.info("Computing '{}' with approach '{}' with axis aligment set to '{}'."
                     .format(key, approach, use_axis_aligment))        
@@ -200,14 +199,10 @@ class LVGeometricsComputations(LV_Speckles):
             # check if speckle centers were computed. If not, compute them.
             # -- check for apex LA centers
             if not self.states.check_spk_key(apex_spk, self.STATES.CENTERS):
-                if apex_center_kwargs is None:
-                    apex_center_kwargs = dict()
-                self.compute_spk_la_centers_over_timesteps(apex_spk, log_level=log_level, **apex_center_kwargs)
+                self.compute_spk_la_centers_over_timesteps(apex_spk, log_level=log_level)
             # -- check for base LA centers
             if not self.states.check_spk_key(base_spk, self.STATES.CENTERS):
-                if base_center_kwargs is None:
-                    base_center_kwargs = dict()
-                self.compute_spk_la_centers_over_timesteps(base_spk, log_level=log_level, **base_center_kwargs)
+                self.compute_spk_la_centers_over_timesteps(base_spk, log_level=log_level)
             # get centers data
             apex_centers = self.states.get_spk_data(apex_spk, self.STATES.CENTERS)
             base_centers = self.states.get_spk_data(base_spk, self.STATES.CENTERS)

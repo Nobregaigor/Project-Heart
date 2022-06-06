@@ -149,8 +149,7 @@ class LV3DMetricsPlotter(LVGeometricsComputations):
             return plotter
         else:
             plotter.show(window_size=window_size)
-    
-    
+        
     # metrics
     
     def _resolve_exm(self, key):
