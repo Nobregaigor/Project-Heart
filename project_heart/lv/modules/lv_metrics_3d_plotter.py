@@ -84,6 +84,73 @@ class LV3DMetricsPlotter(LVGeometricsComputations):
         else:
             plotter.show(window_size=window_size)
     
+    # speckle plotter
+    
+    def plot_speckles(self, 
+                        spk_args, 
+                        t=0, 
+                        show_subset_centers=False,
+                        show_la_centers=False,
+                        show_clusters=False,
+                        show_clusters_centers=False,
+                        c_centers_kwargs=None,
+                        show_longitudinal_line=False,
+                        fix_longitudinal_line=False,
+                        subsets_cmap="tab20",
+                        clusters_cmap="hot",
+                        window_size=None, 
+                        plotter=None,
+                        plot_kwargs=None, 
+                        re=False,
+                        **kwargs):
+        
+        
+        # resolve plotter and window size
+        window_size = self._reolve_window_size(window_size)
+        plotter = self._resolve_plotter(plotter, plot_kwargs, t=t)
+        if show_longitudinal_line:
+            if fix_longitudinal_line:
+                tla = 0.0
+            else:
+                tla = t
+            plotter = self.plot_longitudinal_line(t=tla, plotter=plotter, window_size=window_size, re=True)
+        
+        # resolve speckles
+        spk_deque = self._resolve_spk_args(spk_args) 
+        
+        # get spk data
+        spk_pts = self.get_speckles_xyz(spk_deque, t=t) # spk locations
+        
+        # plot speckles
+        if not show_clusters: #plot speckle points with subsets
+            bins = spk_deque.binarize()
+            plotter.add_points(spk_pts, scalars=bins, cmap=subsets_cmap, point_size=200)
+        else:
+            klabels = spk_deque.binarize_k_clusters()
+            kl_ids = spk_deque.enumerate_ids()
+            bins = np.zeros(len(klabels))
+            bins[kl_ids] = klabels + 1
+            plotter.add_points(spk_pts, scalars=bins, cmap=clusters_cmap, point_size=250)
+        
+        # plot additional info
+        if show_subset_centers:
+            centers = self.get_speckles_centers(spk_deque, t=t)
+            plotter.add_points(centers, color="orange", point_size=275)
+        if show_clusters_centers:
+            if c_centers_kwargs is None:
+                c_centers_kwargs = dict()
+            centers = self.get_speckles_c_centers(spk_deque, t=t, **c_centers_kwargs)
+            plotter.add_points(centers, color="red", point_size=275)
+        if show_la_centers:
+            centers = self.get_speckles_la_centers(spk_deque, t=t)
+            plotter.add_points(centers, color="purple", point_size=300)
+                    
+        # resolve plotter return
+        if re:
+            return plotter
+        else:
+            plotter.show(window_size=window_size)
+    
     
     # metrics
     

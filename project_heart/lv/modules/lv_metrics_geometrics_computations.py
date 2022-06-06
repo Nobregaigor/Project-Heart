@@ -122,8 +122,7 @@ class LVGeometricsComputations(LV_Speckles):
         
         apex_spk = apex_spk[0]
         base_spk = base_spk[0]
-        
-        
+                
         assert self.check_spk(
             apex_spk), "apex_spk must be a valid 'Speckle' object."
         assert self.check_spk(
@@ -150,7 +149,7 @@ class LVGeometricsComputations(LV_Speckles):
           
     # ---- Speckle centers at longitudinal axis
 
-    def compute_spk_la_centers_over_timesteps(self, spk, apex_base_kwargs=None, log_level=logging.INFO, **kwargs):
+    def compute_spk_la_centers_over_timesteps(self, spk, log_level=logging.INFO, **kwargs):
         from project_heart.utils.spatial_utils import project_pt_on_line
         # check for speckle input
         assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
@@ -166,13 +165,25 @@ class LVGeometricsComputations(LV_Speckles):
         # from project_heart.utils.spatial_utils import get_p_along_line
         apex_ts = self.states.get(self.STATES.APEX_REF)
         base_ts = self.states.get(self.STATES.BASE_REF)
-        spk_center = np.mean(self.get_speckles_xyz(spk), 1)
-        spk_res = project_pt_on_line(spk_center, apex_ts, base_ts)
+        # spk_center = np.mean(self.get_speckles_xyz(spk), 1)
+        xyz_ts = self.states.get(self.STATES.XYZ, mask=spk.ids)
+        spk_center = np.asarray([centroid(xyz) for xyz in xyz_ts], dtype=np.float64)
+        spk_res = np.zeros((len(xyz_ts),3), dtype=np.float64)
+        for i, (sc, at, bt) in enumerate(zip(spk_center, apex_ts, base_ts)):
+            spk_res[i] = project_pt_on_line(sc, at, bt)
         logger.debug("\n-apex:'{}\n-base:'{}'\n-centers:'{}'".
-                     format(apex_ts, base_ts, spk_res))
+                     format(np.vstack(apex_ts), np.vstack(base_ts), spk_res))
         self.states.add_spk_data(spk, self.STATES.LA_CENTERS, spk_res)  # save to states
         return self.states.get_spk_data(spk, self.STATES.LA_CENTERS) # return pointer
+    
+    def compute_la_centers_over_timesteps(self, spks, log_level=logging.INFO, **kwargs):
+        log = logger.getChild("compute_la_centers_over_timesteps")
+        log.setLevel(log_level)
+        log.debug("Computing spekles la centers over timesteps.")
+        spks = self._resolve_spk_args(spks)
+        res = [self.compute_spk_la_centers_over_timesteps(spk, log_level=log_level, **kwargs) for spk in spks]
         
+    
     # -------------------------------
     # ---- Longitudinal distance ----
 

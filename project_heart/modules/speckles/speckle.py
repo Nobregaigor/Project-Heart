@@ -90,6 +90,8 @@ class Speckle():
         return hash((self.t, self.subset, self.name, self.group, self.collection))
 
     def stack_c_local_ids(self) -> np.ndarray:
+        if len(self.c_local_ids) == 0:
+            raise RuntimeError("No clusters were computed for spk: {}".format(self.str))
         return np.hstack(self.c_local_ids)
     
     def binarize_local_ids(self) -> np.ndarray:
@@ -144,8 +146,13 @@ class SpeckeDeque(deque):
     def binarize(self) -> np.ndarray:
         return np.hstack([np.zeros(len(spk.ids), np.int64)+i for i, spk in enumerate(list(self))])
 
+    def stack_c_ids(self) -> np.ndarray:
+        arr = np.asarray([spk.c_ids for spk in list(self)], dtype=object)
+        return np.hstack(arr)
+
     def stack_c_local_ids(self) -> np.ndarray:
-        return np.hstack([spk.stack_c_local_ids() for spk in list(self)])
+        arr = np.asarray([spk.c_local_ids for spk in list(self)], dtype=object)
+        return np.hstack(arr)
 
     def binarize_clusters(self) -> np.ndarray:
         return np.hstack([spk.binarize_local_ids() for spk in list(self)])
