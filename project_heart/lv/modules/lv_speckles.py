@@ -95,8 +95,9 @@ class LV_Speckles(LV_RegionIdentifier):
         
         # Assume default values
         cluster_criteria = subsets_criteria if cluster_criteria is None else cluster_criteria
-        assert cluster_criteria is None, ("If speckle cluster is requested, "
-                "must provide subset criteria. No default value was found.")
+        if n_clusters > 0:
+            assert cluster_criteria is not None, ("If speckle cluster is requested, "
+                    "must provide subset criteria. No default value was found.")
         
         # ------ Resolve nodes to use as reference ---------------------
         # determine nodes to use (entire mesh or specified nodeset)

@@ -15,11 +15,13 @@ from functools import reduce
 from pathlib import Path
 import os
 
+import logging
+logger = logging.getLogger('LV_RegionIdentifier')
 
 class LV_RegionIdentifier(LV_Base):
-    def __init__(self, geo_type=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(LV_RegionIdentifier, self).__init__(*args, **kwargs)
-        self.geo_type = geo_type
+        self.geo_type = None
         
         
         self.apex_and_base_from_nodeset = None
@@ -29,22 +31,62 @@ class LV_RegionIdentifier(LV_Base):
     # =========================================================================
     # POINT DATA REGION IDENTIFICATION
 
+    # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+    # REGION METHODS
+
     # ----------------------------------------------------------------
     # Common to all types of geometries
 
-    def identify_base_and_apex_regions(self, ab_n=10, ab_ql=0.03, ab_qh=0.75, **kwargs):
+    def identify_est_base_and_apex_regions(self, n=5, ql=None, qh=None, 
+            log_level=logging.INFO, **kwargs) -> tuple:
+        """Identifies the estimated basal and apical regions. 
+        The algorithm starts by computing 2 kmeans cluster with the entire 
+        geometry and uses both centers as an estimation for LV orientation 
+        (longitudinal axis). It then starts to iteractively and virtually 
+        rotate geometry until longitudinal axis is closely aligned with 
+        Z axis. During iteractive process, apex and base are computed 
+        using ql and qh (percentage low and percentage high based on  
+        lowest and highest node along Z axis).  
+  
+        Note: this is an estimated value. It will not compute the exact
+        base and apex regions; see region identifier function for proper 
+        geometry. This methods is a starting point for other methods and 
+        assumes that no information about LV mesh is avaiable. 
+
+        Saved as 'LV_MESH_DATA.APEX_BASE_EST' at surface and mesh containers.
+
+        Args:
+            n (int, optional): Number of iterations to perform during 
+                iteractive process. Defaults to 5.
+            ql (_type_, optional): Percentage low from lowest point along Z axis.  
+                Defaults to None. 
+            qh (_type_, optional): Percentage high from highest point along Z axis. 
+                Defaults to None.
+            log_level (_type_, optional): Logger logging level. Defaults to logging.INFO.
+
+        Returns:
+            tuple: (surface region, mesh region)
         """
-        """
+        log = logger.getChild("identify_base_and_apex_regions")
+        log.setLevel(log_level)
+        log.debug("Starting identification of base and apex regions.")
+
         # extract surface mesh (use extract)
         lvsurf = self.get_surface_mesh()
         pts = lvsurf.points
 
         # split the surface into two main clusters
         # this will result in top and bottom halves
+        log.debug("Perfoming kmeans to find LV halves")
         kmeans = KMeans(n_clusters=2, random_state=0).fit(pts)
         kcenters = kmeans.cluster_centers_
         kcenters = kcenters[np.argsort(kcenters[:, -1])]
+        log.debug("kcenters: {}".format(kcenters))
 
+        # estimate initial rotation based on kcenters
+        # this will provide a general estimation of LV orientation and 
+        # initiate the approximation of apex/base based on normal orientation
+        # along z-axis.
         rot_chain = deque()
         # set vectors for rotation
         edge_long_vec = kcenters[1] - kcenters[0]
@@ -52,51 +94,60 @@ class LV_RegionIdentifier(LV_Base):
         rot = get_rotation(edge_long_vec, self._Z)
         rot_chain.append(rot)
         initial_rot = rot.apply(pts)
-        aligment_data = self.est_pts_aligment_with_lv_normal(initial_rot,
-                                                             rot_chain=rot_chain,
-                                                             n=ab_n, ql=ab_ql, qh=ab_qh)
+        # estimate apex and base based on iteractive aligment
+        log.debug("Estimating apex and base iteractively.")
+        aligment_data = self.est_apex_and_base_refs_iteratively(pts, 
+                            n=n, ql=ql, qh=qh, rot_chain=rot_chain)
+        apex_est = aligment_data["apex"]
+        base_est = aligment_data["base"]
+        log.debug("apex: {}".format(apex_est))
+        log.debug("base: {}".format(base_est))
 
-        # set surface region ids (for surface mesh)
+        # retrieve estimation info
+        est_apex_region = aligment_data["apex_region"]
+        est_base_region = aligment_data["base_region"]
+        log.debug("len(est_apex_region): {}".format(len(est_apex_region)))
+        log.debug("len(est_base_region): {}".format(len(est_base_region)))
         surf_regions = np.zeros(len(pts))
-        surf_regions[aligment_data["apex_region"]] = LV_SURFS.APEX_REGION
-        surf_regions[aligment_data["base_region"]] = LV_SURFS.BASE_REGION
-        self.set_surface_point_data(
-            LV_MESH_DATA.APEX_BASE_REGIONS, surf_regions.astype(np.int64))
+        surf_regions[est_apex_region] = self.REGIONS.APEX_EST.value
+        surf_regions[est_base_region] = self.REGIONS.BASE_EST.value
+        self.set_region_from_surface_ids(LV_MESH_DATA.APEX_BASE_EST, surf_regions)
 
-        # set global region ids (for entire mesh)
-        id_map = self.get_surface_id_map_from_mesh()
-        apex_base_mesh = np.zeros(self.mesh.n_points)
-        apex_base_mesh[id_map] = surf_regions
-        self.set_mesh_point_data(
-            LV_MESH_DATA.APEX_BASE_REGIONS, apex_base_mesh.astype(np.int64))
+        # add apex and base virtual nodes
+        self.add_virtual_node(LV_VIRTUAL_NODES.APEX, apex_est, True)
+        self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base_est, True)
+        # for consistency, we will call functions to compute 
+        # longitudinal line and normal.
+        self.compute_long_line(apex=apex_est, base=base_est)
+        self.compute_normal(apex=apex_est, base=base_est)
 
-        # save virtual nodes
-        apex_pt = np.mean(pts[aligment_data["apex_region"]], axis=0)
-        base_pt = np.mean(pts[aligment_data["base_region"]], axis=0)
-        self.add_virtual_node(LV_VIRTUAL_NODES.APEX, apex_pt, True)
-        self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base_pt, True)
-        self.set_normal(unit_vector(base_pt - apex_pt))
+        return (self.get(self.CONTAINERS.SURF_POINT_DATA, LV_MESH_DATA.APEX_BASE_EST),
+                self.get(self.CONTAINERS.MESH_POINT_DATA, LV_MESH_DATA.APEX_BASE_EST))
 
-        return surf_regions.astype(np.int64), apex_base_mesh.astype(np.int64)
-
-    def identify_epi_endo_regions(self, threshold: float = 90.0, ref_point: np.ndarray = None, **kwargs) -> tuple:
-        """Estimates Epicardium and Endocardium surfaces based on the angle between \
-            vectors from the reference point to each node and their respective\
-            surface normals. If ref_point is not provided, it will use the center \
+    def identify_epi_endo_regions(self, threshold: float = 90.0, ref_point: np.ndarray = None,
+        log_level=logging.INFO,
+        **kwargs) -> tuple:
+        """Estimates Epicardium and Endocardium surfaces based on the angle between 
+            vectors from the reference point to each node and their respective
+            surface normals. If ref_point is not provided, it will use the center 
             of the geometry.
             
         Args:
-            threshold (float, optional): Angles less than threshold will be considered \
-                part of 'Endocardium' while others will be considered part of 'Epicardium'. \
+            threshold (float, optional): Angles less than threshold will be considered 
+                part of 'Endocardium' while others will be considered part of 'Epicardium'. 
                 Defaults to 90.0.
-            ref_point (np.ndarray or None, optional): Reference point; must be a (1x3) \
-                np.ndarray specifying [x,y,z] coordinates. If set to None, the function \
+            ref_point (np.ndarray or None, optional): Reference point; must be a (1x3) 
+                np.ndarray specifying [x,y,z] coordinates. If set to None, the function 
                 will use the estimated center of the geometry.
 
         Returns:
-            tuple: Arrays containing values for each node as 'Endo', 'Epi' or Neither \ 
+            tuple: Arrays containing values for each node as 'Endo', 'Epi' or Neither  
                     at surface mesh and global mesh.
         """
+        log = logger.getChild("identify_epi_endo_regions")
+        log.setLevel(log_level)
+        log.debug("Starting identification of endo and epi regions for ideal geometry.")
+
         # extract surface mesh (use extract)
         lvsurf = self.get_surface_mesh()
         pts = lvsurf.points
@@ -105,10 +156,11 @@ class LV_RegionIdentifier(LV_Base):
         surf_normals = lvsurf.get_array("Normals", "points")
         # if ref_point was not specified, est geometry center
         if ref_point is None:
-            ref_point = self.est_centroid()
+            ref_point = centroid(pts)
         else:
             if not isinstance(ref_point, np.ndarray):
                 ref_point = np.array(ref_point)
+        log.debug("Using reference point: {}".format(ref_point))
         # get vector from pts at surface to center
         pts_to_ref = ref_point - pts
         # compute angle difference between surface normals and pts to ref
@@ -122,44 +174,41 @@ class LV_RegionIdentifier(LV_Base):
         endo_epi_guess[endo_ids] = LV_SURFS.ENDO
         endo_epi_guess[epi_ids] = LV_SURFS.EPI
 
-        # -- save data at surface and global mesh
+        n_endo = len(endo_ids)
+        n_epi = len(epi_ids)
+        n_pts = len(pts)
+        log.debug("Number of endo ids found: {} ({:.2f}%)".format(n_endo, (n_endo/n_pts)*100 ))
+        log.debug("Number of epi ids found: {} ({:.2f}%)".format(n_epi, (n_epi/n_pts)*100))
 
-        # save data at mesh surface
-        self.set_surface_point_data(
-            LV_MESH_DATA.EPI_ENDO_GUESS, endo_epi_guess.astype(np.int64))  # USED FOR DEGUB
-        self.set_surface_point_data(
-            LV_MESH_DATA.EPI_ENDO, endo_epi_guess.astype(np.int64))  # USED FOR DEGUB
+        self.set_region_from_surface_ids(LV_MESH_DATA.EPI_ENDO_EST, endo_epi_guess)
+        self.set_region_from_surface_ids(LV_MESH_DATA.EPI_ENDO, endo_epi_guess)
 
-        # save data at mesh
-        id_map = self.get_surface_id_map_from_mesh()
-        epi_endo_mesh = np.zeros(self.mesh.n_points)
-        epi_endo_mesh[id_map] = endo_epi_guess
-        self.set_mesh_point_data(
-            LV_MESH_DATA.EPI_ENDO_GUESS, epi_endo_mesh.astype(np.int64))
-        self.set_mesh_point_data(
-            LV_MESH_DATA.EPI_ENDO, epi_endo_mesh.astype(np.int64))
-
-        return endo_epi_guess.astype(np.int64), epi_endo_mesh.astype(np.int64)
+        return (self.get(self.CONTAINERS.SURF_POINT_DATA, LV_MESH_DATA.EPI_ENDO),
+                self.get(self.CONTAINERS.MESH_POINT_DATA, LV_MESH_DATA.EPI_ENDO))
 
     # ----------------------------------------------------------------
-    # Geometries of 'type A' -> No mitral and aortic valve.
-    # These geometries can be idealized or non-idealized.
+    # Geometries of 'type ideal' -> Ellipsoid
 
     def identify_base_region_ideal(self,
                                    fe=45,
                                    db=0.1,
                                    ba=90,
-                                   axis=None
+                                   axis=None,
+                                   log_level=logging.INFO,
                                    ):
+
         if not self.check_geo_type_ideal():
             raise RuntimeError(
                 "LV Geometry type must be set as 'ideal' to run this function.")
         try:
             endo_epi = np.copy(
-                self.get(GEO_DATA.SURF_POINT_DATA, LV_MESH_DATA.EPI_ENDO))
+                self.get(self.CONTAINERS.SURF_POINT_DATA, LV_MESH_DATA.EPI_ENDO))
         except KeyError:
             raise RuntimeError(
                 "Endo-epi regions were not identified. Either set it manually or use 'identify_epi_endo_regions'. ")
+        log = logger.getChild("identify_base_region_ideal")
+        log.setLevel(log_level)
+        log.debug("Starting identification of base region for ideal geometry.")
 
         # get surface mesh
         lvsurf = self.get_surface_mesh()
@@ -168,14 +217,23 @@ class LV_RegionIdentifier(LV_Base):
         edge_pts = edges.points
         est_base = centroid(edge_pts)
         est_radius = radius(edge_pts)
+        log.debug("Number of edge points found: {}".format(len(edge_pts)))
+        log.debug("est_base: {}".format(est_base))
+        log.debug("est_radius: {}".format(est_radius))
         # select pts close to est_base based on dist threshold on axis
+        log.debug("Selecting points close to est_base based on 'd'.")
         pts = lvsurf.points
+        # get axis orientation
         lvnormal = self.get_normal()
         if axis == None:
             axis = np.where(lvnormal == np.max(lvnormal))[0]
+        log.debug("axis orientation: {}".format(axis))
         d_base = np.abs(est_base[axis] - pts[:, axis])
         ioi = np.where(d_base <= db)[0]
+        log.debug("number of indexed found at 'db={}' from 'est_base={}'"
+                  "along 'axis={}'".format(db, est_base, axis))
         # filter selected pts based on surface angle
+        log.debug("Filtering selection based on surface normals.")
         lvsurf.compute_normals(inplace=True)
         surf_normals = lvsurf.get_array("Normals", "points")
         # select reference vector based on orientation axis
@@ -190,24 +248,28 @@ class LV_RegionIdentifier(LV_Base):
             surf_normals[ioi], vec_arr, check_orientation=False)
         # filter by angle w.r.t. orientation axis
         ioi = ioi[np.where(base_angles <= np.radians(ba))[0]]
+        log.debug("Number of ioi found: {}".format(len(ioi)))
+        
         # filter by endo (don't overlap endo values)
+        log.debug("Filtering selection based on surface endo region (no overlap).")
         ioi = ioi[np.where(endo_epi[ioi] != LV_SURFS.ENDO)]
+        log.debug("Number of ioi found: {}".format(len(ioi)))
         # identify final surfaces
         endo_epi_base = np.copy(endo_epi)
         endo_epi_base[ioi] = LV_SURFS.BASE
-        # map to 'global' mesh ids
-        id_map = self.get_surface_id_map_from_mesh()
-        endo_epi_base_mesh = np.zeros(self.mesh.n_points)
-        endo_epi_base_mesh[id_map] = endo_epi_base
+        self.set_region_from_surface_ids(LV_MESH_DATA.SURFS, endo_epi_base)
 
-        # add data to mesh
-        self.set_surface_point_data(LV_MESH_DATA.SURFS, endo_epi_base)
-        self.set_mesh_point_data(LV_MESH_DATA.SURFS, endo_epi_base_mesh)
+        return (self.get(self.CONTAINERS.SURF_POINT_DATA, LV_MESH_DATA.SURFS),
+                self.get(self.CONTAINERS.MESH_POINT_DATA, LV_MESH_DATA.SURFS))
 
-    def identify_base_region_nonideal(self,
+    # ----------------------------------------------------------------
+    # Geometries of 'type A' -> No mitral and aortic valve.
+
+    def identify_base_region_typeA(self,
                                       fe=15,
                                       br=1.25,
-                                      ba=100):
+                                      ba=100,
+                                      log_level=logging.INFO):
         if not self.check_geo_type_typeA():
             raise RuntimeError(
                 "LV Geometry type must be set as 'typeA' or 'nonIdeal' to run this function.")
@@ -217,6 +279,10 @@ class LV_RegionIdentifier(LV_Base):
         except KeyError:
             raise RuntimeError(
                 "Endo-epi regions were not identified. Either set it manually or use 'identify_epi_endo_regions'. ")
+        
+        log = logger.getChild("identify_base_region_typeA")
+        log.setLevel(log_level)
+        log.debug("Starting identification of base region for 'type A' geometry.")
 
         # get surface mesh
         lvsurf = self.get_surface_mesh()
@@ -227,38 +293,38 @@ class LV_RegionIdentifier(LV_Base):
         edge_pts = edges.points
         est_base = centroid(edge_pts)
         est_radius = radius(edge_pts)
+        log.debug("Number of edge points found: {}".format(len(edge_pts)))
+        log.debug("est_base: {}".format(est_base))
+        log.debug("est_radius: {}".format(est_radius))
+
         # select pts close to est_base based on % of est_radius
+        log.debug("Selecting nodes based on distance from est_base.")
         pts = lvsurf.points
         d_base = np.linalg.norm(pts - est_base, axis=1)
         ioi = np.where(d_base <= est_radius*br)[0]
+        log.debug("number of indexed found at 'br={}' from 'est_radius*br={}': {}"
+                  .format(br, est_radius*br, len(ioi)))
         # re-estimate base centroid and radius
         poi = pts[ioi]
+
         # filter selected pts based on surface angle
+        log.debug("Filtering selection based on surface normals.")
         lvsurf.compute_normals(inplace=True)
         surf_normals = lvsurf.get_array("Normals", "points")
         base_vecs = est_base - poi
         base_angles = angle_between(
             surf_normals[ioi], base_vecs, check_orientation=False)
         ioi = ioi[np.where(base_angles <= np.radians(ba))[0]]
+        log.debug("Number of ioi found: {}".format(len(ioi)))
+
         # filter by endo
+        log.debug("Filtering selection based on surface endo region (no overlap).")
         ioi = ioi[np.where(endo_epi[ioi] != LV_SURFS.ENDO)]
+        log.debug("Number of ioi found: {}".format(len(ioi)))
 
-        # re-estimate base info
-        center_pts = pts[ioi]
-        est_base = centroid(center_pts)
-        est_radius = radius(center_pts)
-        self.add_virtual_node(LV_VIRTUAL_NODES.MITRAL, est_base, replace=True)
-
-        # identify final surfaces
         endo_epi_base = np.copy(endo_epi)
         endo_epi_base[ioi] = LV_SURFS.BASE
-        # map to 'global' mesh ids
-        id_map = self.get_surface_id_map_from_mesh()
-        endo_epi_base_mesh = np.zeros(self.mesh.n_points)
-        endo_epi_base_mesh[id_map] = endo_epi_base
-        # add data to mesh
-        self.set_surface_point_data(LV_MESH_DATA.SURFS, endo_epi_base)
-        self.set_mesh_point_data(LV_MESH_DATA.SURFS, endo_epi_base_mesh)
+        self.set_region_from_surface_ids(LV_MESH_DATA.SURFS, endo_epi_base)
 
     # ----------------------------------------------------------------
     # Geometries of 'type B' -> With both mitral and aortic valve.
@@ -683,19 +749,204 @@ class LV_RegionIdentifier(LV_Base):
         # set flag to indicate surfaces were identified from this method:
         self._surfaces_identified_with_class_method = True
     
-    # ----------------------------------------------------------------
-    # Compiled function
+    # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+    # NODESET-DEPENDENT METHODS
+
+    def identify_endo_epi_base_borders_from_nodesets(self, thresh_base=2, thresh_endo=2, thresh_epi=2, log_level=logging.INFO):
+        log = logger.getChild("identify_endo_epi_base_borders_from_nodesets")
+        log.setLevel(log_level)
+        endo_base = self.compute_boundary_between_nodesets(
+                nodesets=[self.REGIONS.BASE, self.REGIONS.ENDO],
+                thresh_vals=[thresh_base, thresh_endo],
+                log_level=log_level
+            )
+        log.info("len(endo_base): {}".format(len(endo_base)))
+        epi_base = self.compute_boundary_between_nodesets(
+                nodesets=[self.REGIONS.BASE, self.REGIONS.EPI],
+                thresh_vals=[thresh_base, thresh_epi],
+                log_level=log_level
+            )
+        log.info("len(epi_base): {}".format(len(epi_base)))
+        surf_data = self.get(self.CONTAINERS.MESH_POINT_DATA, LV_MESH_DATA.SURFS)
+        surf_data[endo_base] = self.REGIONS.BASE_BORDER_ENDO
+        surf_data[epi_base] = self.REGIONS.BASE_BORDER_EPI
+        self.set_region_from_mesh_ids(LV_MESH_DATA.SURFS_DETAILED, surf_data)
+    
+    def identify_apex_base_from_nodesets(self, apex_nodeset=None, base_nodeset=None):
+        if apex_nodeset is None:
+            apex_nodeset = self.REGIONS.APEX
+        if base_nodeset is None:
+            base_nodeset = self.REGIONS.BASE
+
+        apex_ids = self.get_nodeset(apex_nodeset)
+        base_ids = self.get_nodeset(base_nodeset)
+        region = np.zeros(self.mesh.n_points)
+        region[base_ids] = self.REGIONS.BASE
+        region[apex_ids] = self.REGIONS.APEX
+        self.set_region_from_mesh_ids(LV_MESH_DATA.APEX_BASE, region)
+
+
+    # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+    # COMPILED METHODS
+
+    def identify_regions_ideal(self, 
+        border_thresh_base=1, 
+        border_thresh_endo=1, 
+        border_thresh_epi=1,
+        base_vn_nodeset=None, # default = "base_endo"
+        apex_vn_nodeset=None, # default = "endo"
+        d_apex=5,
+        apex_base_args=None, 
+        endo_epi_args=None, 
+        base_args=None,
+        log_level=logging.INFO, 
+        **kwargs):
+
+        log = logger.getChild("identify_regions_ideal")
+        log.setLevel(log_level)
+        log.info("Identifying regions from ideal geometry.")
+        if not self.check_geo_type_ideal():
+            raise RuntimeError(
+                "LV Geometry type must be set as 'ideal' to run this function.")
+
+        # set default values
+        if apex_base_args is None:
+            apex_base_args = dict()
+        if endo_epi_args is None:
+            endo_epi_args = dict()
+        if base_args is None:
+            base_args = dict()
+        
+        # begin identification
+        self.identify_est_base_and_apex_regions(log_level=log_level, **apex_base_args)
+        self.identify_epi_endo_regions(log_level=log_level, **endo_epi_args)
+        self.identify_base_region_ideal(log_level=log_level, **base_args)
+        # create nodesets
+        self.create_nodesets_from_regions(
+            mesh_data=LV_MESH_DATA.APEX_BASE_EST, overwrite=False)
+        self.create_nodesets_from_regions(
+            mesh_data=LV_MESH_DATA.EPI_ENDO, overwrite=False)
+        self.create_nodesets_from_regions(
+            mesh_data=LV_MESH_DATA.SURFS, overwrite=True)
+        
+        # Compute endo-epi base borders (adds base_endo and base_epi)
+        self.identify_endo_epi_base_borders_from_nodesets(thresh_base=border_thresh_base, 
+                                                          thresh_endo=border_thresh_endo, 
+                                                          thresh_epi=border_thresh_epi,
+                                                          log_level=log_level)
+        self.create_nodesets_from_regions(
+            mesh_data=LV_MESH_DATA.SURFS_DETAILED, overwrite=False)
+
+        # compute base from endo_border (or user-provided) nodeset
+        if base_vn_nodeset is None:
+            base_vn_nodeset = self.REGIONS.BASE_BORDER_ENDO
+        base_ref = self.compute_base_from_nodeset(base_vn_nodeset)
+        log.debug("base_ref: {}".format(base_ref))
+
+        # compute apex from "endo" (or user-provided) nodeset
+        if apex_vn_nodeset is None:
+            apex_vn_nodeset = self.REGIONS.ENDO
+        _, apex_region_ids = self.compute_apex_from_base_vn(
+                                        d=d_apex, 
+                                        nodeset=apex_vn_nodeset, 
+                                        log_level=log_level)
+        self.add_nodeset(self.REGIONS.APEX, apex_region_ids, overwrite=True)
+
+        # compute 'final' apex and base regions (mainly for debuging)
+        self.identify_apex_base_from_nodesets()
+        
+        # set infos
+        self.set_base_info(LV_SURFS.BASE)
+
+        # compute longitudinal axis and normals
+        self.compute_long_line()
+        self.compute_normal()
+
+    def identify_regions_typeA(self, 
+        border_thresh_base=2, 
+        border_thresh_endo=2, 
+        border_thresh_epi=2,
+        base_vn_nodeset=None, # default = "base_endo"
+        apex_vn_nodeset=None, # default = "endo"
+        d_apex=5,
+        apex_base_args=None, 
+        endo_epi_args=None, 
+        base_args=None,
+        log_level=logging.INFO, 
+        **kwargs):
+
+        log = logger.getChild("identify_regions_typeA")
+        log.setLevel(log_level)
+        log.info("Identifying regions from 'type A' geometry.")
+        if not self.check_geo_type_typeA():
+            raise RuntimeError(
+                "LV Geometry type must be set as 'type A' to run this function.")
+
+        # set default values
+        if apex_base_args is None:
+            apex_base_args = dict(n=1, ql=0.1, qh=0.7)
+        if endo_epi_args is None:
+            endo_epi_args = dict(threshold=85)
+        if base_args is None:
+            base_args = dict()
+        
+        # begin identification
+        self.identify_est_base_and_apex_regions(log_level=log_level, **apex_base_args)
+        self.identify_epi_endo_regions(log_level=log_level, **endo_epi_args)
+        self.identify_base_region_typeA(log_level=log_level, **base_args)
+        # create nodesets
+        self.create_nodesets_from_regions(
+            mesh_data=LV_MESH_DATA.APEX_BASE_EST, overwrite=False)
+        self.create_nodesets_from_regions(
+            mesh_data=LV_MESH_DATA.EPI_ENDO, overwrite=False)
+        self.create_nodesets_from_regions(
+            mesh_data=LV_MESH_DATA.SURFS, overwrite=True)
+        
+        # Compute endo-epi base borders (adds base_endo and base_epi)
+        self.identify_endo_epi_base_borders_from_nodesets(thresh_base=border_thresh_base, 
+                                                          thresh_endo=border_thresh_endo, 
+                                                          thresh_epi=border_thresh_epi,
+                                                          log_level=log_level)
+        self.create_nodesets_from_regions(
+            mesh_data=LV_MESH_DATA.SURFS_DETAILED, overwrite=False)
+
+        # compute base from endo_border (or user-provided) nodeset
+        if base_vn_nodeset is None:
+            base_vn_nodeset = self.REGIONS.BASE_BORDER_ENDO
+        base_ref = self.compute_base_from_nodeset(base_vn_nodeset)
+        log.debug("base_ref: {}".format(base_ref))
+
+        # compute apex from "endo" (or user-provided) nodeset
+        if apex_vn_nodeset is None:
+            apex_vn_nodeset = self.REGIONS.ENDO
+        _, apex_region_ids = self.compute_apex_from_base_vn(
+                                        d=d_apex, 
+                                        nodeset=apex_vn_nodeset, 
+                                        log_level=log_level)
+        self.add_nodeset(self.REGIONS.APEX, apex_region_ids, overwrite=True)
+
+        # compute 'final' apex and base regions (mainly for debuging)
+        self.identify_apex_base_from_nodesets()
+        
+        # set infos
+        self.set_base_info(LV_SURFS.BASE)
+
+        # compute longitudinal axis and normals
+        self.compute_long_line()
+        self.compute_normal()
+
 
     def identify_regions(self,
                          geo_type=None,
-                         apex_base_args={},
-                         endo_epi_args={},
-                         base_args={},
-                         aortic_mitral_args={},
-                         create_nodesets=True,
-                         set_infos=True,
-                         set_normal=False,  # recomputes normal based on newly found base virtual node
-                         recompute_apex_base=True
+                        #  apex_base_args=None,
+                        #  endo_epi_args=None,
+                        #  base_args=None,
+                        #  aortic_mitral_args=None,
+                        #  create_nodesets=True,
+                        #  set_infos=True,
+                        #  set_normal=False,  
+                        #  recompute_apex_base=True,
+                         **kwargs
                          ):
 
         if geo_type is None:
@@ -709,81 +960,62 @@ class LV_RegionIdentifier(LV_Base):
                 "Must specify a geo_type either at object initialization, or with 'geo_type' argument.")
 
         if geo_type == LV_GEO_TYPES.IDEAL:
-            self.identify_base_and_apex_regions(**apex_base_args)
-            self.identify_epi_endo_regions(**endo_epi_args)
-            self.identify_base_region_ideal(**base_args)
-            if create_nodesets:
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=True)
-            if set_infos:
-                self.set_base_info(LV_SURFS.BASE)
-            if set_normal:
-                self.compute_normal()
+            self.identify_regions_ideal(**kwargs)
         elif geo_type == LV_GEO_TYPES.TYPE_A:
-            self.identify_base_and_apex_regions(**apex_base_args)
-            self.identify_epi_endo_regions(**endo_epi_args)
-            self.identify_base_region_nonideal(**base_args)
-            if create_nodesets:
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=True)
-            if set_infos:
-                self.set_base_info(LV_SURFS.BASE)
-            if set_normal:
-                self.compute_normal()
+            raise NotImplementedError("Working on it.")
+
         elif geo_type == LV_GEO_TYPES.TYPE_B:
-            self._identify_typeB_regions(
-                apex_base_args=apex_base_args,
-                endo_epi_args=endo_epi_args,
-                aortic_mitral_args=aortic_mitral_args)
-            # create nodesets
-            if create_nodesets:
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=False)
-                self.create_nodesets_from_regions(
-                    mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=True)
-                
-                # create 'base' nodeset from AM data
-                from functools import reduce
-                base = reduce(np.union1d, 
-                                    (
-                                        self.get_nodeset(self.REGIONS.AORTIC),
-                                        self.get_nodeset(self.REGIONS.MITRAL),
-                                        self.get_nodeset(self.REGIONS.AM_INTERCECTION)
-                                    )
-                                )
-                self.add_nodeset(self.REGIONS.BASE, base, True)
-            # if set_infos: -> these are already created from '_identify_typeB_regions'
-            #     self.set_aortic_info(LV_SURFS.AORTIC)
-            #     self.set_mitral_info(LV_SURFS.MITRAL)
+            raise NotImplementedError("Working on fix.")
+            # self._identify_typeB_regions(
+            #     apex_base_args=apex_base_args,
+            #     endo_epi_args=endo_epi_args,
+            #     aortic_mitral_args=aortic_mitral_args)
+            # # create nodesets
+            # # if create_nodesets:
+            # self.create_nodesets_from_regions(
+            #     mesh_data=LV_MESH_DATA.APEX_BASE_REGIONS.value, overwrite=False)
+            # self.create_nodesets_from_regions(
+            #     mesh_data=LV_MESH_DATA.EPI_ENDO.value, overwrite=False)
+            # self.create_nodesets_from_regions(
+            #     mesh_data=LV_MESH_DATA.SURFS.value, overwrite=False)
+            # self.create_nodesets_from_regions(
+            #     mesh_data=LV_MESH_DATA.AM_SURFS.value, overwrite=False)
+            # self.create_nodesets_from_regions(
+            #     mesh_data=LV_MESH_DATA.SURFS_DETAILED.value, overwrite=True)
+            
+            # # create 'base' nodeset from AM data
+            # from functools import reduce
+            # base = reduce(np.union1d, 
+            #                     (
+            #                         self.get_nodeset(self.REGIONS.AORTIC),
+            #                         self.get_nodeset(self.REGIONS.MITRAL),
+            #                         self.get_nodeset(self.REGIONS.AM_INTERCECTION)
+            #                     )
+            #                 )
+            # self.add_nodeset(self.REGIONS.BASE, base, True)
+            # # if set_infos: -> these are already created from '_identify_typeB_regions'
+            # #     self.set_aortic_info(LV_SURFS.AORTIC)
+            # #     self.set_mitral_info(LV_SURFS.MITRAL)
         else:
             raise ValueError(
                 "Invalid geo type: %s. Check LV_GEO_TYPES enums for valid types." % geo_type)
 
-        # ----
-        # apply functions for all geo types
-        # creatre nodeset for epi and endo without base ids
-        self.set_epi_endo_exclude_base_nodeset()
-        self.set_endo_plus_base_nodeset()
-        # recompute apex and base based on 'ENDO' or provided 'recompute_apex_base' args
-        if recompute_apex_base is not None:
-            if isinstance(recompute_apex_base, dict):
-                self.set_apex_and_base_from_nodeset(**recompute_apex_base)
-            elif isinstance(recompute_apex_base, bool) and recompute_apex_base == True:
-                self.set_apex_and_base_from_nodeset() #using default args
+        # # ----
+        # # apply functions for all geo types
+        # # creatre nodeset for epi and endo without base ids
+        # self.set_epi_endo_exclude_base_nodeset()
+        # self.set_endo_plus_base_nodeset()
+
+        # self.compute_base_intersections()
+        # # recompute apex and base virtual nodes based on nodesets created from 
+        # # regions. Default is BASE_REGION and APEX_REGION regions. 
+        # if recompute_apex_base is not None:
+        #     if isinstance(recompute_apex_base, dict):
+        #     #     self.set_apex_and_base_from_nodeset(**recompute_apex_base)
+        #         self.compute_apex_and_base_ref_from_nodesets(**recompute_apex_base)
+        #     elif isinstance(recompute_apex_base, bool) and recompute_apex_base == True:
+        #         self.compute_apex_and_base_ref_from_nodesets(
+        #             apex_nodeset="APEX_REGION")
         
     # =========================================================================
     # FACET DATA REGION TRANSFORMATION
@@ -851,17 +1083,52 @@ class LV_RegionIdentifier(LV_Base):
                         )
         self.add_nodeset(self.REGIONS.ENDO_BASE, endo_base, True)
     
-    def set_region_from_mesh_ids(self, key: str, mesh_ids: list) -> np.ndarray:
+    def set_region_from_surface_ids(self, key: str, surf_mesh_ids: list) -> np.ndarray:
         """Sets mesh and surface mesh region from a list of ids based on mesh. \
             Each index corresponds to node id, and each value should represent\
             region id.
 
         Args:
             key: (str or enum): key identifier for region data
-            mesh_ids (list): List of region ids for each point in mesh.
+            surf_mesh_ids (list): List of region ids for each point in mesh.
 
         Raises:
             ValueError: If length of mesh ids is not equal to number of points in mesh.
+
+        Returns:
+            Pointer to added surf_mesh_ids
+        """
+
+        if len(surf_mesh_ids) != self.get_surface_mesh().n_points:
+            raise ValueError(
+                "surf_mesh_ids length must correspond to number of points in surface mesh. "
+                "Each id should be an integer determining its region."
+                "Expected: {}, received: {}"
+                .format(self.get_surface_mesh().n_points, len(surf_mesh_ids)))
+        key = self.check_enum(key)
+
+        # add data to mesh
+        self.set_surface_point_data(key, surf_mesh_ids)
+        # add data to surface mesh
+        # set global region ids (for entire mesh)
+        id_map = self.get_surface_id_map_from_mesh()
+        mesh_ids = np.zeros(self.mesh.n_points)
+        mesh_ids[id_map] = surf_mesh_ids
+        self.set_mesh_point_data(key, mesh_ids)
+
+        return self.get(self.CONTAINERS.MESH_POINT_DATA, key)
+    
+    def set_region_from_mesh_ids(self, key: str, mesh_ids: list) -> np.ndarray:
+        """Sets mesh and surface mesh region from a list of ids based on surface mesh. \
+            Each index corresponds to node id, and each value should represent\
+            region id.
+
+        Args:
+            key: (str or enum): key identifier for region data
+            mesh_ids (list): List of region ids for each point in surface mesh.
+
+        Raises:
+            ValueError: If length of mesh ids is not equal to number of points in surface mesh.
 
         Returns:
             Pointer to added mesh_ids
@@ -869,16 +1136,19 @@ class LV_RegionIdentifier(LV_Base):
 
         if len(mesh_ids) != self.mesh.n_points:
             raise ValueError(
-                "mesh_ids length must correspond to number of points in mesh. Each id should be an integer determining its region.")
-        key = self.check_enum(key)
+                "mesh_ids length must correspond to number of points in surface mesh. "
+                "Each id should be an integer determining its region."
+                "Expected: {}, received: {}"
+                .format(self.mesh.n_points, len(mesh_ids)))
 
-        # add data to mesh
+        key = self.check_enum(key)
+        # add data to surface mesh
         self.set_mesh_point_data(key, mesh_ids)
         # add data to surface mesh
         id_map = self.get_surface_id_map_from_mesh()
         self.set_surface_point_data(key, mesh_ids[id_map])
 
-        return self.get(GEO_DATA.MESH_POINT_DATA, key)
+        return self.get(self.CONTAINERS.MESH_POINT_DATA, key)
 
     def set_region_from_nodesets(self, region_key: str, nodeset_keys: list):
         region = np.zeros(self.mesh.n_points, dtype=np.int64)
@@ -896,43 +1166,13 @@ class LV_RegionIdentifier(LV_Base):
 
         return self.set_region_from_mesh_ids(region_key, region)
 
-    def set_region_from_intersections(self, 
-                                      key: str, 
-                                      region_val: int, 
-                                      intersection_regions: list, 
-                                      n:int=1,
-                                      add_as_nodeset=True,
-                                      overwrite_nodeset=True,                              
-                                      ):
-        
-        mesh = self.mesh.copy()
-        pdata = np.zeros(mesh.n_points, dtype=np.float64)
-        for i, nset in enumerate(intersection_regions):
-            pdata[self.get_nodeset(nset)] = (i+1.0)*10
-        invalid_nodes = np.where(pdata == 0)[0]       
-        pdata[invalid_nodes] = 10.0 # min value is equal to first provided region
 
-        mesh.point_data["region_from_intersections_grads"] = pdata
-        mesh = mesh.compute_derivative("region_from_intersections_grads")
-        
-        if n > 1:
-            for _ in range(n):
-                mesh = mesh.compute_derivative("gradient")
-        grads = mesh.get_array("gradient")
-        grads_mag = np.linalg.norm(grads, axis=1)
-        ioi = np.where(grads_mag > 0)[0]
-        ioi = np.setdiff1d(ioi, invalid_nodes)
-        
-        
-        region = np.zeros(mesh.n_points, dtype=np.float64)
-        region[ioi] = region_val
-        
-        if add_as_nodeset:
-            self.add_nodeset(key, ioi, overwrite=overwrite_nodeset)
-        
-        return self.set_region_from_mesh_ids(key, region)
+
         
     
+
+    def set_geo_type(self, geo_type):
+        self.geo_type = geo_type
     
     # ----------------------------------------------------------------
     # Check methods
@@ -952,65 +1192,68 @@ class LV_RegionIdentifier(LV_Base):
     # ----------------------------------------------------------------
     # Others
     
-    def set_apex_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
-        if nodeset is None:
-            nodeset = self.REGIONS.ENDO_BASE
-        pts=self.points(mask=self.get_nodeset(nodeset))
-        (_, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
-        self.add_virtual_node(LV_VIRTUAL_NODES.APEX, es_apex, replace=True)
-        self.compute_normal() # update normal
-        self.compute_long_line() # update long line
-        self._apex_from_nodeset = nodeset
-        return self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
+    # def set_apex_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
+    #     if nodeset is None:
+    #         nodeset = self.REGIONS.ENDO_BASE
+    #     pts=self.points(mask=self.get_nodeset(nodeset))
+    #     (_, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+    #     self.add_virtual_node(LV_VIRTUAL_NODES.APEX, es_apex, replace=True)
+    #     self.compute_normal() # update normal
+    #     self.compute_long_line() # update long line
+    #     self._apex_from_nodeset = nodeset
+    #     return self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
     
-    def set_base_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
-        if nodeset is None:
-            nodeset = self.REGIONS.ENDO_BASE
-        pts=self.points(mask=self.get_nodeset(nodeset))
-        (es_base, _) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
-        self.add_virtual_node(LV_VIRTUAL_NODES.BASE, es_base, replace=True)
-        self.compute_normal() # update normal
-        self.compute_long_line() # update long line
-        self._base_from_nodeset = nodeset
-        return self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
+    # def set_base_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
+    #     if nodeset is None:
+    #         nodeset = self.REGIONS.ENDO_BASE
+    #     pts=self.points(mask=self.get_nodeset(nodeset))
+    #     (es_base, _) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+    #     self.add_virtual_node(LV_VIRTUAL_NODES.BASE, es_base, replace=True)
+    #     self.compute_normal() # update normal
+    #     self.compute_long_line() # update long line
+    #     self._base_from_nodeset = nodeset
+    #     return self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
     
-    def set_apex_and_base_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
-        if nodeset is None:
-            nodeset = self.REGIONS.ENDO_BASE
-        pts=self.points(mask=self.get_nodeset(nodeset))
-        (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
-        self.add_virtual_node(LV_VIRTUAL_NODES.BASE, es_base, replace=True)
-        self.add_virtual_node(LV_VIRTUAL_NODES.APEX, es_apex, replace=True)
-        self.compute_normal() # update normal
-        self.compute_long_line() # update long line
-        self.apex_and_base_from_nodeset = nodeset
-        return (self.get_virtual_node(LV_VIRTUAL_NODES.APEX), 
-                self.get_virtual_node(LV_VIRTUAL_NODES.BASE))
+    # def set_apex_and_base_from_nodeset(self, nodeset=None, **kwargs) -> np.ndarray:
+    #     if nodeset is None:
+    #         nodeset = self.REGIONS.ENDO_BASE
+    #     pts=self.points(mask=self.get_nodeset(nodeset))
+    #     (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
+    #     self.add_virtual_node(LV_VIRTUAL_NODES.BASE, es_base, replace=True)
+    #     self.add_virtual_node(LV_VIRTUAL_NODES.APEX, es_apex, replace=True)
+    #     self.compute_normal() # update normal
+    #     self.compute_long_line() # update long line
+    #     self.apex_and_base_from_nodeset = nodeset
+    #     return (self.get_virtual_node(LV_VIRTUAL_NODES.APEX), 
+    #             self.get_virtual_node(LV_VIRTUAL_NODES.BASE))
         
     # overwrite class compute normal to include identify_base_and_apex_regions
-    def compute_normal(self, **kwargs):
-        try:
-            apex = self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
-            base = self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
+    def compute_normal(self, apex=None, base=None, **kwargs):
+        if apex is not None and base is not None:
             self.set_normal(unit_vector(base - apex))
-        except:
+        else:
             try:
-                apex = centroid(self.points(
-                    mask=self.get_nodeset(LV_SURFS.APEX_REGION)))
-                base = centroid(self.points(
-                    mask=self.get_nodeset(LV_SURFS.BASE_REGION)))
-                self.add_virtual_node(LV_VIRTUAL_NODES.APEX, apex)
-                self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base)
+                apex = self.get_virtual_node(LV_VIRTUAL_NODES.APEX)
+                base = self.get_virtual_node(LV_VIRTUAL_NODES.BASE)
                 self.set_normal(unit_vector(base - apex))
             except:
                 try:
-                    self.identify_base_and_apex_regions(**kwargs)
+                    apex = centroid(self.points(
+                        mask=self.get_nodeset(LV_SURFS.APEX_REGION)))
+                    base = centroid(self.points(
+                        mask=self.get_nodeset(LV_SURFS.BASE_REGION)))
+                    self.add_virtual_node(LV_VIRTUAL_NODES.APEX, apex)
+                    self.add_virtual_node(LV_VIRTUAL_NODES.BASE, base)
+                    self.set_normal(unit_vector(base - apex))
                 except:
-                    raise RuntimeError(
-                        """Unable to compute normal. Prooced with another method\
-                           See 'identify_base_and_apex_surfaces' and 'set_normal'\
-                           for details.
-                        """)
+                    try:
+                        self.identify_base_and_apex_regions(**kwargs)
+                    except:
+                        raise RuntimeError(
+                            """Unable to compute normal. Prooced with another method\
+                            See 'identify_base_and_apex_surfaces' and 'set_normal'\
+                            for details.
+                            """)
 
     def peek_unique_values_in_region(self, surface_name: str, enum_like: Enum = None) -> list:
         """Returns a list of unique values in the given surface. If Enum is specified, \

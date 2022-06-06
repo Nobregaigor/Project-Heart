@@ -56,6 +56,12 @@ class LV_Base(BaseContainerHandler):
         # ------ Flags
         self._surfaces_identified_with_class_method = False
 
+    # ----------------------------------------------------------------
+    #  Estimation of apex and base methods
+    # ----------------------------------------------------------------
+    # These methods assume that there is no previous information available
+    # for the current LV instance
+
     def est_centroid(self) -> np.ndarray:
         """Estimates the centroid of the geometry based on surface mesh.
 
@@ -70,12 +76,15 @@ class LV_Base(BaseContainerHandler):
     def est_apex_ref(points, ql=0.05, **kwargs):
         # print("apex:", ql)
         zvalues = points[:, 2]
+        # zmin = np.min(zvalues)
         zmin = np.min(zvalues)
-        if zmin > 0:
-            thresh = zmin*(1+ql)
-            # apex_region_idxs = np.where(zvalues <= thresh)[0]
-        else:
-            thresh = zmin*(1-ql)
+        zmax = np.max(zvalues)
+        thresh = np.interp(ql, [0, 1], [zmin, zmax])
+        # if zmin > 0:
+        #     thresh = zmin*(1+ql)
+        #     # apex_region_idxs = np.where(zvalues <= thresh)[0]
+        # else:
+        #     thresh = zmin*(1-ql)
         apex_region_idxs = np.where(zvalues <= thresh)[0]
         # thresh = np.quantile(zvalues, ql)
         # apex_region_idxs = np.where(zvalues <= thresh)[0]
@@ -83,19 +92,19 @@ class LV_Base(BaseContainerHandler):
         # return np.mean(apex_region_pts, 0), apex_region_idxs
         return centroid(apex_region_pts), apex_region_idxs
         
-
     @staticmethod
     def est_base_ref(points, qh=0.95, **kwargs):
         # print("base:", qh)
         zvalues = points[:, 2]
+        zmin = np.min(zvalues)
         zmax = np.max(zvalues)
-        thresh = qh*zmax
-        if zmax > 0:
-            base_region_idxs = np.where(zvalues >= thresh)[0]
-        else:
-            base_region_idxs = np.where(zvalues <= thresh)[0]
+        thresh = np.interp(qh, [0, 1], [zmin, zmax])
+        # if zmax > 0:
+        #     base_region_idxs = np.where(zvalues >= thresh)[0]
+        # else:
+            # base_region_idxs = np.where(zvalues <= thresh)[0]
         # thresh = np.quantile(zvalues, qh)
-        # base_region_idxs = np.where(zvalues >= thresh)[0]
+        base_region_idxs = np.where(zvalues >= thresh)[0]
         base_region_pts = points[base_region_idxs]
         # print(len(base_region_pts))
         return centroid(base_region_pts), base_region_idxs
@@ -150,6 +159,9 @@ class LV_Base(BaseContainerHandler):
         info["normal"] = lv_normal
         info["long_line"] = long_line
         info["rot_chain"] = rot_chain
+        info["apex"] = apex_pt
+        info["base"] = base_pt
+
         return info
     
     def est_pts_aligment_with_lv_normal(self, points, 
@@ -184,7 +196,150 @@ class LV_Base(BaseContainerHandler):
         self._aligment_data = info
         return info
 
-    
+    # ----------------------------------------------------------------
+    # Computation of apex and base methods
+    # ----------------------------------------------------------------
+    # These methods now assume that some information is available
+
+    def compute_base_from_nodeset(self, base_nodeset:str=None) -> np.ndarray:
+        """Computes the base virtual node as the centroid of provided nodeset.
+           If no dataset is provided, it defaults to REGIONS.BASE_REGION. 
+           
+           Note: if enough information is provided, for instance BASE_BORDER
+           or ENDO_BASE_BORDER, it is recommended to use these regions
+           for base computation. Default value will not use these.
+
+        Args:
+            base_nodeset (str or Enum, optional): Nodeset to mask nodes. Defaults to None.
+
+        Returns:
+            np.ndarray: Apex virtual node
+        """
+        if base_nodeset is None:
+            base_nodeset = self.REGIONS.BASE_REGION
+        ref = centroid(self.nodes(mask=self.get_nodeset(base_nodeset)))
+        self.add_virtual_node(self.VIRTUAL_NODES.BASE, ref, True)
+        return self.get_virtual_node(self.VIRTUAL_NODES.BASE)
+
+    def compute_apex_from_nodeset(self, apex_nodeset:str=None) -> np.ndarray:
+        """Computes the apex virtual node as the centroid of provided nodeset. \n
+           If no dataset is provided, it defaults to REGIONS.APEX_REGION
+
+        Args:
+            nodeset (str or Enum, optional): Nodeset to mask nodes. Defaults to None.
+
+        Returns:
+            np.ndarray: Apex virtual node
+        """
+        if apex_nodeset is None:
+            apex_nodeset = self.REGIONS.APEX_REGION
+
+        ref = centroid(self.nodes(mask=self.get_nodeset(apex_nodeset)))
+        self.add_virtual_node(self.VIRTUAL_NODES.APEX, ref, True)
+        return self.get_virtual_node(self.VIRTUAL_NODES.APEX)
+
+    def compute_apex_from_base_vn(self, 
+            d=5, 
+            nodeset=None, 
+            base_ref=None,
+            log_level=logging.INFO
+        ) -> np.ndarray:
+        """Computes apex region based on node with longest distance form reference base and
+        distance 'd' from such node. If nodeset is provided, will only use nodes from such nodeset.
+        If reference base node is not provided, will try to use existing base virtual node.
+        If requested, information will be saved as nodeset. 
+
+        Args:
+            d (int, optional): distance threshold from found apex id. Defaults to 5.
+            nodeset (_type_, optional): nodeset in which search is performed. Defaults to None (uses entire mesh).
+            base_ref ((str or enum) or (list, tuple or np.ndarray), optional): virtual reference node. Defaults to None.
+            add_as_nodeset (bool, optional): _description_. Defaults to True.
+            overwrite_nodeset (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            np.ndarray: Region array
+        """
+        log = logger.getChild("compute_apex_from_base_vn")
+        log.setLevel(log_level)
+
+        
+        if base_ref is None:
+            base_ref = self.get_virtual_node(self.VIRTUAL_NODES.BASE)
+        else:
+            if isinstance(base_ref, (str, Enum)):
+                base_ref = self.get_virtual_node(self.VIRTUAL_NODES.BASE)
+                
+            assert isinstance(base_ref, (list, tuple, np.ndarray)), (
+                "base_ref must be list, tuple or np.ndarray representing [x,y,z] of reference node.")
+            if not isinstance(base_ref, np.ndarray):
+                base_ref = np.array(base_ref, dtype=np.float64)
+            
+            shape = base_ref.shape
+            assert len(shape) == 1 and shape[0] == (3), (
+                "base_ref must have shape of [3], representing [x,y,z] of reference node.")
+        log.debug("using base_ref={}".format(base_ref))
+        
+        # get nodes
+        if nodeset is None:
+            log.debug("Using all nodes (nodeset is None)")
+        else:
+            log.debug("Using nodes from nodeset: {}".format(nodeset))
+        mask = self.get_nodeset(nodeset) if nodeset is not None else None
+        nodes = self.nodes(mask=mask)
+
+        from project_heart.utils.cloud_ops import relate_closest
+        _, dists = relate_closest(nodes, [base_ref])
+        apex_id = np.argmax(dists)
+        apex_pt = nodes[apex_id]
+        log.debug("Apex id: {} -> {}".format(nodeset, apex_pt))
+
+        _, dist_to_apex =  relate_closest(nodes, [apex_pt])
+        apex_region_ids = np.where(dist_to_apex < d)
+        log.debug("Number of nodes close to apex: {}".format(len(apex_region_ids)))
+
+        if mask is not None:
+            apex_region_ids = mask[apex_region_ids]
+        
+        ref = centroid(self.nodes(mask=apex_region_ids))
+        log.debug("Apex: {}".format(ref))
+
+        self.add_virtual_node(self.VIRTUAL_NODES.APEX, ref, True)
+        return self.get_virtual_node(self.VIRTUAL_NODES.APEX), apex_region_ids
+
+    def compute_apex_and_base_ref_from_nodesets(self, 
+            apex_nodeset:str=None, 
+            base_nodeset:str=None) -> dict:
+        """Computes apex and base virtual nodes from provided nodesets. If no nodeset is provided for
+        either region, default values are used (check individual methods for details). For consistency
+        This method also computes longitudinal line and LV normal based on apex and base virtual nodes.
+
+        Apex default nodeset: REGIONS.APEX_REGION
+        Base default nodeset: REGIONS.BASE_REGION
+
+        Args:
+            apex_nodeset (str or Enum, optional): Nodeset used to mask nodes for apex. Defaults to None.
+            base_nodeset (str or Enum, optional): Nodeset used to mask nodes for base. Defaults to None.
+
+        Returns:
+            dict: keys -> apex_region, base_region, long_line and normal.
+        """
+        # compute apex and base
+        apex = self.compute_apex_from_nodeset(apex_nodeset)
+        base = self.compute_base_from_nodeset(base_nodeset)
+        # compute longitudinal axis and LV normal vector
+        long_line = self.compute_long_line(apex, base)
+        normal = self.compute_normal()
+        # gather info (for consistency with previous code)
+        info = {
+                "apex_region": self.get_nodeset(apex_nodeset),
+                "base_region": self.get_nodeset(base_region),
+                "long_line": long_line,
+                "normal": normal
+            }
+        return info
+
+
+
     # ----------------------------------------------------------------
     # Aortic and Mitral identification/set functions
 
@@ -298,10 +453,7 @@ class LV_Base(BaseContainerHandler):
                 self.add_virtual_node(
                     LV_VIRTUAL_NODES.MITRAL_BORDER, center, True)
 
-    def set_base_info(self,
-                      base_id=LV_SURFS.BASE,
-                      add_virtual_nodes=True,
-                      ) -> None:
+    def set_base_info(self, base_id=LV_SURFS.BASE) -> None:
         """Sets base information for other computations, such as boundary conditions.\
            Creates 'base_info' dictionary with radius, center, and mesh ids.\
             If 'add_virtual_nodes' is set to true, it will create virtual node information\
@@ -327,8 +479,6 @@ class LV_Base(BaseContainerHandler):
                 LV_BASE_INFO.SURF_IDS.value: None,  # ids at surface
                 LV_BASE_INFO.MESH_IDS.value: ioi,  # ids at mesh
             }
-            if add_virtual_nodes:
-                self.add_virtual_node(LV_VIRTUAL_NODES.BASE, center, True)
 
     def create_nodesets_from_regions(self,
                                      mesh_data=LV_MESH_DATA.SURFS.value,

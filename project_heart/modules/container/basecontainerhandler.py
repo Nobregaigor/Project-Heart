@@ -650,6 +650,50 @@ class BaseContainerHandler():
                 # print("Unknown node set: %s" % item.name)
         return data
 
+    def compute_boundary_between_nodesets(self, 
+            nodesets: list, thresh_vals:list, log_level=logging.INFO) -> np.ndarray:
+
+        log = logger.getChild("compute_boundary_between_nodesets")
+        log.setLevel(log_level)
+
+        from project_heart.utils.cloud_ops import relate_closest
+
+        assert len(nodesets) == 2, ("Up to now, we only accept two nodesets. "
+                                    "Future implementation will support multiple nodesets")
+        assert len(nodesets) == len(thresh_vals), "There must be one threshold value for each nodeset."
+        assert np.all(np.asarray(thresh_vals) >= 0), ("Threshold values must be positive as they represent distance "
+                                        "between nodesets.")
+        
+        # get threshold values
+        thresh_a = thresh_vals[0]
+        thresh_b = thresh_vals[1]
+        
+        # get ids (mask) from nodesets
+        ma = self.get_nodeset(nodesets[0])
+        mb = self.get_nodeset(nodesets[1])
+
+        # get nodes corresponding to masks
+        a = self.nodes(mask=ma)
+        b = self.nodes(mask=mb)
+
+        # relate closests points from a to b
+        c, d = relate_closest(a, b)
+        md = d <= thresh_a
+        ioi_a = np.union1d(ma[md], mb[c[:, 1][md]])
+
+        # relate closests points from b to a
+        c, d = relate_closest(b, a)
+        md = d <= thresh_b
+        ioi_b = np.union1d(mb[md], ma[c[:, 1][md]])
+
+        # final match
+        ioi = np.union1d(ioi_a, ioi_b)
+
+        if len(ioi) == 0:
+            raise RuntimeError("No close boundary found. Try adjusting threshold values.")
+
+        return ioi
+        
     # ------------------------
     # Surface
 
@@ -782,7 +826,8 @@ class BaseContainerHandler():
         key = self.check_enum(key)
         if len(data) != self.mesh.n_points:
             raise ValueError(
-                "Number of data points must match number of points [nodes] at mesh.")
+                "Number of data points must match number of points [nodes] at mesh."
+                "Expected: {}, Received: {}".format(self.mesh.n_points, len(data)))
         self.mesh.point_data[key] = data
 
     def set_mesh_cell_data(self, key, data, **kwargs):

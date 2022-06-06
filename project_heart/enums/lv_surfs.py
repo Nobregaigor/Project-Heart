@@ -35,40 +35,49 @@ class LV_SURFS(IntEnum):
     EPI_AM_INTERCECTION = 13
 
     # AORTIC AND MITRAL REGIONS AS ENDO-EPI
-    ENDO_AM_REGION = 14
-    EPI_AM_REGION = 15
+    ENDO_AM = 14
+    EPI_AM = 15
 
+    # -- BASE AND APEX REGIONS -- 
     # BASAL REGIONS
-    BASE_REGION = 16
-    ENDO_BASE_REGION = 17
-    EPI_BASE_REGION = 18
+    BASE = 16
+    BASE_EST = 16  # FOR DEBUGING
+    BASE_ENDO = 17 # BASE + END0
+    BASE_EPI = 18  # BASE + EPI
 
     # APEX REGIONS
-    APEX_REGION = 19
-    ENDO_APEX_REGION = 20
-    EPI_APEX_REGION = 21
+    APEX = 19
+    APEX_EST = 19   # FOR DEBUGING
+    APEX_ENDO = 20  # APEX + ENDO
+    APEX_EPI = 21   # APEX + EPI
 
     # BASE BORDER
-    BASE = 23
-    BASE_BORDER = 23
+    BASE_BORDER = 23 # 
+    BASE_BORDER_ENDO = 24 # INTERSECTION OF BASE AND ENDO
+    BASE_BORDER_EPI = 25  # INTERSECTION OF BASE AND EPI
+
+    # BASE_EXCLUDE_ENDO = 26
+    # BASE_EXCLUDE_EPI = 27
+
     
-    ENDO_EXCLUDE_BASE = 24
-    EPI_EXCLUDE_BASE = 25
     
-    ENDO_BASE = 26 # endo + base
+
     
 
 class LV_MESH_DATA(Enum):
 
     # apex and base, no distinction between endo and epi
-    APEX_BASE_REGIONS = "LV_APEX_BASE_REGIONS"
+    APEX_BASE_EST = "LV_APEX_BASE_EST"
+    APEX_BASE = "LV_APEX_BASE"
+
     # apex endo, apex epi, base endo, base epi
     AB_ENDO_EPI = "LV_APEX_BASE_REGIONS_ENDO_EPI"
 
     # 'guess' based on angle between surf normals and geo center
-    EPI_ENDO_GUESS = "LV_EPI_ENDO_GUESS"
+    EPI_ENDO_EST = "LV_EPI_ENDO_EST"
     EPI_ENDO = "LV_EPI_ENDO"  # final est. of epi and endo surfs
     EPI_ENDO_EXCLUDE_BASE = "EPI_ENDO_EXCLUDE_BASE"
+    
     
     # aortic, mitral and intersection (no detailed info)
     AM_SURFS = "LV_AM_SURFS"
