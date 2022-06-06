@@ -104,7 +104,6 @@ class LV3DMetricsPlotter(LVGeometricsComputations):
                         re=False,
                         **kwargs):
         
-        
         # resolve plotter and window size
         window_size = self._reolve_window_size(window_size)
         plotter = self._resolve_plotter(plotter, plot_kwargs, t=t)
