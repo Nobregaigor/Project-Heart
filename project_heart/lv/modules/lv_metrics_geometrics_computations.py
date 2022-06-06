@@ -64,57 +64,81 @@ class LVGeometricsComputations(LV_Speckles):
         self.states.add(self.STATES.XYZ, pos)  # save to states
         return self.states.get(self.STATES.XYZ)  # return pointer
 
-    # ---- Apex and Base ref over timesteps
+    # ----------------
+    # ---- Volume ----
 
-    def compute_base_apex_ref_over_timesteps(self,
-                                             nodeset: str = None,
-                                             check_preset_nodeset=True,
-                                             use_reference_ab_regions=False,
-                                             use_base_region=False,
-                                             dtype: np.dtype = np.float64,
-                                             **kwargs
-                                             ) -> np.ndarray:
-
-        # check if xyz was computed; If not, try to compute it.
+    def compute_volume_based_on_nodeset(self,
+                                        nodeset: str = None,
+                                        dtype: np.dtype = np.float64
+                                        ) -> np.ndarray:
+        # try to import required module
+        try:
+            from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
+        except ImportError:
+            raise ImportError(
+                "scipy.spatial is required for volume computation.")
+        # check if xyz was computed, otherwise try to automatically compute it.
         if not self.states.check_key(self.STATES.XYZ):
             self.compute_xyz_from_displacement()
         # get node ids (index array) from nodeset
-        # nodeset = self.REGIONS.EPI if nodeset is None else nodeset
+        nodeset = self.REGIONS.ENDO if nodeset is None else nodeset
+        nodeids = self.get_nodeset(nodeset)
+        # apply nodeids mask for position data
+        positions = self.states.get(self.STATES.XYZ, mask=nodeids)
+        vols = np.zeros(len(positions), dtype=dtype)
+        for i, xyz in enumerate(positions):
+            vols[i] = ConvexHull(xyz, qhull_options="Qt Qx Qv Q4 Q14").volume
+        self.states.add(self.STATES.VOLUME, vols)  # save to states
+        return self.states.get(self.STATES.VOLUME)  # return pointer
+
+    # =============================
+    #   Geometric computations
+    # =============================
+    
+    # ---- Apex and Base ref over timesteps
+    
+    def compute_base_apex_ref_over_timesteps(self, apex_spk, base_spk, log_level=logging.INFO):
         
-        if check_preset_nodeset:
-            if nodeset is None and self.apex_and_base_from_nodeset is not None:
-                nodeset = self.apex_and_base_from_nodeset
+        log = logger.getChild("compute_base_apex_ref_over_timesteps")
+        log.setLevel(log_level)
+        log.info("Computing apex and base virtual nodes over timesteps")
+        log.debug("Using apex spk: {}".format(apex_spk))
+        log.debug("Using base spk: {}".format(base_spk))
+
+        apex_spk = self._resolve_spk_args(apex_spk)
+        base_spk = self._resolve_spk_args(base_spk)
+        
+        assert len(apex_spk) == 1, "Only one speckle is allowed for apex computation."
+        assert len(base_spk) == 1, "Only one speckle is allowed for base computation."
+        
+        apex_spk = apex_spk[0]
+        base_spk = base_spk[0]
+        
+        
+        assert self.check_spk(
+            apex_spk), "apex_spk must be a valid 'Speckle' object."
+        assert self.check_spk(
+            base_spk), "base_spk must be a valid 'Speckle' object."
+        
+        # check if xyz was computed; If not, try to compute it.
+        if not self.states.check_key(self.STATES.XYZ):
+            self.compute_xyz_from_displacement()
             
-        if nodeset is not None:
-            nodeids = self.get_nodeset(nodeset)
-            # get node positions from nodeset at specified state
-            xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
-        else:
-            xyz = self.states.get(self.STATES.XYZ)
-        # compute distances for each timesteps
-        base = np.zeros((len(xyz), 3), dtype=dtype)
-        apex = np.zeros((len(xyz), 3), dtype=dtype)
-
-        if use_reference_ab_regions:
-            base_region = self.get_nodeset(self.REGIONS.BASE_REGION)
-            apex_region = self.get_nodeset(self.REGIONS.APEX_REGION)
-            for i, pts in enumerate(xyz):
-                base[i] = centroid(pts[base_region])
-                apex[i] = centroid(pts[apex_region])
-        else:
-            for i, pts in enumerate(xyz):
-                # because nodes can shift position, we need to re-estimate
-                # base and apex positions at each timestep.
-                (es_base, es_apex) = self.est_apex_and_base_refs_iteratively(pts, **kwargs)["long_line"]
-                base[i] = es_base
-                apex[i] = es_apex
-
+        xyz_apex = self.states.get(self.STATES.XYZ, mask=apex_spk.ids)
+        xyz_base = self.states.get(self.STATES.XYZ, mask=base_spk.ids)
+        
+        apex = [centroid(xyz) for xyz in xyz_apex]
+        base = [centroid(xyz) for xyz in xyz_base]
+        
+        log.debug("apex: \n{}".format(apex))
+        log.debug("base: \n{}".format(base))
+        
         self.states.add(self.STATES.BASE_REF, base)  # save to states
         self.states.add(self.STATES.APEX_REF, apex)  # save to states
 
         # return pointers
         return (self.states.get(self.STATES.BASE_REF), self.states.get(self.STATES.APEX_REF))
-
+          
     # ---- Speckle centers at longitudinal axis
 
     def compute_spk_la_centers_over_timesteps(self, spk, 
@@ -148,127 +172,9 @@ class LVGeometricsComputations(LV_Speckles):
                      format(apex_ts, base_ts, spk_res))
         self.states.add_spk_data(spk, self.STATES.LA_CENTERS, spk_res)  # save to states
         return self.states.get_spk_data(spk, self.STATES.LA_CENTERS) # return pointer
-    
-    # =============================
-    #   Geometric computations
-    # =============================
-
-    # ----------------
-    # ---- Volume ----
-
-    def compute_volume_based_on_nodeset(self,
-                                        nodeset: str = None,
-                                        dtype: np.dtype = np.float64
-                                        ) -> np.ndarray:
-        # try to import required module
-        try:
-            from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
-        except ImportError:
-            raise ImportError(
-                "scipy.spatial is required for volume computation.")
-        # check if xyz was computed, otherwise try to automatically compute it.
-        if not self.states.check_key(self.STATES.XYZ):
-            self.compute_xyz_from_displacement()
-        # get node ids (index array) from nodeset
-        nodeset = self.REGIONS.ENDO if nodeset is None else nodeset
-        nodeids = self.get_nodeset(nodeset)
-        # apply nodeids mask for position data
-        positions = self.states.get(self.STATES.XYZ, mask=nodeids)
-        vols = np.zeros(len(positions), dtype=dtype)
-        for i, xyz in enumerate(positions):
-            vols[i] = ConvexHull(xyz, qhull_options="Qt Qx Qv Q4 Q14").volume
-        self.states.add(self.STATES.VOLUME, vols)  # save to states
-        return self.states.get(self.STATES.VOLUME)  # return pointer
-
+        
     # -------------------------------
     # ---- Longitudinal distance ----
-
-    def compute_nodeset_longitudinal_distance(self,
-                                      nodeset: str,
-                                      approach: str = "extremes",
-                                      use_base_region:str=None,
-                                      dtype: np.dtype = np.float64,
-                                      log_level=logging.INFO,
-                                      **kwargs,
-                                      ) -> np.ndarray:            
-        # check if xyz was computed; If not, try to compute it.
-        if not self.states.check_key(self.STATES.XYZ):
-            self.compute_xyz_from_displacement()
-        logger.setLevel(log_level)
-        logger.debug("Computing longitudinal distance for nodeset: '{}' "
-                     "with approach: '{}'.".format(nodeset, approach))
-        from project_heart.utils.enum_utils import check_for_enum_name
-        nodeset = check_for_enum_name(nodeset, self.REGIONS)
-        # get node ids (index array) from nodeset
-        nodeids = self.get_nodeset(nodeset)
-        # get node positions from nodeset at specified state
-        xyz = self.states.get(self.STATES.XYZ, mask=nodeids)
-        # get base region nodes if requested
-        should_use_base_nodes = False
-        if use_base_region is not None:
-            from enum import Enum
-            if isinstance(use_base_region, bool):
-                if use_base_region is True:
-                  should_use_base_nodes = True
-                  logger.debug("Using default base region for base centroid estimation: {}"
-                               .format(self.REGIONS.BASE.value))
-                  base_mask = self.get_nodeset(self.REGIONS.BASE)
-            elif isinstance(use_base_region, (str, Enum)):
-                should_use_base_nodes = True
-                logger.debug("Using base user-provided region for base centroid estimation: {}"
-                               .format(use_base_region))
-                base_mask = self.get_nodeset(self.REGIONS.BASE)
-            else:
-              should_use_base_nodes = False
-              raise ValueError("use_base_region should be bool or str or Enum-like. Received: {}"
-                               .format(use_base_region))
-            if should_use_base_nodes is True:
-              xyz_base = self.states.get(self.STATES.XYZ, mask=base_mask)
-          
-        # compute distances for each timesteps
-        dists = np.zeros(len(xyz), dtype=dtype)
-        if approach == "extremes":
-            if not should_use_base_nodes:
-              for i, pts in enumerate(xyz):
-                  dists[i] = np.max(pts[:,2]) - np.min(pts[:,2])
-                  logger.debug("[{}] --> max: {}, min: {}, dist: {}"
-                               .format(i, np.max(pts[:,2]), np.min(pts[:,2]), dists[i]))
-            else:
-              for i, (pts, pts_base) in enumerate(zip(xyz, xyz_base)):
-                  dists[i] = np.max(pts_base[:,2]) - np.min(pts[:,2])
-                  logger.debug("[{}] --> max: {}, min: {}, dist: {}"
-                               .format(i, np.max(pts_base[:,2]), np.min(pts[:,2]), dists[i]))
-        elif approach == "estimate_apex_base":
-            ab_info = self.est_apex_and_base_refs_iteratively(xyz[0], **kwargs)
-            apex_mask = ab_info["apex_region"]
-            base_mask = ab_info["base_region"]
-            apex_pts = xyz[:, apex_mask]
-            base_pts = xyz[:, base_mask]
-            if not should_use_base_nodes:
-              zipped = zip(apex_pts, base_pts)
-            else:
-              zipped = zip(apex_pts, xyz_base)
-            for i, (apts, bpts) in enumerate(zipped):
-                ac = centroid(apts)
-                bc = centroid(bpts)
-                dists[i] = np.linalg.norm(bc - ac)
-                logger.debug("[{}] --> base: {}, apex: {}, dist: {}"
-                               .format(i, bc, ac, dists[i]))
-        else:
-            raise ValueError("Unknown approach. Avaiable approaches are: "
-                             "'extremes' and 'estimate_apex_base'. Received: '{}'."
-                             "Please, check documentation for further details."
-                             .format(approach))
-        # resolve reference key (save as endo-epi)
-        nodeset = self.check_enum(nodeset)
-        if nodeset == self.REGIONS.EPI_EXCLUDE_BASE.value:
-            nodeset = self.REGIONS.EPI.value
-        elif nodeset == self.REGIONS.ENDO_EXCLUDE_BASE.value:
-            nodeset = self.REGIONS.ENDO.value
-        self.STATES, (_, key) = add_to_enum(self.STATES, self.STATES.LONGITUDINAL_DISTANCE, nodeset)
-        logger.info("State key added:'{}'".format(key))
-        self.states.add(key, dists)  # save to states
-        return self.states.get(key)  # return pointer
 
     def compute_longitudinal_distances_between_speckles(self, apex_spk, base_spk, 
                                                         approach="centroid",
@@ -313,58 +219,45 @@ class LVGeometricsComputations(LV_Speckles):
         self.states.add_spk_data(base_spk, self.STATES.LONGITUDINAL_DISTANCE, spk_res)  # save to states
         return self.states.get_spk_data(apex_spk, self.STATES.LONGITUDINAL_DISTANCE) # return pointer
 
-    def compute_longitudinal_distance(self, nodesets:set=None, apex_spks=None, base_spks=None,
-                                      reduce_by=None,
+    def compute_longitudinal_distance(self, apex_spks, base_spks, reduce_by=None,
                                       dtype: np.dtype = np.float64, **kwargs) -> np.ndarray:
         # set key for this function
         key = self.STATES.LONGITUDINAL_DISTANCE
-        # check if enough information is available for speckle computation
-        using_spks = True if apex_spks is not None and base_spks is not None else False
-        if using_spks: # if both apex and base speckles were provided, use this approach
-            logger.info("Computing metric '{}' using spks.".format(key))
-            # resolve spks (make sure you have a SpeckeDeque)
-            apex_spks = self._resolve_spk_args(apex_spks)
-            base_spks = self._resolve_spk_args(base_spks)
-            # compute metric
-            res = [self.compute_longitudinal_distances_between_speckles(apex_s, base_s, **kwargs) for (apex_s, base_s) in zip(apex_spks, base_spks)]
-            # reduce metric (here we compute the mean radius across entire LV)
-            self._reduce_metric_and_save(res, key, **kwargs)
-            # set metric relationship with spks 
-            # so that we can reference which spks were used to compute this metric
-            self.states.set_data_spk_rel(apex_spks, key)
-            self.states.set_data_spk_rel(base_spks, key)
-            # Break down computation by each 'set of spks'
-            if reduce_by is None:
-                reduce_by = {"group"}
-            if "group" in reduce_by:
-                logger.debug("Reducing metric by group for '{}'".format(key))
-                self._reduce_metric_by_group(apex_spks, key, **kwargs)
-                self._reduce_metric_by_group(base_spks, key, **kwargs)
-                logger.debug("Metric '{}' has reduced values by group.".format(key))
-            if "name" in reduce_by:
-                logger.debug("Reducing metric by name for '{}'".format(key))
-                self._reduce_metric_by_name(apex_spks, key, **kwargs)
-                self._reduce_metric_by_name(base_spks, key, **kwargs)
-                logger.debug("Metric '{}' has reduced values by names.".format(key))
-            if "subset" in reduce_by:
-                logger.debug("Reducing metric by subset for '{}'".format(key))
-                self._reduce_metric_by_subset(apex_spks, key, **kwargs)
-                self._reduce_metric_by_name(base_spks, key, **kwargs)
-                logger.debug("Metric '{}' has reduced values by subsets.".format(key))
-            if "group_name" in reduce_by:
-                logger.debug("Reducing metric by group and name for '{}'".format(key))
-                self._reduce_metric_by_group_and_name(apex_spks, key, **kwargs)
-                self._reduce_metric_by_group_and_name(base_spks, key, **kwargs)
-                logger.debug("Metric '{}' has reduced values by group and name.".format(key))
-        else: # fall back to nodesets approach
-            # make sure we have endo and epi surface ids
-            if nodesets is None:
-                nodesets = {self.REGIONS.ENDO_EXCLUDE_BASE, self.REGIONS.EPI_EXCLUDE_BASE}
-            logger.info("Computing metric '{}' using nodesets: {}".format(key, nodesets))
-            # compute long dists for each nodeset
-            res = [self.compute_nodeset_longitudinal_distance(key, dtype=dtype, **kwargs) for key in nodesets]
-            # reduce metric and return pointer
-            return self._reduce_metric_and_save(res, self.STATES.LONGITUDINAL_DISTANCE)
+        logger.info("Computing metric '{}'.".format(key))
+        # resolve spks (make sure you have a SpeckeDeque)
+        apex_spks = self._resolve_spk_args(apex_spks)
+        base_spks = self._resolve_spk_args(base_spks)
+        # compute metric
+        res = [self.compute_longitudinal_distances_between_speckles(apex_s, base_s, **kwargs) for (apex_s, base_s) in zip(apex_spks, base_spks)]
+        # reduce metric (here we compute the mean radius across entire LV)
+        self._reduce_metric_and_save(res, key, **kwargs)
+        # set metric relationship with spks 
+        # so that we can reference which spks were used to compute this metric
+        self.states.set_data_spk_rel(apex_spks, key)
+        self.states.set_data_spk_rel(base_spks, key)
+        # Break down computation by each 'set of spks'
+        if reduce_by is None:
+            reduce_by = {"group"}
+        if "group" in reduce_by:
+            logger.debug("Reducing metric by group for '{}'".format(key))
+            self._reduce_metric_by_group(apex_spks, key, **kwargs)
+            self._reduce_metric_by_group(base_spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
+        if "name" in reduce_by:
+            logger.debug("Reducing metric by name for '{}'".format(key))
+            self._reduce_metric_by_name(apex_spks, key, **kwargs)
+            self._reduce_metric_by_name(base_spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(apex_spks, key, **kwargs)
+            self._reduce_metric_by_name(base_spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
+        if "group_name" in reduce_by:
+            logger.debug("Reducing metric by group and name for '{}'".format(key))
+            self._reduce_metric_by_group_and_name(apex_spks, key, **kwargs)
+            self._reduce_metric_by_group_and_name(base_spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
     
     # -------------------------
     # ---- Radial distance ---- 
