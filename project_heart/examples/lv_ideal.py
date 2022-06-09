@@ -23,7 +23,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             name="base",    # base region
             from_nodeset=LV_SURFS.BASE_BORDER_ENDO, # using border (edge for ideal)
             use_all_nodes=True, # skip search for nodes close to 'plane'
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
     
     _ = lv.create_speckles(
@@ -32,7 +32,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             name="base",    # base region
             from_nodeset=LV_SURFS.BASE_BORDER_EPI, # using border (edge for ideal)
             use_all_nodes=True, # skip search for nodes close to 'plane'
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
     _ = lv.create_speckles(
@@ -42,7 +42,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             from_nodeset=LV_SURFS.ENDO, # using border (edge for ideal)
             k=0.0,
             d=1.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
     _ = lv.create_speckles(
             collection="LA", # longitudinal axis collection
@@ -52,7 +52,8 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             use_local_k_ref=True,
             k=0.0,
             d=1.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
+            ignore_local_k_reference_warning=True
         )
 
     # =========================================================================
@@ -74,7 +75,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=10,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
         
         _ = lv.create_speckles(
@@ -91,7 +92,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=10,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
         
         _ = lv.create_speckles(
@@ -108,7 +109,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="z2",
             n_clusters=60,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
         _ = lv.create_speckles(
@@ -125,7 +126,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="z2",
             n_clusters=60,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
     # =========================================================================
@@ -147,7 +148,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=16,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
         _ = lv.create_speckles(
@@ -163,7 +164,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=16,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
         
         _ = lv.create_speckles(
@@ -179,7 +180,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=36,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
 
@@ -196,7 +197,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=36,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
    
     # =========================================================================
@@ -215,7 +216,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
     _ = lv.create_speckles(
@@ -231,7 +232,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
     
     _ = lv.create_speckles(
@@ -247,7 +248,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
     _ = lv.create_speckles(
@@ -263,7 +264,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
     
     _ = lv.create_speckles(
@@ -279,7 +280,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
     
     _ = lv.create_speckles(
@@ -295,7 +296,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
     _ = lv.create_speckles(
@@ -311,7 +312,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
     
     _ = lv.create_speckles(
@@ -327,7 +328,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=8,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
 
 
@@ -345,7 +346,7 @@ def get_lv_ideal(filepath=filepath, save_spk_dict=False):
             cluster_criteria="angles3",
             n_clusters=18,
             t=0.0,
-            log_level=logging.WARN,
+            log_level=logging.INFO,
         )
     
 

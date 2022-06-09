@@ -68,6 +68,7 @@ class LV_Speckles(LV_RegionIdentifier):
                         cluster_criteria:str=None,
                         log_level:int=logging.WARNING,
                         ignore_unmatch_number_of_clusters:bool=True,
+                        ignore_local_k_reference_warning:bool=False,
                         **kwargs
                         ):
         """
@@ -134,8 +135,9 @@ class LV_Speckles(LV_RegionIdentifier):
             long_line = self.get_long_line()
             logger.debug("long_line: \n{}".format(long_line))
         else:
-            logger.warn("Using local k reference (not LV long_line). "
-                        "Only use speckles created with this approach for region-independent computations.")
+            if not ignore_local_k_reference_warning:
+                logger.warn("Using local k reference (not LV long_line). "
+                            "Only use speckles created with this approach for region-independent computations.")
             from project_heart.utils.cloud_ops import relate_closest
 
             _, rel_d = relate_closest(nodes, [self.get_virtual_node(self.VIRTUAL_NODES.BASE)])
