@@ -305,7 +305,9 @@ class LVGeometricsComputations(LV_Speckles):
             # check if speckle apex and base values were computed. If not, compute them.
             if not self.states.check_key(self.STATES.BASE_REF) or \
             not self.states.check_key(self.STATES.APEX_REF):
-                self.compute_base_apex_ref_over_timesteps(**kwargs)
+                raise RuntimeError("STATES.APEX_REF and STATES.BASE_REF references were not computed. "
+                                   "Either add them manually or use "
+                                   "'compute_base_apex_ref_over_timesteps'.")
             # get apex and base points over timesteps
             apex_ts = self.states.get(self.STATES.APEX_REF)
             base_ts = self.states.get(self.STATES.BASE_REF)

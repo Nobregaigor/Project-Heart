@@ -121,6 +121,9 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
         def assert_endo_epi_spks_arg(key):
             assert "endo_spks" in metrics[key], "Metric '{}' requires 'endo_spks' argument.".format(key)
             assert "epi_spks" in metrics[key], "Metric '{}' requires 'epi_spks' argument.".format(key)
+        def assert_apex_base_spks_arg(key):
+            assert "apex_spks" in metrics[key], "Metric '{}' requires 'apex_spks' argument.".format(key)
+            assert "base_spks" in metrics[key], "Metric '{}' requires 'base_spks' argument.".format(key)
         def execute_w_spks(fun, key):
             assert_spks_arg(key)
             args = copy(metrics[key])
@@ -135,6 +138,14 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
             args.pop("endo_spks")
             args.pop("epi_spks")
             fun(endo_spks, epi_spks, **args)
+        def execute_w_apex_base_spks(fun, key):
+            assert_apex_base_spks_arg(key)
+            args = copy(metrics[key])
+            apex_spks = args["apex_spks"]
+            base_spks = args["base_spks"]
+            args.pop("apex_spks")
+            args.pop("base_spks")
+            fun(apex_spks, base_spks, **args)
         def resolve_add_info(df,info,all_dfs):
             if info is not None:
                 all_dfs.append(info)
@@ -144,7 +155,12 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
         valkeys = self.STATES
         
         all_dfs = deque([])
-
+        
+        # compute apex and base over timesteps
+        key = self.STATES.APEX_BASE_OVER_TIMESTEPS.value
+        if key in metrics:
+            logger.info("Computing {}.".format(key))
+            execute_w_apex_base_spks(self.compute_base_apex_ref_over_timesteps, key)
         # volume
         key = valkeys.VOLUME.value
         if key in metrics:

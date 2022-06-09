@@ -187,6 +187,7 @@ class LV_STATES(Enum):
     
     BASE_REF = "base_ref"
     APEX_REF = "apex_ref"
+    APEX_BASE_OVER_TIMESTEPS = "apex_base_over_timesteps"
     
     LA_CENTERS = "la_centers" # used for spk centers
 
