@@ -15,7 +15,8 @@ statesfile = os.path.join(CURR_DIR, statesfile)
 def get_lv_typeA(filepath=filepath,statesfile=statesfile, save_spk_dict=False):
 
     lv = LV.from_file(Path(filepath)) 
-    lv.states.from_pickle(str(statesfile))
+    if statesfile is not None:
+        lv.states.from_pickle(str(statesfile))
     
     lv.identify_regions(LV_GEO_TYPES.TYPE_A)
   
@@ -358,6 +359,6 @@ def get_lv_typeA(filepath=filepath,statesfile=statesfile, save_spk_dict=False):
     apex_spk = lv.get_speckles(spk_collection="LA", spk_group="endo", spk_name="apex")
     base_spk = lv.get_speckles(spk_collection="LA", spk_group="endo", spk_name="base")
 
-    lv.compute_base_apex_ref_over_timesteps(apex_spk, base_spk, log_level=logging.WARN)
+    # lv.compute_base_apex_ref_over_timesteps(apex_spk, base_spk, log_level=logging.WARN)
             
     return lv
