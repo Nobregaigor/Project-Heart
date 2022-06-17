@@ -29,7 +29,7 @@ To check and update your local repository with the lastest version you can do:
 - To read/write .feb and read .xplt:
 
   - Reference: [febio-python](https://github.com/Nobregaigor/febio-python)
-  - Install: `pip install febio-python==0.1.3`
+  - Install: `pip install febio-python==0.1.4`
 
 - For Tetrahedralizer backends:
 
