@@ -12,13 +12,19 @@ filepath = os.path.join(CURR_DIR, filepath)
 statesfile = "./sample_files/sample_displacement_lv_typeA_hex_states_linear_press_incr.pbz2"
 statesfile = os.path.join(CURR_DIR, statesfile)
 
-def get_lv_typeA(filepath=filepath,statesfile=statesfile, save_spk_dict=False):
+def get_lv_typeA(filepath=filepath, statesfile=statesfile, save_spk_dict=False, extract_largest_mesh=True, id_regionkwargs=None):
 
     lv = LV.from_file(Path(filepath)) 
     if statesfile is not None:
         lv.states.from_pickle(str(statesfile))
     
-    lv.identify_regions(LV_GEO_TYPES.TYPE_A)
+    if id_regionkwargs is None:
+        id_regionkwargs = dict()
+        
+    if extract_largest_mesh:
+        lv.extract_largest_mesh()
+        
+    lv.identify_regions(LV_GEO_TYPES.TYPE_A, **id_regionkwargs)
   
     # =========================================================================
     # LA SPECKLES
