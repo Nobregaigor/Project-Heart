@@ -63,9 +63,11 @@ class LV_Speckles(LV_RegionIdentifier):
                         n_subsets:int=0, 
                         subsets_criteria:str=None,
                         subsets_names:str=None,
+                        subsets_vector_ref: np.ndarray=None,
                         t:float=0.0,
                         n_clusters:int=0,
                         cluster_criteria:str=None,
+                        clusters_vector_ref: np.ndarray=None,
                         log_level:int=logging.WARNING,
                         ignore_unmatch_number_of_clusters:bool=True,
                         ignore_local_k_reference_warning:bool=False,
@@ -232,7 +234,6 @@ class LV_Speckles(LV_RegionIdentifier):
         
         if n_subsets <= 1:
             logger.debug("Adding single subset.")
-            
             c_ids = None
             non_empty_buckets_l = None
             if n_clusters > 0:
@@ -241,6 +242,7 @@ class LV_Speckles(LV_RegionIdentifier):
                                                         cluster_criteria, 
                                                         normal, valid_ids,
                                                         spk_la_center,
+                                                        clusters_vector_ref,
                                                         True, #check for orientation
                                                         log_level,
                                                         ignore_unmatch_number_of_clusters)
@@ -268,6 +270,7 @@ class LV_Speckles(LV_RegionIdentifier):
                                                          subsets_criteria, 
                                                          normal, valid_ids,
                                                          spk_la_center,
+                                                         subsets_vector_ref,
                                                          False, # dont check for orientation
                                                          log_level)
                         
@@ -285,6 +288,7 @@ class LV_Speckles(LV_RegionIdentifier):
                                                      cluster_criteria, 
                                                      normal, sub_ids,
                                                      spk_la_center,
+                                                     clusters_vector_ref,
                                                      False, # dont check for orientation
                                                      log_level,
                                                      ignore_unmatch_number_of_clusters,
@@ -442,6 +446,7 @@ class LV_Speckles(LV_RegionIdentifier):
                             normal, 
                             valid_ids,
                             ref_center, # used for angles
+                            ref_vector=None, #used for angles3
                             check_orientation=False,
                             log_level=logging.WARNING,
                             ignore_unmatch_number_of_clusters=False):
@@ -545,6 +550,7 @@ class LV_Speckles(LV_RegionIdentifier):
                     normal = -normal
                     logger.debug("using opposite normal for computation as negative "
                                 "(on z) axis are not fully tested: {}.".format(normal))
+            
             # project points onto a single plane based on spk normal
             logger.debug("pts.shape: {}.".format(pts.shape))
             logger.debug("pts[:5]: \n{}.".format(pts[:5]))
@@ -555,72 +561,82 @@ class LV_Speckles(LV_RegionIdentifier):
             logger.debug("p_center: {}.".format(p_center))
             # compute angles between a reference vector and other vectos
             vecs = ppts - p_center 
-            vecs_sum = np.linalg.norm(vecs, axis=1)
-            ref_max_pt = np.argmax(vecs_sum)
-            ref_min_pt = np.argmin(vecs_sum)
-            logger.debug("ref_max_pt: {}.".format(ref_max_pt))
-            logger.debug("ref_max_pt: {}.".format(ref_min_pt))
-            ref_max_vec = vecs[ref_max_pt]
-            ref_min_vec = vecs[ref_min_pt]
-            logger.debug("ref_max_vec: {}.".format(ref_max_vec))
-            logger.debug("ref_min_vec: {}.".format(ref_min_vec))
+            # check for reference vector
+            if ref_vector is None:
+                vecs_sum = np.linalg.norm(vecs, axis=1)
+                ref_max_pt = np.argmax(vecs_sum)
+                ref_min_pt = np.argmin(vecs_sum)
+                logger.debug("ref_max_pt: {}.".format(ref_max_pt))
+                logger.debug("ref_max_pt: {}.".format(ref_min_pt))
+                ref_max_vec = vecs[ref_max_pt]
+                ref_min_vec = vecs[ref_min_pt]
+                logger.debug("ref_max_vec: {}.".format(ref_max_vec))
+                logger.debug("ref_min_vec: {}.".format(ref_min_vec))
+                ref_vector = ref_max_vec
+            else:
+                if not isinstance(ref_vector, np.ndarray):
+                    ref_vector = np.array(ref_vector, dtype=np.float64)
+                assert len(ref_vector.shape) == 1 and ref_vector.shape[0] == 3, (
+                    "ref_vector must have shape (3,), referring to [x,y,z]."
+                )
+            logger.debug("ref_vector: {}.".format(ref_vector))
             # compute angles based on 
             if check_orientation:
                 logger.debug("Using a none or single subset, meaning large speckle. \n" 
                             "-> 'check_orientation' is set to True."
                             "-> Will try to eliminate possible discontinuities.")
-                angles = angle_between(vecs, ref_max_vec, check_orientation=True, zaxis=normal)    
-                search_for_jumps = True
-                search_trial = 0
-                max_search_trials = 20
-                dist_step = 0.25
-                while search_for_jumps:
-                    logger.debug("Searching for discontinuity... {}".format(search_trial+1))
-                    sort_ids = np.argsort(angles)
-                    ppts_sorted_by_angles = ppts[sort_ids]
-                    dists_ppts = np.linalg.norm(ppts_sorted_by_angles[1:] - ppts_sorted_by_angles[:-1], axis=1)
-                    dists_grad = np.gradient(dists_ppts)
-                    d_mean, d_stdev = np.mean(dists_grad), np.std(dists_grad)
-                    dist_jump = np.where(np.abs(dists_grad - d_mean) > (4 + (search_trial*dist_step)) *d_stdev)[0]
-                    if len(dist_jump) > 0:
-                        logger.debug("Discontinuity Found: {}".format(len(dist_jump)))
-                        dist_jump_val = dists_grad[dist_jump]
-                        logger.debug("dist_jump: {} -> {}.".format(dist_jump, dist_jump_val))
-                        if (search_trial % 2) == 0:
-                            look_at = 2
-                        else:
-                            look_at = 0
-                        idx_to_look_at =dist_jump[np.argmax(dist_jump_val)]+look_at
-                        if idx_to_look_at >= len(sort_ids):
-                            idx_to_look_at = len(sort_ids) - idx_to_look_at
-                        new_max_pt = sort_ids[idx_to_look_at]
-                        ref_max_vec = vecs[new_max_pt]
-                        ref_max_pt = new_max_pt
-                        angles = angle_between(vecs, ref_max_vec, check_orientation=True, zaxis=normal)
-                    else:
-                        logger.debug("No discontinuity found: {}".format(len(dist_jump)))
-                        search_for_jumps = False
-                    if search_trial >= max_search_trials:
-                        logger.debug("Could not resolve jumps under {} trials. \n"
-                                    "-> Continuing (errors might occur)".format(max_search_trials))
-                        search_for_jumps = False
-                    search_trial += 1
+                angles = angle_between(vecs, ref_vector, check_orientation=True, zaxis=normal)    
+                # search_for_jumps = True
+                # search_trial = 0
+                # max_search_trials = 20
+                # dist_step = 0.25
+                # while search_for_jumps:
+                #     logger.debug("Searching for discontinuity... {}".format(search_trial+1))
+                #     sort_ids = np.argsort(angles)
+                #     ppts_sorted_by_angles = ppts[sort_ids]
+                #     dists_ppts = np.linalg.norm(ppts_sorted_by_angles[1:] - ppts_sorted_by_angles[:-1], axis=1)
+                #     dists_grad = np.gradient(dists_ppts)
+                #     d_mean, d_stdev = np.mean(dists_grad), np.std(dists_grad)
+                #     dist_jump = np.where(np.abs(dists_grad - d_mean) > (4 + (search_trial*dist_step)) *d_stdev)[0]
+                #     if len(dist_jump) > 0:
+                #         logger.debug("Discontinuity Found: {}".format(len(dist_jump)))
+                #         dist_jump_val = dists_grad[dist_jump]
+                #         logger.debug("dist_jump: {} -> {}.".format(dist_jump, dist_jump_val))
+                #         if (search_trial % 2) == 0:
+                #             look_at = 2
+                #         else:
+                #             look_at = 0
+                #         idx_to_look_at =dist_jump[np.argmax(dist_jump_val)]+look_at
+                #         if idx_to_look_at >= len(sort_ids):
+                #             idx_to_look_at = len(sort_ids) - idx_to_look_at
+                #         new_max_pt = sort_ids[idx_to_look_at]
+                #         ref_max_vec = vecs[new_max_pt]
+                #         ref_max_pt = new_max_pt
+                #         angles = angle_between(vecs, ref_max_vec, check_orientation=True, zaxis=normal)
+                #     else:
+                #         logger.debug("No discontinuity found: {}".format(len(dist_jump)))
+                #         search_for_jumps = False
+                #     if search_trial >= max_search_trials:
+                #         logger.debug("Could not resolve jumps under {} trials. \n"
+                #                     "-> Continuing (errors might occur)".format(max_search_trials))
+                #         search_for_jumps = False
+                #     search_trial += 1
             else:
                 logger.debug("Using angles without orientation [0, 180]")
-                angles = angle_between(vecs, ref_max_vec, check_orientation=False)
+                angles = angle_between(vecs, ref_vector, check_orientation=False)
             # get reference vecs for binarization bounds
             min_a, max_a = np.min(angles), np.max(angles)
             logger.debug("min_a: {}.".format(np.degrees(min_a)))
             logger.debug("max_a: {}.".format(np.degrees(max_a)))
-            min_idx, max_idx = np.argmin(angles), np.argmax(angles)
-            ref_max_vec = vecs[max_idx]
-            ref_min_vec = vecs[min_idx]
-            logger.debug("Updating reference vectors.")
-            logger.debug("ref_max_vec: {}.".format(ref_max_vec))
-            logger.debug("ref_min_vec: {}.".format(ref_min_vec))
+            # min_idx, max_idx = np.argmin(angles), np.argmax(angles)
+            # ref_max_vec = vecs[max_idx]
+            # ref_min_vec = vecs[min_idx]
+            # logger.debug("Updating reference vectors.")
+            # logger.debug("ref_max_vec: {}.".format(ref_max_vec))
+            # logger.debug("ref_min_vec: {}.".format(ref_min_vec))
             # create bins
             bins = np.digitize(
-                angles, np.linspace(min_a*0.999, max_a*1.001, n_subsets+1))
+                angles, np.linspace(min_a*0.9999, max_a*1.0001, n_subsets+1))
             logger.debug("Number of bins found: {}.".format(len(np.unique(bins))))
             min_bin_id, max_bin_id = np.min(bins), np.max(bins)
             logger.debug("Min, Max bin Ids: [{}, {}].".format(min_bin_id, max_bin_id))
@@ -696,8 +712,51 @@ class LV_Speckles(LV_RegionIdentifier):
             
         elif subsets_criteria == "kmeans":
             from sklearn.cluster import KMeans
-            kmeans = KMeans(n_clusters=n_subsets, n_init=5, random_state=0)
-            bins = kmeans.fit_predict(pts)+1
+            
+            plane_d = calc_plane_d(normal, ref_center)
+            logger.debug("plane_d: {}.".format(plane_d))
+            
+            ppts = project_pts_onto_plane(pts, normal, plane_d)
+            kmeans = KMeans(n_clusters=n_subsets, random_state=0)
+            bins = kmeans.fit_predict(pts)
+            k_centers = kmeans.cluster_centers_
+            # _, idx = sort_by_spherical(centers, order="r_phi_theta")
+            
+            # ppts = project_pts_onto_plane(centers, normal, plane_d)
+            p_center = project_pts_onto_plane(ref_center, normal, plane_d)[0]
+            logger.debug("p_center: {}.".format(p_center))
+            vecs = k_centers - p_center 
+            
+            # check for reference vector
+            if ref_vector is None:
+                vecs_sum = np.linalg.norm(vecs, axis=1)
+                ref_max_pt = np.argmax(vecs_sum)
+                ref_min_pt = np.argmin(vecs_sum)
+                logger.debug("ref_max_pt: {}.".format(ref_max_pt))
+                logger.debug("ref_max_pt: {}.".format(ref_min_pt))
+                ref_max_vec = vecs[ref_max_pt]
+                ref_min_vec = vecs[ref_min_pt]
+                logger.debug("ref_max_vec: {}.".format(ref_max_vec))
+                logger.debug("ref_min_vec: {}.".format(ref_min_vec))
+                ref_vector = ref_max_vec
+            else:
+                if not isinstance(ref_vector, np.ndarray):
+                    ref_vector = np.array(ref_vector, dtype=np.float64)
+                assert len(ref_vector.shape) == 1 and ref_vector.shape[0] == 3, (
+                    "ref_vector must have shape (3,), referring to [x,y,z]."
+                )
+            logger.debug("ref_vector: {}.".format(ref_vector))
+                        
+            angles = angle_between(vecs, ref_vector, check_orientation=True, zaxis=normal) 
+            idx = np.argsort(angles)
+                        
+            binsorder = np.zeros_like(idx)
+            binsorder[idx] = np.arange(n_subsets)
+            
+            new_bins = np.asarray([binsorder[v] for v in bins])+1
+            bins = new_bins
+            # print(bins)
+
         else:
             raise ValueError(
                 "Unknown subset criteria. Valid options are: 'z', 'z2', or 'angles'")

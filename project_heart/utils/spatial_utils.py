@@ -182,13 +182,29 @@ def sort_circumferential_2D(xy, vec=np.asarray([1.0, 0.0])):
     return xy[idx]
 
 
-def sort_by_spherical(xyz):
+def sort_by_spherical(xyz, order="phi_theta_r"):
     # transform to spherical coordinates
     rs = np.linalg.norm(xyz, axis=1)
     thetas = np.arccos(xyz[:, 2]/rs)
     phis = np.arctan2(xyz[:, 1],xyz[:, 0])
     # sort by columns
-    ids = np.lexsort((phis, thetas,rs))
+    if order == "phi_theta_r":
+        ids = np.lexsort((phis, thetas, rs))
+    elif order == "phi_r_theta":
+        ids = np.lexsort((phis, rs, thetas))
+    elif order == "r_phi_theta":
+        ids = np.lexsort((rs, phis, thetas))
+    elif order == "r_theta_phi":
+        ids = np.lexsort((rs, thetas, phis))
+    elif order == "theta_r_phi":
+        ids = np.lexsort((thetas, rs, phis))
+    elif order == "theta_phi_r":
+        ids = np.lexsort((thetas, phis, rs))
+    else:
+        raise ValueError("Order not understood. Options are: "
+                         "phi_theta_r, phi_r_theta, "
+                         "r_phi_theta, r_theta_phi ",
+                         "theta_r_phi, theta_phi_r")
     return xyz[ids], ids
 
 # ==================================
@@ -513,7 +529,6 @@ def compute_length_from_predefined_cluster_list(xyz:np.ndarray,
         centers = apply_filter_on_line_segment(centers, **filter_args)
     #compute length
     return line_sum(centers, join_ends=join_ends)
-
 
 
 # ===================================

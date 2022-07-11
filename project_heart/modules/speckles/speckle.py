@@ -164,7 +164,7 @@ class SpeckeDeque(deque):
             new_offset = offset + len(spk.ids)
             ids[offset:new_offset] += offset
             offset = new_offset
-        return ids
+        return ids.astype(np.int64)
     
        
 class SpecklesDict():

@@ -106,7 +106,9 @@ class LVGeometricsComputations(LV_Speckles):
     
     # ---- Apex and Base ref over timesteps
     
-    def compute_base_apex_ref_over_timesteps(self, apex_spk, base_spk, log_level=logging.INFO):
+    def compute_base_apex_ref_over_timesteps(self, apex_spk, base_spk, recompute=True, log_level=logging.INFO):
+        
+        # recompute is not used (here for temporary placeholder)
         
         log = logger.getChild("compute_base_apex_ref_over_timesteps")
         log.setLevel(log_level)

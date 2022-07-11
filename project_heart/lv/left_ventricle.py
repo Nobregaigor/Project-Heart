@@ -111,7 +111,7 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
         #     t_ed=None, geochar=False, **kwargs)
         # return self.states.get(key, t=t) 
 
-    def extract_geometrics(self, metrics, dtype=np.float64, **kwargs):
+    def extract_geometrics(self, metrics, recompute=False, dtype=np.float64, **kwargs):
         
         import pandas as pd
         from collections import deque
@@ -129,7 +129,7 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
             args = copy(metrics[key])
             spks = args["spks"]
             args.pop("spks")
-            fun(spks, **args)
+            fun(spks, recompute=recompute, **args)
         def execute_w_endo_epi_spks(fun, key):
             assert_endo_epi_spks_arg(key)
             args = copy(metrics[key])
@@ -137,7 +137,7 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
             epi_spks = args["epi_spks"]
             args.pop("endo_spks")
             args.pop("epi_spks")
-            fun(endo_spks, epi_spks, **args)
+            fun(endo_spks, epi_spks, recompute=recompute, **args)
         def execute_w_apex_base_spks(fun, key):
             assert_apex_base_spks_arg(key)
             args = copy(metrics[key])
@@ -145,7 +145,7 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
             base_spks = args["base_spks"]
             args.pop("apex_spks")
             args.pop("base_spks")
-            fun(apex_spks, base_spks, **args)
+            fun(apex_spks, base_spks, recompute=recompute, **args)
         def resolve_add_info(df,info,all_dfs):
             if info is not None:
                 all_dfs.append(info)
