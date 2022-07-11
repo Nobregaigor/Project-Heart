@@ -34,8 +34,10 @@ def extract_geometrics(**kwargs):
     # required arguments
     input_file = input_data.get(SCRIPT_TAGS.INPUT_FILE.value, None)
     sh.assert_input_file(input_file)
-    output_file = input_data.get(SCRIPT_TAGS.OUTPUT_FILE.value, None)
-    sh.assert_input_exists(output_file, (str))
+    # output_file = input_data.get(SCRIPT_TAGS.OUTPUT_FILE.value, None)
+    # sh.assert_input_exists(output_file, (str))
+    output_file = sh.resolve_output_filename(input_data, "geometrics", ".csv")
+    sh.assert_input_exists(output_file, (str, Path))
     region_args = input_data.get(LV_SCRIPT_TAGS.IDENTIFY_REGIONS.value, None)
     sh.assert_input_exists(region_args, dict)
     spks = input_data.get(LV_SCRIPT_TAGS.SPECKLES.value, None)
@@ -63,6 +65,8 @@ def extract_geometrics(**kwargs):
     # start LV creation
     logger.debug("Loading LV data...")
     lv = LV.from_file(input_file, log_level=lv_log_level)
+    logger.debug("Extracting largest mesh...")
+    lv.extract_largest_mesh()
     logger.debug("Identifying LV regions...")
     lv.identify_regions(**region_args)
     logger.debug("Creating spks...")
