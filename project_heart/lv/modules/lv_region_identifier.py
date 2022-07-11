@@ -866,9 +866,9 @@ class LV_RegionIdentifier(LV_Base):
         self.compute_normal()
 
     def identify_regions_typeA(self, 
-        border_thresh_base=2, 
-        border_thresh_endo=2, 
-        border_thresh_epi=2,
+        border_thresh_base=1.5, 
+        border_thresh_endo=1.5, 
+        border_thresh_epi=1.5,
         base_vn_nodeset=None, # default = "base_endo"
         apex_vn_nodeset=None, # default = "endo"
         d_apex=5,

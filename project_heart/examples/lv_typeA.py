@@ -12,7 +12,12 @@ filepath = os.path.join(CURR_DIR, filepath)
 statesfile = "./sample_files/sample_displacement_lv_typeA_hex_states_linear_press_incr.pbz2"
 statesfile = os.path.join(CURR_DIR, statesfile)
 
-def get_lv_typeA(filepath=filepath, statesfile=statesfile, save_spk_dict=False, extract_largest_mesh=True, id_region_kwargs=None):
+def get_lv_typeA(filepath=filepath, 
+                 statesfile=statesfile, 
+                 save_spk_dict=False, 
+                 extract_largest_mesh=True, 
+                 id_region_kwargs=None,
+                 create_sample_speckles=True):
 
     lv = LV.from_file(Path(filepath)) 
     if statesfile is not None:
@@ -118,9 +123,9 @@ def get_lv_typeA(filepath=filepath, statesfile=statesfile, save_spk_dict=False, 
             normal_to=[np.cos(a),np.sin(a),0.0],
             n_subsets=0,
             subsets_criteria="z2",
-            n_clusters=45,
+            n_clusters=75,
             cluster_criteria="angles3",
-            clusters_vector_ref=np.asarray([0,0,1]),
+            clusters_vector_ref=[0,0,1],
             t=0.0,
             log_level=logging.WARN,
         )
@@ -136,9 +141,9 @@ def get_lv_typeA(filepath=filepath, statesfile=statesfile, save_spk_dict=False, 
             normal_to=[np.cos(a),np.sin(a),0.0],
             n_subsets=0,
             subsets_criteria="z2",
-            n_clusters=50,
+            n_clusters=75,
             cluster_criteria="angles3",
-            clusters_vector_ref=np.asarray([0,0,1]),
+            clusters_vector_ref=[0,0,1],
             t=0.0,
             log_level=logging.WARN,
         )
@@ -192,12 +197,11 @@ def get_lv_typeA(filepath=filepath, statesfile=statesfile, save_spk_dict=False, 
             n_subsets=0,
             subsets_criteria="angles",
             cluster_criteria="angles3",
-            n_clusters=36,
+            n_clusters=50,
             t=0.0,
             log_level=logging.WARN,
         )
-
-
+        
         _ = lv.create_speckles(
             collection="circ-1",
             group="epi",
@@ -209,7 +213,7 @@ def get_lv_typeA(filepath=filepath, statesfile=statesfile, save_spk_dict=False, 
             n_subsets=0,
             subsets_criteria="angles",
             cluster_criteria="angles3",
-            n_clusters=36,
+            n_clusters=50,
             t=0.0,
             log_level=logging.WARN,
         )
@@ -217,156 +221,156 @@ def get_lv_typeA(filepath=filepath, statesfile=statesfile, save_spk_dict=False, 
     # =========================================================================
     # SAMPLE SPECKLES
     
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="epi",
-            name="SAMPLE",
-            from_nodeset=LV_SURFS.EPI,
-            d=4.0,
-            k=0.8,
-            normal_to=[0.0, 0.0, 1.0],
-            n_subsets=6,
-            subsets_criteria="angles",
-            cluster_criteria="angles3",
-            n_clusters=8,
-            t=0.0,
-            log_level=logging.WARN,
-        )
-
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="endo",
-            name="SAMPLE",
-            from_nodeset=LV_SURFS.ENDO,
-            d=4.0,
-            k=0.8,
-            normal_to=[0.0, 0.0, 1.0],
-            n_subsets=6,
-            subsets_criteria="angles",
-            cluster_criteria="angles3",
-            n_clusters=8,
-            t=0.0,
-            log_level=logging.WARN,
-        )
+    if create_sample_speckles:
     
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="endo",
-            name="THICK",
-            from_nodeset=LV_SURFS.ENDO,
-            d=6.0,
-            k=0.8,
-            normal_to=[0.0, 0.0, 1.0],
-            n_subsets=6,
-            subsets_criteria="angles",
-            cluster_criteria="angles3",
-            n_clusters=8,
-            t=0.0,
-            log_level=logging.WARN,
-        )
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="epi",
+                name="SAMPLE",
+                from_nodeset=LV_SURFS.EPI,
+                d=4.0,
+                k=0.8,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=6,
+                subsets_criteria="angles",
+                cluster_criteria="angles3",
+                n_clusters=8,
+                t=0.0,
+                log_level=logging.WARN,
+            )
 
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="endo",
-            name="MID",
-            from_nodeset=LV_SURFS.ENDO,
-            d=3.0,
-            k=0.8,
-            normal_to=[0.0, 0.0, 1.0],
-            n_subsets=6,
-            subsets_criteria="angles",
-            cluster_criteria="angles3",
-            n_clusters=8,
-            t=0.0,
-            log_level=logging.WARN,
-        )
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="endo",
+                name="SAMPLE",
+                from_nodeset=LV_SURFS.ENDO,
+                d=4.0,
+                k=0.8,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=6,
+                subsets_criteria="angles",
+                cluster_criteria="angles3",
+                n_clusters=8,
+                t=0.0,
+                log_level=logging.WARN,
+            )
+        
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="endo",
+                name="THICK",
+                from_nodeset=LV_SURFS.ENDO,
+                d=6.0,
+                k=0.8,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=6,
+                subsets_criteria="angles",
+                cluster_criteria="angles3",
+                n_clusters=8,
+                t=0.0,
+                log_level=logging.WARN,
+            )
+
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="endo",
+                name="MID",
+                from_nodeset=LV_SURFS.ENDO,
+                d=3.0,
+                k=0.8,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=6,
+                subsets_criteria="angles",
+                cluster_criteria="angles3",
+                n_clusters=8,
+                t=0.0,
+                log_level=logging.WARN,
+            )
+        
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="endo",
+                name="THIN",
+                from_nodeset=LV_SURFS.ENDO,
+                d=1.75,
+                k=0.8,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=6,
+                subsets_criteria="angles",
+                cluster_criteria="angles3",
+                n_clusters=8,
+                t=0.0,
+                log_level=logging.WARN,
+            )
+        
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="epi",
+                name="THICK",
+                from_nodeset=LV_SURFS.EPI,
+                d=6.0,
+                k=0.8,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=6,
+                subsets_criteria="angles",
+                cluster_criteria="angles3",
+                n_clusters=8,
+                t=0.0,
+                log_level=logging.WARN,
+            )
+
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="epi",
+                name="MID",
+                from_nodeset=LV_SURFS.EPI,
+                d=3.0,
+                k=0.8,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=6,
+                subsets_criteria="angles",
+                cluster_criteria="angles3",
+                n_clusters=8,
+                t=0.0,
+                log_level=logging.WARN,
+            )
+        
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="epi",
+                name="THIN",
+                from_nodeset=LV_SURFS.EPI,
+                d=1.75,
+                k=0.8,
+                normal_to=[0.0, 0.0, 1.0],
+                n_subsets=6,
+                subsets_criteria="angles",
+                cluster_criteria="angles3",
+                n_clusters=8,
+                t=0.0,
+                log_level=logging.WARN,
+            )
+
+
+        _ = lv.create_speckles(
+                collection="SAMPLE",
+                group="epi",
+                name="SAMPLE-LONG",
+                from_nodeset=LV_SURFS.EPI,
+                exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
+                d=4.0,
+                k=0.5,
+                normal_to=[1.0,0.0,0.0],
+                n_subsets=6,
+                subsets_criteria="z2",
+                cluster_criteria="angles3",
+                n_clusters=18,
+                t=0.0,
+                log_level=logging.WARN,
+            )
     
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="endo",
-            name="THIN",
-            from_nodeset=LV_SURFS.ENDO,
-            d=1.75,
-            k=0.8,
-            normal_to=[0.0, 0.0, 1.0],
-            n_subsets=6,
-            subsets_criteria="angles",
-            cluster_criteria="angles3",
-            n_clusters=8,
-            t=0.0,
-            log_level=logging.WARN,
-        )
-    
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="epi",
-            name="THICK",
-            from_nodeset=LV_SURFS.EPI,
-            d=6.0,
-            k=0.8,
-            normal_to=[0.0, 0.0, 1.0],
-            n_subsets=6,
-            subsets_criteria="angles",
-            cluster_criteria="angles3",
-            n_clusters=8,
-            t=0.0,
-            log_level=logging.WARN,
-        )
-
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="epi",
-            name="MID",
-            from_nodeset=LV_SURFS.EPI,
-            d=3.0,
-            k=0.8,
-            normal_to=[0.0, 0.0, 1.0],
-            n_subsets=6,
-            subsets_criteria="angles",
-            cluster_criteria="angles3",
-            n_clusters=8,
-            t=0.0,
-            log_level=logging.WARN,
-        )
-    
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="epi",
-            name="THIN",
-            from_nodeset=LV_SURFS.EPI,
-            d=1.75,
-            k=0.8,
-            normal_to=[0.0, 0.0, 1.0],
-            n_subsets=6,
-            subsets_criteria="angles",
-            cluster_criteria="angles3",
-            n_clusters=8,
-            t=0.0,
-            log_level=logging.WARN,
-        )
-
-
-    _ = lv.create_speckles(
-            collection="SAMPLE",
-            group="epi",
-            name="SAMPLE-LONG",
-            from_nodeset=LV_SURFS.EPI,
-            exclude_nodeset=LV_SURFS.BASE, # does not afect ideal case
-            d=4.0,
-            k=0.5,
-            normal_to=[1.0,0.0,0.0],
-            n_subsets=6,
-            subsets_criteria="z2",
-            cluster_criteria="angles3",
-            n_clusters=18,
-            t=0.0,
-            log_level=logging.WARN,
-        )
-    
-
     apex_spk = lv.get_speckles(spk_collection="LA", spk_group="endo", spk_name="apex")
     base_spk = lv.get_speckles(spk_collection="LA", spk_group="endo", spk_name="base")
-
     # lv.compute_base_apex_ref_over_timesteps(apex_spk, base_spk, log_level=logging.WARN)
             
     return lv
