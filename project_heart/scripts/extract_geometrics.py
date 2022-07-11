@@ -37,7 +37,7 @@ def extract_geometrics(**kwargs):
     sh.assert_input_file(input_file)
     # output_file = input_data.get(SCRIPT_TAGS.OUTPUT_FILE.value, None)
     # sh.assert_input_exists(output_file, (str))
-    output_file = sh.resolve_output_filename(input_data, "geometrics", ".csv")
+    output_file = sh.resolve_output_filename(input_data, "geometrics", ".ftr")
     sh.assert_input_exists(output_file, (str, Path))
     region_args = input_data.get(LV_SCRIPT_TAGS.IDENTIFY_REGIONS.value, None)
     sh.assert_input_exists(region_args, dict)

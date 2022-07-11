@@ -203,6 +203,7 @@ class ScriptHandler():
 
     @staticmethod
     def export_df(df, outpath, **kwargs):
+        outpath = str(outpath)
         if outpath.endswith('.csv'):
             df.to_csv(outpath, **kwargs)
         elif outpath.endswith('.ftr'):
