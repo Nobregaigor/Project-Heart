@@ -12,3 +12,5 @@ from .json_encoders import *
 from .pickle_io import *
 
 from .extended_classes import *
+
+from .tensor_utils import *

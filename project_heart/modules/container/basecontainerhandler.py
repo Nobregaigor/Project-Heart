@@ -3,7 +3,7 @@ from os import path
 
 import pathlib
 from re import L
-from turtle import st
+# from turtle import st
 
 import pyvista as pv
 
@@ -939,6 +939,7 @@ class BaseContainerHandler():
 
     def transform_surface_point_data_to_facet_data(self, data_key, method="max", **kwargs):
         return self.transform_point_data_to_cell_data(data_key, method=method, surface=True, **kwargs)
+    
     # -------------------------------
     # points to cell data related functions
 
@@ -1271,6 +1272,7 @@ class BaseContainerHandler():
 
     # -------------------------------
     # Interpolate
+    
     @staticmethod
     def interpolate(X, y, XI, method="linear", fill_with_nearest=True, **kwargs):
         if method == "linear":
@@ -1301,6 +1303,8 @@ class BaseContainerHandler():
             xyz = self.points()
         elif len(arr) == self.get_surface_mesh().n_points:
             xyz = self.get_surface_mesh().points
+        elif len(arr) == self.mesh.cell_centers().n_points:
+            xyz = self.mesh.cell_centers().points
         else:
             raise ValueError(
                 "Could not match arr length with mesh points, or surface mesh points. "
@@ -1364,6 +1368,15 @@ class BaseContainerHandler():
 
     # -------------------------------
     # Other functions
+
+    def convert_to_cylindrical_coordinates(self, key, mask=None):
+        from project_heart.utils.tensor_utils import convert_to_cylindrical_coordinates
+        key = self.check_enum(key)
+        data = self.get(GEO_DATA.STATES, key, mask=mask) # retrieve data from storage
+        centers = np.asarray(self.mesh.cell_centers().points)
+        cy_data = np.asarray([convert_to_cylindrical_coordinates(d, centers, ) for d in data])
+        self.states.add(key + "_cylindrical", cy_data)
+        return self.states.get(key + "_cylindrical")
 
     def prep_for_gmsh(self,
                       cellregionIds: np.ndarray,

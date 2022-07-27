@@ -1,4 +1,8 @@
-from collections import Iterable
+try:
+    from collections import Iterable
+except ImportError:
+    from collections.abc import Iterable
+
 
 
 def assert_iterable(arg, accept_none=True):
