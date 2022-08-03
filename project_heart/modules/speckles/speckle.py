@@ -30,6 +30,7 @@ class Speckle():
                  normal:np.ndarray=None,
                  c_ids:list=None,
                  c_local_ids:list=None,
+                 elem_ids:np.ndarray=None,
                  ):
         
         # check for valid keys
@@ -50,6 +51,8 @@ class Speckle():
         normal = normal if normal is not None else np.asarray([])       
         c_ids = c_ids if c_ids is not None else np.asarray([])       
         c_local_ids = c_local_ids if c_local_ids is not None else np.asarray([])       
+        
+        elem_ids = elem_ids if elem_ids is not None else np.asarray([])
         
         # reference keys
         self.subset = subset
@@ -74,6 +77,8 @@ class Speckle():
         # conversion to string (just to facilitate parts of the code).
         self.str = "{}_{}_{}_{}".format(
             self.subset, self.name, self.group, self.collection)
+        
+        self.elem_ids = elem_ids
 
     def __repr__(self):
         return "<Speckle: .subset: {}, .name: {}, .group: {}, .collection: {}, .t: {}>".format(

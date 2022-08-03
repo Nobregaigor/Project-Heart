@@ -288,6 +288,7 @@ class LVClinicalMetricsComputations(LVGeometricsComputations):
             logger.debug("Metric '{}' has reduced values by group and name.".format(key))
 
     def compute_torsion(self, apex_spk, base_spk, t_ed: float = 0.0, reduce_by={"name"}, **kwargs):
+        
         # set key for this function
         key = self.STATES.TORSION
         logger.info("Computing metric '{}'".format(key))
@@ -346,3 +347,7 @@ class LVClinicalMetricsComputations(LVGeometricsComputations):
         # save data to states and return pointer
         self.states.add_spk_data(spk, cm_key, spk_res)  
         return self.states.get_spk_data(spk, cm_key)
+
+    
+    
+    

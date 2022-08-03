@@ -1056,6 +1056,232 @@ class LVGeometricsComputations(LV_Speckles):
         return self.states.get_spk_data(base_spk, self.STATES.TORSION)
 
     # ===============================
+    # Not a geometric, but it is related
+    # ===============================
+    
+    # -----------------------------
+    # Stress
+    
+    def compute_spk_stress(self, spk: object,
+                            dtype: np.dtype = np.float64, 
+                            approach="mean",
+                            cylindrical=True, 
+                            effective=True,
+                            log_level=logging.INFO,
+                            **kwargs):
+        if cylindrical:
+            key = self.STATES.CYLINDRICAL_STRESS
+            if not self.states.check_key(key):
+                try:
+                    if not self.states.check_key(self.STATES.STRESS):
+                        raise RuntimeError("Could not compute cylindrical stress. Did you compute/recorded stress?")
+                    else:
+                        cy_stress = self.convert_to_cylindrical_coordinates(self.STATES.STRESS)
+                        self.states.add(self.STATES.CYLINDRICAL_STRESS, cy_stress)
+                except:
+                    raise RuntimeError("Could not compute cylindrical stress. Try adding it manually. ")
+        else:
+            key = self.STATES.STRESS
+        
+        assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle STRESS for spk: '{}'".format(spk))
+        logger.debug("Using approach: '{}'".format(approach))
+        # check if stress variable exists in states
+        if not self.states.check_key(key):
+            raise RuntimeError("Could not find '{}' in states. Did you compute it?".format(key))
+        # get stress value for each timestep
+        stress = self.states.get(key, mask=spk.elem_ids)
+        logger.debug("-stress.shape:'{}".format(stress.shape))
+        if approach == "mean":
+            # get centers data
+            spk_res = np.mean(stress, axis=1)
+        elif approach == "max":
+            spk_res = np.max(stress, axis=1)
+        elif approach == "min":
+            spk_res = np.min(stress, axis=1)
+        else:
+            raise ValueError("Unknown approach. Avaiable approaches are: "
+                             "'mean', 'max' or 'min'. Received: '{}'. "
+                             "Please, check documentation for further details."
+                             .format(approach))
+        if effective:
+            self.STATES, (_, key) = add_to_enum(self.STATES, "effective", key)
+            spk_res = self._to_von_mises(spk_res)
+            
+        logger.debug("-spk_res.shape:'{}".format(spk_res.shape))
+        # record explainable_metrics
+        # exm = ExplainableMetric()
+        # exm.key = key
+        # exm.approach = approach
+        # exm.speckles = spk
+        # exm.used_reference_apex_base=True
+        # self.explainable_metrics[self.states.get_spk_state_key(spk, key)] = exm
+        self.states.add_spk_data(spk, key, spk_res)  # save to states
+        return self.states.get_spk_data(spk, key)    # return pointer
+
+    def compute_stress(self, spks, 
+                            cylindrical=True, 
+                            effective=True,
+                            reduce_by={"group"}, **kwargs):
+        
+        # set key for this function
+        if cylindrical:
+            key = self.STATES.CYLINDRICAL_STRESS
+        else:
+            key = self.STATES.STRESS
+        if effective:
+            _, (_, key) = add_to_enum(self.STATES, "effective", key)
+            
+        logger.info("Computing metric '{}' with 'effective' set to '{}'".format(key, effective))
+        # resolve spks (make sure you have a SpeckeDeque)
+        spks = self._resolve_spk_args(spks)
+        # compute metric
+        res = [self.compute_spk_stress(spk, cylindrical=cylindrical, effective=effective, **kwargs) for spk in spks]
+        # reduce metric (here we compute the mean radius across entire LV)
+        self._reduce_metric_and_save(res, key, **kwargs)
+        # set metric relationship with spks 
+        # so that we can reference which spks were used to compute this metric
+        self.states.set_data_spk_rel(spks, key)
+        # Break down computation by each 'set of spks'
+        if "group" in reduce_by:
+            logger.debug("Reducing metric by group for '{}'".format(key))
+            self._reduce_metric_by_group(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
+        if "name" in reduce_by:
+            logger.debug("Reducing metric by name for '{}'".format(key))
+            self._reduce_metric_by_name(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
+        if "group_name" in reduce_by:
+            logger.debug("Reducing metric by group and name for '{}'".format(key))
+            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+
+    # -----------------------------
+    # strain
+    
+    def compute_spk_strain(self, spk: object,
+                            dtype: np.dtype = np.float64, 
+                            approach="mean",
+                            cylindrical=True, 
+                            effective=True,
+                            log_level=logging.INFO,
+                            **kwargs):
+        
+        _strain_key = None
+        if self.states.check_key(self.STATES.STRAIN):
+            _strain_key = self.STATES.STRAIN
+        elif self.states.check_key(self.STATES.LAGRANGE_STRAIN):
+            _strain_key = self.STATES.LAGRANGE_STRAIN
+        if _strain_key is None:
+            raise RuntimeError("Could not found default strain values. Did you specify a custom strain key at self.STATES?")
+        
+        if cylindrical:
+            key = self.STATES.CYLINDRICAL_STRAIN
+            if not self.states.check_key(key):
+                try:
+                    if not self.states.check_key(_strain_key):
+                        raise RuntimeError("Could not compute cylindrical strain. Did you compute/recorded strain?")
+                    else:
+                        cy_strain = self.convert_to_cylindrical_coordinates(_strain_key)
+                        self.states.add(self.STATES.CYLINDRICAL_STRAIN, cy_strain)
+                except:
+                    raise RuntimeError("Could not compute cylindrical strain. Try adding it manually. ")
+        else:
+            key = _strain_key
+        
+        assert self.check_spk(spk), "Spk must be a valid 'Speckle' object."
+        logger.setLevel(log_level)
+        logger.debug("Computing speckle STRAIN for spk: '{}'".format(spk))
+        logger.debug("Using approach: '{}'".format(approach))
+        # check if strain variable exists in states
+        if not self.states.check_key(key):
+            raise RuntimeError("Could not find '{}' in states. Did you compute it?".format(key))
+        # get strain value for each timestep
+        strain = self.states.get(key, mask=spk.elem_ids)
+        logger.debug("-strain.shape:'{}".format(strain.shape))
+        if approach == "mean":
+            # get centers data
+            spk_res = np.mean(strain, axis=1)
+        elif approach == "max":
+            spk_res = np.max(strain, axis=1)
+        elif approach == "min":
+            spk_res = np.min(strain, axis=1)
+        else:
+            raise ValueError("Unknown approach. Avaiable approaches are: "
+                             "'mean', 'max' or 'min'. Received: '{}'. "
+                             "Please, check documentation for further details."
+                             .format(approach))
+        if effective:
+            self.STATES, (_, key) = add_to_enum(self.STATES, "effective", key)
+            spk_res = self._to_von_mises(spk_res)
+            
+        logger.debug("-spk_res.shape:'{}".format(spk_res.shape))
+        # record explainable_metrics
+        # exm = ExplainableMetric()
+        # exm.key = key
+        # exm.approach = approach
+        # exm.speckles = spk
+        # exm.used_reference_apex_base=True
+        # self.explainable_metrics[self.states.get_spk_state_key(spk, key)] = exm
+        self.states.add_spk_data(spk, key, spk_res)  # save to states
+        return self.states.get_spk_data(spk, key)    # return pointer
+
+    def compute_strain(self, spks, 
+                            cylindrical=True, 
+                            effective=True,
+                            reduce_by={"group"}, **kwargs):
+        
+        # set key for this function
+        if cylindrical:
+            key = self.STATES.CYLINDRICAL_STRAIN
+        else:
+            key = None
+            if self.states.check_key(self.STATES.STRAIN):
+                key = self.STATES.STRAIN
+            elif self.states.check_key(self.STATES.LAGRANGE_STRAIN):
+                key = self.STATES.LAGRANGE_STRAIN
+            if key is None:
+                raise RuntimeError("Could not found default strain values. Did you specify a custom strain key at self.STATES?")
+        
+        if effective:
+            _, (_, key) = add_to_enum(self.STATES, "effective", key)
+            
+        logger.info("Computing metric '{}' with 'effective' set to '{}'".format(key, effective))
+        # resolve spks (make sure you have a SpeckeDeque)
+        spks = self._resolve_spk_args(spks)
+        # compute metric
+        res = [self.compute_spk_strain(spk, cylindrical=cylindrical, effective=effective, **kwargs) for spk in spks]
+        # reduce metric (here we compute the mean radius across entire LV)
+        self._reduce_metric_and_save(res, key, **kwargs)
+        # set metric relationship with spks 
+        # so that we can reference which spks were used to compute this metric
+        self.states.set_data_spk_rel(spks, key)
+        # Break down computation by each 'set of spks'
+        if "group" in reduce_by:
+            logger.debug("Reducing metric by group for '{}'".format(key))
+            self._reduce_metric_by_group(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group.".format(key))
+        if "name" in reduce_by:
+            logger.debug("Reducing metric by name for '{}'".format(key))
+            self._reduce_metric_by_name(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by names.".format(key))
+        if "subset" in reduce_by:
+            logger.debug("Reducing metric by subset for '{}'".format(key))
+            self._reduce_metric_by_subset(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by subsets.".format(key))
+        if "group_name" in reduce_by:
+            logger.debug("Reducing metric by group and name for '{}'".format(key))
+            self._reduce_metric_by_group_and_name(spks, key, **kwargs)
+            logger.debug("Metric '{}' has reduced values by group and name.".format(key))
+
+    
+
+    # ===============================
     # Other
     # ===============================
 
@@ -1222,3 +1448,26 @@ class LVGeometricsComputations(LV_Speckles):
         # save data to states and return pointer
         self.states.add_spk_data(spk, cm_key, spk_res)  
         return self.states.get_spk_data(spk, cm_key)
+
+    
+    
+    def _to_von_mises(self, data):
+        """Computes the 'effective stress' based on von mises stress.
+
+        Args:
+            data (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        x = data[:, 0]
+        y = data[:, 1]
+        z = data[:, 2]
+        xy = data[:, 3]
+        yz = data[:, 4]
+        xz = data[:, 5]
+        
+        vm = x**2 + y**2 + z**2
+        vm -= x*y + y*z + x*z
+        vm += 3*(xy**2 + yz**2 + xz**2)
+        return np.sqrt(vm)

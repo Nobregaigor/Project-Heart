@@ -173,6 +173,13 @@ class LV_STATES(Enum):
     DISP = "displacement"
     DISPLACEMENT = "displacement"
     STRESS = "stress"
+    STRAIN = "strain"
+    
+    LAGRANGE_STRAIN = "Lagrange strain"
+    
+    CYLINDRICAL_STRESS = "cylindrical_stress"
+    CYLINDRICAL_STRAIN = "cylindrical_strain"
+    
 
     XYZ = "xyz"
     POS = "xyz"

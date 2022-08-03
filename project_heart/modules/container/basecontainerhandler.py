@@ -75,6 +75,9 @@ class BaseContainerHandler():
 
         self._cell_list = None
         self._surf_cell_list = None
+        
+        self._node_cell_dict = None
+        self._surf_node_cell_dice = None
 
         self._surfmap = None
         self.CONTAINERS = GEO_DATA
@@ -974,6 +977,29 @@ class BaseContainerHandler():
 
         return cells_ids_list
 
+    def get_cell_ids_for_each_node(self, surface=False, **kwargs):
+        
+        if not surface and self._node_cell_dict is not None:
+            return self._node_cell_dict
+        elif surface and self._surf_node_cell_dict is not None:
+            return self._surf_node_cell_dict
+        
+        cell_node_ids = self.get_node_ids_for_each_cell(surface=surface)
+        
+        node_cell_ids = dict()
+        for i, nodes in enumerate(cell_node_ids):
+            for n in nodes:
+                node_cell_ids[n] = i
+        
+        # save
+        if surface:
+            self._surf_node_cell_dict = node_cell_ids
+        else:
+            self._node_cell_dict = node_cell_ids
+        
+        return node_cell_ids        
+        
+        
     def transform_point_data_to_cell_data(self,
                                           data_key,
                                           method="max",

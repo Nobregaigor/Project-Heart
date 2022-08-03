@@ -232,6 +232,8 @@ class LV_Speckles(LV_RegionIdentifier):
         valid_ids = ids[ioi]  # get valid ids
         mask = ioi   # global mask
         
+        node_to_cell_id_map = self.get_cell_ids_for_each_node()
+        
         if n_subsets <= 1:
             logger.debug("Adding single subset.")
             c_ids = None
@@ -255,6 +257,7 @@ class LV_Speckles(LV_RegionIdentifier):
                 mask=mask,
                 elmask=None,
                 ids=valid_ids,
+                elem_ids=np.asarray([node_to_cell_id_map[ival] for ival in valid_ids]),
                 normal=normal,
                 la_center=spk_la_center,
                 c_ids=c_ids,
@@ -303,10 +306,11 @@ class LV_Speckles(LV_RegionIdentifier):
                     mask=sub_ids,
                     elmask=None,
                     ids=sub_ids,
+                    elem_ids=np.asarray([node_to_cell_id_map[ival] for ival in sub_ids]),
                     normal=normal,
                     la_center=spk_la_center,
                     c_ids=c_ids,
-                    c_local_ids=non_empty_buckets_l
+                    c_local_ids=non_empty_buckets_l,
                 )
 
         return self.speckles.get(
