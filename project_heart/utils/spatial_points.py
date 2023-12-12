@@ -5,14 +5,14 @@ import pyvista as pv
 
 
 def create_rim_circunference(
-    center: np.ndarray,
-    radius: float,
-    height: float,
-    normal: np.ndarray,
-    cross_normal: np.ndarray,
-    radial_resolution: int = 64,
-    rim_angles: np.ndarray = None
-) -> tuple:
+        center: np.ndarray,
+        radius: float,
+        height: float,
+        normal: np.ndarray,
+        cross_normal: np.ndarray,
+        radial_resolution: int = 64,
+        rim_angles: np.ndarray = None
+    ) -> tuple:
     """Creates a set of points organized as a 'rim' structure (two stacked circles) \
         at given center, radius, height, normal (normal to rim plane) and cross_normal \
         (orthonomal vector to normal describing the direction of rim plane). \
@@ -75,6 +75,9 @@ def create_rim_circunference(
     for i, j in zip(range(0, n_nodes), range(n_nodes, n_nodes*2-1)):
         elements.append((
             i, j, j+1, i+1
+        ))
+    elements.append((
+            i+1, j+1, n_nodes, 1
         ))
     elements = np.array(elements, dtype=np.int64)
 

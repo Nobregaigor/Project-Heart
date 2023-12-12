@@ -22,9 +22,19 @@ def check_angle_orientation(angle, a, b, zaxis=[0., 0., 1.]):
     # make sure angle is in range [0, 2*pi)
     # https://bit.ly/3nUrr0U
     z = np.asarray(zaxis)
-    det = np.linalg.det(np.vstack((a.T, b.T, z.T)))
+    try:
+        invert_angle = False
+        det = np.linalg.det(np.vstack((a.T, b.T, z.T)))
+    except:
+        invert_angle = True
+        det = np.linalg.det(np.vstack((a.T, b.T)))
+        
     if det < 0:
         angle = 2*np.pi - angle
+        
+    if invert_angle:
+        angle = np.interp(angle, [0, 2*np.pi], [2*np.pi, 0])
+    
     return angle
 
 

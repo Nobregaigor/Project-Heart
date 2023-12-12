@@ -31,6 +31,7 @@ class Speckle():
                  c_ids:list=None,
                  c_local_ids:list=None,
                  elem_ids:np.ndarray=None,
+                 c_elem_ids:np.ndarray=None
                  ):
         
         # check for valid keys
@@ -50,7 +51,9 @@ class Speckle():
         ids = ids if ids is not None else np.asarray([])
         normal = normal if normal is not None else np.asarray([])       
         c_ids = c_ids if c_ids is not None else np.asarray([])       
-        c_local_ids = c_local_ids if c_local_ids is not None else np.asarray([])       
+        c_local_ids = c_local_ids if c_local_ids is not None else np.asarray([]) 
+        
+        c_elem_ids = c_elem_ids if c_elem_ids is not None else np.asarray([])           
         
         elem_ids = elem_ids if elem_ids is not None else np.asarray([])
         
@@ -74,11 +77,14 @@ class Speckle():
         self.c_ids = c_ids  # spk cluster ids (array of ids arrays -> (k,n))
         self.c_local_ids = c_local_ids  # spk cluster ids local (array of ids arrays -> (k,n))
         
+        self.c_elem_ids = c_elem_ids # elem cluster ids for  -> (k,n)
+        
         # conversion to string (just to facilitate parts of the code).
         self.str = "{}_{}_{}_{}".format(
             self.subset, self.name, self.group, self.collection)
         
         self.elem_ids = elem_ids
+        
 
     def __repr__(self):
         return "<Speckle: .subset: {}, .name: {}, .group: {}, .collection: {}, .t: {}>".format(
@@ -101,6 +107,10 @@ class Speckle():
     
     def binarize_local_ids(self) -> np.ndarray:
         return np.hstack([np.zeros(len(ids), np.int64)+i for i, ids in enumerate(self.c_local_ids)])
+
+    def binarize_elem_clusters(self) -> np.ndarray:
+        return np.hstack([np.zeros(len(ids), np.int64)+i for i, ids in enumerate(self.elem_ids)])
+
 
 class SpeckeDeque(deque):
     def __init__(self, *args, **kwargs):
@@ -170,6 +180,24 @@ class SpeckeDeque(deque):
             ids[offset:new_offset] += offset
             offset = new_offset
         return ids.astype(np.int64)
+    
+    def binarize_elem_clusters(self) -> np.ndarray:
+        return np.hstack([spk.binarize_elem_clusters() for spk in list(self)])
+    
+    # def enumerate_elem_ids(self) -> np.ndarray:
+    #     elem_ids = self.stack_c_local_elem_ids()
+    #     offset = 0
+    #     for spk in list(self):
+    #         new_offset = offset + len(spk.elem_ids)
+    #         ids[offset:new_offset] += offset
+    #         offset = new_offset
+    #     return ids.astype(np.int64)
+    
+    # def binarize_nodes_from_elem_clusters(self, nodes_to_cells_map) -> np.ndarray:
+    #     node_ids = self.enumerate_ids() # ids for all speckles
+    #     elem_clusters = self.binarize_elem_clusters() # clusters, elment-wise
+        
+        
     
        
 class SpecklesDict():

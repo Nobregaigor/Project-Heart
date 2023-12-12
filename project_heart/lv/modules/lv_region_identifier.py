@@ -780,9 +780,10 @@ class LV_RegionIdentifier(LV_Base):
             )
         log.info("len(epi_base): {}".format(len(epi_base)))
         surf_data = self.get(self.CONTAINERS.MESH_POINT_DATA, LV_MESH_DATA.SURFS)
-        surf_data[endo_base] = self.REGIONS.BASE_BORDER_ENDO
-        surf_data[epi_base] = self.REGIONS.BASE_BORDER_EPI
-        self.set_region_from_mesh_ids(LV_MESH_DATA.SURFS_DETAILED, surf_data)
+        new_data = np.copy(surf_data)
+        new_data[endo_base] = self.REGIONS.BASE_BORDER_ENDO
+        new_data[epi_base] = self.REGIONS.BASE_BORDER_EPI
+        self.set_region_from_mesh_ids(LV_MESH_DATA.SURFS_DETAILED, new_data)
     
     def identify_apex_base_from_nodesets(self, apex_nodeset=None, base_nodeset=None):
         if apex_nodeset is None:

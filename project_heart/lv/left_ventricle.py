@@ -349,7 +349,14 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
 
         ts = self.states.timesteps
         re = self.states.get(metric) # get main metric
-        df = pd.DataFrame({"timesteps": ts, metric: re})
+        if len(re.shape) == 2:
+            df = pd.DataFrame({"timesteps": ts})
+            for metric_idx in range(re.shape[1]):
+                metric_with_suffix = "{}_{}".format(metric, metric_idx+1)
+                df[metric_with_suffix] = re[:, metric_idx]
+        else:               
+            df = pd.DataFrame({"timesteps": ts, metric: re})
+        
         info = None
         if search_spk_info:
             logger.debug("Initiate search for spk info.")
@@ -368,7 +375,12 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
                         try:
                             check_val = "{}_{}".format(metric, suffix)
                             data = self.states.get(check_val)
-                            info[cat][check_val] = data
+                            if len(data.shape) == 2:
+                                for sub_data_idx in range(data.shape[1]):
+                                    check_val = "{}_{}".format(check_val, sub_data_idx)
+                                    info[cat][check_val] = data[:, sub_data_idx]
+                            else:
+                                info[cat][check_val] = data
                         except KeyError:
                             logger.debug("Speckle suffix '{}' not found for metric '{}': {}".format(suffix, metric, check_val))
             except:
@@ -388,7 +400,12 @@ class LV(LV_FiberEstimator, LVClinicalMetricsComputations, LV3DMetricsPlotter):
                     check_val = "{}_{}".format(metric, value)
                     save_val = "{}_{}".format(metric, name)
                     data = self.states.get(check_val)
-                    info["suffix"][save_val] = data
+                    if len(data.shape) == 2:
+                        for sub_data_idx in range(data.shape[1]):
+                            save_val = "{}_{}".format(save_val, sub_data_idx)
+                            info[cat][save_val] = data[:, sub_data_idx]
+                    else:   
+                        info["suffix"][save_val] = data
                 except KeyError:
                     logger.debug("Suffix '{}' not found for metric '{}': {}".format(key, metric, check_val))     
         

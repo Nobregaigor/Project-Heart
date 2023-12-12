@@ -48,11 +48,12 @@ def convert_to_cylindrical_coordinates(
     
     u = centers - ref_pt
     
-    # thetas = angle_between(u[:, :2], x_axis[:, :2], check_orientation=False)
-    thetas = angle_between(u, x_axis, check_orientation=True, zaxis=z_axis)
+    thetas = angle_between(u[:, :2], x_axis[:2], check_orientation=True)
+    # thetas = angle_between(u, x_axis, check_orientation=True, zaxis=z_axis)
+    # thetas = angle_between(u, x_axis, check_orientation=False)
     
-    sin_t = np.sin(thetas)        # sin(theta)
-    cos_t = np.cos(thetas)        # cos(theta)
+    sin_t = np.sin(thetas)          # sin(theta)
+    cos_t = np.cos(thetas)          # cos(theta)
     sin_t2 = sin_t ** 2             # sin(theta)**2
     cos_t2 = cos_t ** 2             # cos(theta)**2
     sin_cos_t = sin_t * cos_t       # sin(theta)*cos(theta)
@@ -61,7 +62,7 @@ def convert_to_cylindrical_coordinates(
     cy_data[:, 1] = data[:, 0]*sin_t2 + data[:, 1]*cos_t2 - 2*data[:, 3]*sin_cos_t          # a_tt
     cy_data[:, 2] = data[:, 2]                                                              # a_zz
     cy_data[:, 3] = (data[:, 1] - data[:, 0])*sin_cos_t + data[:, 3]*(cos_t2 - sin_t2)      # a_rt = a_tr
-    cy_data[:, 4] = data[:, 5]*cos_t + data[:, 4]*sin_t                                     # a_rz = a_zr
-    cy_data[:, 5] = -data[:, 5]*sin_t + data[:, 4]*cos_t                                    # a_tz = a_zt
-    
+    cy_data[:, 4] = -data[:, 5]*sin_t + data[:, 4]*cos_t                                    # a_tz = a_zt
+    cy_data[:, 5] = data[:, 5]*cos_t + data[:, 4]*sin_t                                     # a_rz = a_zr
+        
     return cy_data

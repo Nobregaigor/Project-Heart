@@ -180,6 +180,8 @@ class LV_STATES(Enum):
     CYLINDRICAL_STRESS = "cylindrical_stress"
     CYLINDRICAL_STRAIN = "cylindrical_strain"
     
+    PRINCIPAL_STRESS = "principal_stress"
+    PRINCIPAL_STRAIN = "principal_strain"
 
     XYZ = "xyz"
     POS = "xyz"

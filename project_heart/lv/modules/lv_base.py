@@ -1,7 +1,7 @@
 from project_heart.modules.container import BaseContainerHandler
 from project_heart.utils.vector_utils import *
 from project_heart.utils.spatial_utils import *
-from project_heart.utils.spatial_points import *
+from project_heart.utils.spatial_points import create_rim_circunference, lines_from_points
 from project_heart.utils.cloud_ops import *
 from collections import deque
 

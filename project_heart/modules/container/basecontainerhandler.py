@@ -52,7 +52,11 @@ class BaseContainerHandler():
         self.states = States()
         self._nodesets = {}  # {"nodeset_name": [ids...], ...}
         self._elemsets = {}  # {"elemset_name": [ids...], ...}
-        self._surfaces_oi = {}
+        
+        self._facets = {}
+        self._facet_point_ids = {} # -> reference to mesh data
+        self._facet_cell_ids = {}  # -> reference to facet data
+        
         self._normal = None
 
         # represent virtual nodes that are not in mesh but are used in other calculations
@@ -79,7 +83,8 @@ class BaseContainerHandler():
         self._node_cell_dict = None
         self._surf_node_cell_dice = None
 
-        self._surfmap = None
+        self._surf_to_mesh_map = None
+        self._mesh_to_surf_map = None
         self.CONTAINERS = GEO_DATA
         
         if len(enums) > 0:
@@ -211,21 +216,27 @@ class BaseContainerHandler():
 
         # create mesh dataset from nodes and elements in xplt file
         geo = cls.from_nodes_elements(
-            xplt["nodes"], xplt["elems"][0][:, 1:], **kwargs)  # WARNING: xplt["elems"][0] is temporary, I will modify to xplt["elems"] later (this is due an error in xplt_parser)
+            xplt["NODES"], xplt["ELEMENTS"][0][:, 1:], **kwargs)  # WARNING: xplt["elems"][0] is temporary, I will modify to xplt["elems"] later (this is due an error in xplt_parser)
+        # add nodesets (either by name or by ids)
+        if len(xplt["NODESETS_BY_NAME"]) > 0:
+            for nodeset_name, nodeset_nodes in xplt["NODESETS_BY_NAME"].items():
+                geo.add_nodeset(nodeset_name, nodeset_nodes)
+        elif len(xplt["NODESETS_BY_ID"]) > 0:
+            for nodeset_name, nodeset_nodes in xplt["NODESETS_BY_ID"].items():
+                geo.add_nodeset(nodeset_name, nodeset_nodes)
+            
         # add timesteps
-        geo.states.set_timesteps(xplt["timesteps"])
+        geo.states.set_timesteps(xplt["TIMESTEPS"])
         # add states
-        n = len(xplt["timesteps"])
-        for i, (key, data_format) in enumerate(zip(xplt["data_keys"], xplt["data_format"])):
-            data = xplt["data"]
-            shape = data[0][i].shape
-            # data_sequence = np.array(data[:, i])
-            # _data = np.zeros((n, shape[0], shape[1]), dtype=np.float32)
-            # for step in range(n):
-            #     _data[step] = data_sequence[step]
-            _data = np.vstack(np.array(data[:, i])).reshape(
-                (n, shape[0], shape[1]))  # optimized version
-            geo.states.add(key, _data, DATA_FORMAT(data_format))
+        n = len(xplt["TIMESTEPS"])
+        for key, data in xplt["STATES"].items():
+            geo.states.add(key, data)
+            
+        # for i, (key, data_format) in enumerate(zip(xplt["data_keys"], xplt["data_format"])):
+        #     data = xplt["data"]
+        #     shape = data[0][i].shape
+        #     _data = np.vstack(np.array(data[:, i])).reshape((n, shape[0], shape[1]))  
+        #     geo.states.add(key, _data, DATA_FORMAT(data_format))
         # save reference file info
         geo._ref_file = Path(xplt_path)
         geo._ref_dir = geo._ref_file.parents[0]
@@ -265,7 +276,7 @@ class BaseContainerHandler():
         try:
             surfaces = feb.get_surfaces()
             for key, value in surfaces.items():
-                obj.add_surface_oi(key, value)
+                obj.add_facets(key, value)
         except:
             print("Could not add surfaces. Does your .feb content have 'Surface' tag under 'Geometry'? Try adding them manually. Check https://github.com/Nobregaigor/febio-python for details on how to extract nodeset data from feb.")
 
@@ -310,6 +321,7 @@ class BaseContainerHandler():
                 surfaces_oi_enums: list = None,
                 ** kwargs) -> dict:
 
+        # nodes
         _d = dict()
         _d[GEO_DICT.NODES.value] = np.array(
             self.points(), dtype=np.float64)  # xyz
@@ -337,10 +349,11 @@ class BaseContainerHandler():
             _d[GEO_DICT.SURFACES.value] = dict()
             for enumlike in nodeset_enums:
                 _d[GEO_DICT.SURFACES.value].update(
-                    self.get_surface_oi_from_enum(enumlike))
+                    self.get_facets_from_enum(enumlike))
         else:
-            _d[GEO_DICT.SURFACES.value] = self._surfaces_oi
+            _d[GEO_DICT.SURFACES.value] = self._facet_point_ids
 
+        # other data
         _d[GEO_DICT.VIRTUAL_NODES.value] = self._virtual_nodes
         _d[GEO_DICT.DISCRETE_SETS.value] = self._discrete_sets
 
@@ -359,6 +372,12 @@ class BaseContainerHandler():
             key = self.check_enum(key)
             _d[GEO_DICT.MESH_CELL_DATA.value][key] = self.mesh.cell_data[key].tolist()
 
+        # states
+        _d[GEO_DICT.STATES.value] = self.states.to_dict()
+        
+        #
+        _d["SURFACE_NODES"] = self.get_surface_id_map_from_mesh()
+        
         return _d
 
     def to_json(self, filename, **kwargs) -> None:
@@ -706,12 +725,12 @@ class BaseContainerHandler():
     # ------------------------
     # Surface
 
-    def add_surface_oi(self, name: str, ids: np.ndarray, overwrite: bool = False, dtype: np.dtype = np.int64) -> None:
-        """Adds a surface of interest.
+    def add_facets(self, name: str, ids: np.ndarray, overwrite: bool = False, dtype: np.dtype = np.int64) -> None:
+        """Adds a facet.
 
         Args:
-            name (str): surface_oi name. 
-            ids (np.ndarray): list of indexes referencing the nodes of given surface_oi.
+            name (str): facets name. 
+            ids (np.ndarray): list of indexes referencing the nodes of given facets.
             overwrite (bool, optional): _description_. Defaults to False.
             dtype (np.dtype, optional): _description_. Defaults to np.int64.
 
@@ -729,28 +748,62 @@ class BaseContainerHandler():
         if not np.issubdtype(ids.dtype, np.integer):
             raise ValueError("ids must be integers.")
         # check if maximum id within n_nodes
-        if np.max(ids) > self.mesh.n_points:
-            raise ValueError(
-                "maximum reference id is greater than number of nodes. \
-                    Surfaces are list of integers referencing the indexes of nodes array.")
+        # if np.max(ids) > self.mesh.n_points:
+        #     raise ValueError(
+        #         "maximum reference id is greater than number of nodes. \
+        #             Surfaces are list of integers referencing the indexes of nodes array.")
         # check if key is already used (if overwrite is False)
-        if overwrite == False and name in self._surfaces_oi:
+        if overwrite == False and name in self._facet_point_ids:
             raise KeyError(
                 "Surface '%s' already exists. Please, set overwrite flag to True if you want to replace it." % name)
+        
         # add nodeset to the dictionary
-        self._surfaces_oi[name] = ids.astype(dtype)
+        self._facet_point_ids[name] = ids.astype(dtype)
 
-    def get_surface_oi(self, name: str):
+    def get_facet(self, name: str):
+        """
+            Returns mesh node ids for a given facet
+        """
         if isinstance(name, Enum):
             str_val = name.name
             name = name.value
         else:
             str_val = name
-        if name not in self._nodesets:
+        if name not in self._facets:
             raise KeyError(
-                "Surface of interest '%s' does not exist." % str_val)
+                "Facet '%s' does not exist." % str_val)
         else:
-            return self._surfaces_oi[name]
+            return self._facets[name]
+    
+    def get_facet_point_ids(self, name: str):
+        """
+            Returns mesh node ids for a given facet
+        """
+        if isinstance(name, Enum):
+            str_val = name.name
+            name = name.value
+        else:
+            str_val = name
+        if name not in self._facet_point_ids:
+            raise KeyError(
+                "Facet '%s' does not exist." % str_val)
+        else:
+            return self._facet_point_ids[name]
+    
+    def get_facet_cell_ids(self, name: str):
+        """
+            Returns surface mesh cell ids for a given facet
+        """
+        if isinstance(name, Enum):
+            str_val = name.name
+            name = name.value
+        else:
+            str_val = name
+        if name not in self._facet_cell_ids:
+            raise KeyError(
+                "Facet '%s' does not exist." % str_val)
+        else:
+            return self._facet_cell_ids[name]
 
     # ------------------------
     # Virtual nodes and virtual elements
@@ -880,18 +933,28 @@ class BaseContainerHandler():
                 return self.surface_mesh
 
     def get_surface_id_map_from_mesh(self):
-        # lvsurf = self.get_surface_mesh()
-        # return lvsurf.point_data["vtkOriginalPointIds"]
-        if self._surfmap is None:
+        if self._surf_to_mesh_map is None:
             from project_heart.utils.cloud_ops import map_A_to_B
             A = self.get_surface_mesh().points
             B = self.mesh.points           
-            self._surfmap = map_A_to_B(A,B)
-        return self._surfmap
+            self._surf_to_mesh_map = map_A_to_B(A,B)
+        return self._surf_to_mesh_map
+    
+    def get_mesh_id_map_from_surface(self):
+        if self._mesh_to_surf_map is None:
+            from project_heart.utils.cloud_ops import map_A_to_B
+            A = self.mesh.points      
+            B = self.get_surface_mesh().points     
+            self._mesh_to_surf_map = map_A_to_B(A,B)
+        return self._mesh_to_surf_map
 
     def map_surf_ids_to_global_ids(self, surf_ids, dtype=np.int64):
         surf_to_global = self.get_surface_id_map_from_mesh()
         return np.array(surf_to_global[surf_ids], dtype=dtype)
+    
+    def map_mesh_ids_to_surf_ids(self, mesh_ids, dtype=np.int64):
+        id_map = self.get_mesh_id_map_from_surface()
+        return np.array(id_map[mesh_ids], dtype=dtype)
 
     def smooth_surface(self, **kwargs):
         """ Adjust point coordinates using Laplacian smoothing.\n
@@ -924,7 +987,7 @@ class BaseContainerHandler():
         key = self.check_enum(key)
         surf.point_data[key] = data
 
-    def set_facet_data(self, key, data, **kwargs):
+    def set_surface_cell_data(self, key, data, **kwargs):
         key = self.check_enum(key)
         surf = self.get_surface_mesh(**kwargs)
         if len(data) != surf.n_cells:
@@ -932,13 +995,13 @@ class BaseContainerHandler():
                 "Number of data points must match number of faces [cells] at surface.")
         surf.cell_data[key] = data
 
-    def get_facet_data(self, key, **kwargs):
-        key = self.check_enum(key)
-        surf = self.get_surface_mesh()
-        if key in surf.cell_data:
-            return surf.cell_data[key]
-        else:
-            raise KeyError("Was not able to find data in facet data.")
+    # def get_facet_data(self, key, **kwargs):
+    #     key = self.check_enum(key)
+    #     surf = self.get_surface_mesh()
+    #     if key in surf.cell_data:
+    #         return surf.cell_data[key]
+    #     else:
+    #         raise KeyError("Was not able to find data in facet data.")
 
     def transform_surface_point_data_to_facet_data(self, data_key, method="max", **kwargs):
         return self.transform_point_data_to_cell_data(data_key, method=method, surface=True, **kwargs)
@@ -989,16 +1052,63 @@ class BaseContainerHandler():
         node_cell_ids = dict()
         for i, nodes in enumerate(cell_node_ids):
             for n in nodes:
-                node_cell_ids[n] = i
+                if n not in node_cell_ids:
+                    node_cell_ids[n] = deque([i])
+                else:
+                    node_cell_ids[n].append(i)
+                # node_cell_ids[n] = i
         
+        # sort keys -> each row in represents cell number
+        sorted_keys = sorted(node_cell_ids.keys())
+        node_cell_deque = deque()
+        for key in sorted_keys:
+            node_cell_deque.append(np.asarray(node_cell_ids[key], dtype=cell_node_ids[0].dtype))
+
         # save
         if surface:
-            self._surf_node_cell_dict = node_cell_ids
+            self._surf_node_cell_dict = node_cell_deque
         else:
-            self._node_cell_dict = node_cell_ids
+            self._node_cell_dict = node_cell_deque
         
-        return node_cell_ids        
+        return node_cell_deque        
+    
+    def get_cell_ids_for_nodeset(self, node_ids, approach=1, q=0.425, **kwargs):
         
+        from collections import deque
+        
+        if approach == 0:
+            # get node ids for each cell
+            cell_node_ids = self.get_node_ids_for_each_cell()
+            # ensure node_ids is a set object
+            nodes_set = set(node_ids)
+            # compute cell ids -> for each possible cell, include only if 
+            # uinion of nodeset and "cellset" is >= than 'q' of number of nodes
+            # in cell.
+            cell_ids = deque()
+            for i, cell in enumerate(cell_node_ids):
+                n_in = len(nodes_set & set(cell))
+                if n_in >= len(cell) * q:
+                    cell_ids.append(i)
+        else:
+            # get cell ids for each node --> cell -> nodes
+            cell_nodes_map = self.get_node_ids_for_each_cell()
+            # get node ids for each cell --> node --> cells
+            nodes_cell_map = self.get_cell_ids_for_each_node()
+            # compute cell cell_candidates -> for each node, append related cells
+            cell_candidates = deque()
+            for n_id in node_ids:
+                cell_candidates.extend(nodes_cell_map[n_id])
+            # compute unique values and their counts
+            unique, counts = np.unique(cell_candidates, return_counts=True)
+            # finalize cell ids based on count number for each cell ->
+            # nodes must be connected to at least 'q' of number of nodes in cell
+            # to include such cell id
+            cell_ids = deque()
+            for cell_id, cell_count in zip(unique, counts):
+                if cell_count >= len(cell_nodes_map[cell_id]) * q:
+                    cell_ids.append(cell_id)        
+        
+        return cell_ids
         
     def transform_point_data_to_cell_data(self,
                                           data_key,
@@ -1062,7 +1172,7 @@ class BaseContainerHandler():
         # return pointer to saved data
         return mesh.cell_data[data_key]
 
-    def create_surface_oi_from_surface(self, surf_name):
+    def create_facets_from_surface_data(self, surf_name):
 
         surf_map = self.get_surface_id_map_from_mesh()
         cell_id_list = self.get_node_ids_for_each_cell(surface=True)
@@ -1079,24 +1189,29 @@ class BaseContainerHandler():
         unique_vals = np.unique(index_map)
         for val in unique_vals:
             ioi = np.where(index_map == val)[0]
-            surf_oi = deque()
+            facet_pt_ids = deque()
+            facet = deque()
             for i in ioi:
-                surf_oi.append(surf_map[cell_id_list[i]])
-            self._surfaces_oi[val] = list(surf_oi)
+                facet.append(surf_map[cell_id_list[i]])
+                facet_pt_ids.append(cell_id_list[i])
+            
+            self._facet_point_ids[val] = list(np.unique(facet_pt_ids)) # at surface level
+            self._facet_cell_ids[val] = list(ioi)                      # at surface level
+            
+            self._facets[val] = list(facet)                         # at mesh level
+            
+        return self._facets, (self._facet_point_ids, self._facet_point_ids)
 
-        return self._surfaces_oi
-
-    def get_surface_oi_from_enum(self, enum_like):
+    def get_facets_from_enum(self, enum_like):
         if not isinstance(enum_like, object):
             raise ValueError(
                 "enum_like must be Enum related to saved nodesets.")
         data = dict()
         for item in enum_like:
             try:
-                data[item.name] = self.get_surface_oi(item.value)
+                data[item.name] = self.get_facets(item.value)
             except KeyError:
                 continue
-                # print("Unknown node set: %s" % item.name)
         return data
 
     # -------------------------------
@@ -1399,10 +1514,25 @@ class BaseContainerHandler():
         from project_heart.utils.tensor_utils import convert_to_cylindrical_coordinates
         key = self.check_enum(key)
         data = self.get(GEO_DATA.STATES, key, mask=mask) # retrieve data from storage
-        centers = np.asarray(self.mesh.cell_centers().points)
-        cy_data = np.asarray([convert_to_cylindrical_coordinates(d, centers, ) for d in data])
+        cy_data = []
+        displacements = self.states.get(self.STATES.DISP)
+        for ts, disp in enumerate(displacements):
+            tmp_mesh = self.mesh.copy()
+            tmp_mesh.points += disp
+            centers = np.asarray(tmp_mesh.cell_centers().points)
+            cy_data.append(convert_to_cylindrical_coordinates(data[ts], centers))
+        cy_data = np.asarray(cy_data)
         self.states.add(key + "_cylindrical", cy_data)
         return self.states.get(key + "_cylindrical")
+
+    def convert_to_nodal_data(self, key, mask=None, **kwargs):
+        key = self.check_enum(key)  # check if key is enum or value
+        data = self.get(GEO_DATA.STATES, key, mask=mask) # retrieve data from storage
+        nodes = self.nodes(mask=mask) # retrieve nodes xyz info
+        nodal_data = np.vstack([self.interpolate_from_array(d, nodes, **kwargs) for d in data]) # interpolate data to nodes
+        self.states.add(key + "_nodal", nodal_data)
+        return self.states.get(key + "_nodal")
+
 
     def prep_for_gmsh(self,
                       cellregionIds: np.ndarray,

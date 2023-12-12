@@ -9,7 +9,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 filepath = "./sample_files/ideal_linear_pressure_increase.xplt"
 filepath = os.path.join(CURR_DIR, filepath)
     
-def get_lv_ideal(filepath=filepath, save_spk_dict=False):
+def get_lv_ideal(filepath=filepath, save_spk_dict=False, statesfile=None):
 
     lv = LV.from_file(Path(filepath)) 
     lv.identify_regions(geo_type=LV_GEO_TYPES.IDEAL, log_level=logging.WARN)

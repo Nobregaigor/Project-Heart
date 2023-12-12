@@ -111,7 +111,9 @@ class LV_Speckles(LV_RegionIdentifier):
             # keep track of nodes data
             nodes = self.nodes()
             # keep track of nodes ids
-            ids = np.arange(1, len(nodes) + 1, dtype=np.int32)
+            # ids = np.arange(1, len(nodes) + 1, dtype=np.int32)
+            ids = np.arange(0, len(nodes), dtype=np.int32)
+            
         else:
             logger.debug("Using nodes from nodeset %s" % from_nodeset)
             ids = self.get_nodeset(from_nodeset)
@@ -233,11 +235,13 @@ class LV_Speckles(LV_RegionIdentifier):
         mask = ioi   # global mask
         
         node_to_cell_id_map = self.get_cell_ids_for_each_node()
+        all_pts_center = np.mean(pts, axis=0)
         
         if n_subsets <= 1:
             logger.debug("Adding single subset.")
             c_ids = None
             non_empty_buckets_l = None
+            c_elem_ids = None
             if n_clusters > 0:
                 sub_pts = self.nodes()[valid_ids]
                 c_ids, non_empty_buckets_l = self._subdivide_speckles(sub_pts, n_clusters, 
@@ -245,9 +249,15 @@ class LV_Speckles(LV_RegionIdentifier):
                                                         normal, valid_ids,
                                                         spk_la_center,
                                                         clusters_vector_ref,
+                                                        all_pts_center,
                                                         True, #check for orientation
                                                         log_level,
                                                         ignore_unmatch_number_of_clusters)
+                if n_clusters > 1:
+                    # c_elem_ids = deque([deque([node_to_cell_id_map[ival] for ival in clids]) for clids in c_ids])
+                    c_elem_ids = deque([self.get_cell_ids_for_nodeset(clids) for clids in c_ids])
+                    
+            
             self.speckles.append(
                 name=name,
                 group=group,
@@ -257,11 +267,13 @@ class LV_Speckles(LV_RegionIdentifier):
                 mask=mask,
                 elmask=None,
                 ids=valid_ids,
-                elem_ids=np.asarray([node_to_cell_id_map[ival] for ival in valid_ids]),
+                elem_ids=self.get_cell_ids_for_nodeset(valid_ids), #np.asarray([node_to_cell_id_map[ival] for ival in valid_ids]),
                 normal=normal,
                 la_center=spk_la_center,
                 c_ids=c_ids,
-                c_local_ids=non_empty_buckets_l
+                c_local_ids=non_empty_buckets_l,
+                c_elem_ids=c_elem_ids
+                # c_elem_ids= self._set_speckles_subdivision_elements(node_to_cell_id_map, c_ids, n_clusters) #deque([deque([node_to_cell_id_map[ival] for ival in clids]) for clids in valid_ids]),
             )
         else:
             logger.debug("pts: {}".format(len(pts)))
@@ -274,6 +286,7 @@ class LV_Speckles(LV_RegionIdentifier):
                                                          normal, valid_ids,
                                                          spk_la_center,
                                                          subsets_vector_ref,
+                                                         all_pts_center,
                                                          False, # dont check for orientation
                                                          log_level)
                         
@@ -282,6 +295,7 @@ class LV_Speckles(LV_RegionIdentifier):
 
                 c_ids = None
                 non_empty_buckets_l = None
+                c_elem_ids = None
                 if n_clusters > 0:
                     logger.debug("len(pts): {}".format(len(pts)))
                     logger.debug("sub_ids[:5]: {}".format(np.array(sub_ids)[:5]))
@@ -292,10 +306,15 @@ class LV_Speckles(LV_RegionIdentifier):
                                                      normal, sub_ids,
                                                      spk_la_center,
                                                      clusters_vector_ref,
+                                                     all_pts_center,
                                                      False, # dont check for orientation
                                                      log_level,
                                                      ignore_unmatch_number_of_clusters,
                                                      )
+                    # if n_clusters > 1:
+                    # c_elem_ids = deque([deque([node_to_cell_id_map[ival] for ival in clids]) for clids in c_ids])
+                    c_elem_ids = deque([self.get_cell_ids_for_nodeset(clids) for clids in c_ids])
+                    
                 self.speckles.append(
                     subset=subname,
                     name=name,
@@ -306,11 +325,13 @@ class LV_Speckles(LV_RegionIdentifier):
                     mask=sub_ids,
                     elmask=None,
                     ids=sub_ids,
-                    elem_ids=np.asarray([node_to_cell_id_map[ival] for ival in sub_ids]),
+                    elem_ids=self.get_cell_ids_for_nodeset(sub_ids), #np.asarray([node_to_cell_id_map[ival] for ival in sub_ids]),
                     normal=normal,
                     la_center=spk_la_center,
                     c_ids=c_ids,
                     c_local_ids=non_empty_buckets_l,
+                    c_elem_ids= c_elem_ids
+                    # c_elem_ids= self._set_speckles_subdivision_elements(node_to_cell_id_map, c_ids, n_clusters) #deque([deque([node_to_cell_id_map[ival] for ival in clids]) for clids in c_ids]),
                 )
 
         return self.speckles.get(
@@ -451,6 +472,7 @@ class LV_Speckles(LV_RegionIdentifier):
                             valid_ids,
                             ref_center, # used for angles
                             ref_vector=None, #used for angles3
+                            all_pts_center=None, # used for radius clustering
                             check_orientation=False,
                             log_level=logging.WARNING,
                             ignore_unmatch_number_of_clusters=False):
@@ -760,7 +782,29 @@ class LV_Speckles(LV_RegionIdentifier):
             new_bins = np.asarray([binsorder[v] for v in bins])+1
             bins = new_bins
             # print(bins)
-
+        elif subsets_criteria == "radius": # xy-plane angles subdvisiton.
+            # vecs = pts - ref_center #np.mean(pts, axis=0)
+            from project_heart.utils.vector_utils import dist_from_line
+            long_line = self.get_long_line() # based on ref normal
+            # compute distance to longitudinal line
+            p2, p3 = long_line[0], long_line[1]
+            radius = dist_from_line(pts, p2, p3)
+            # normalize
+            # wall_index = np.interp(radius, (radius.min(), radius.max()), (0,1))
+            # save to spk
+            # spk.wall_index = wall_index
+            bins = np.digitize(
+                radius, np.linspace(radius.min()-0.0001, radius.max()+0.0001, n_subsets+1))
+            logger.debug("Unique bins: {}.".format(np.unique(bins)))
+        elif subsets_criteria == "radius2": # xy-plane angles subdvisiton.
+            vecs = pts - all_pts_center #np.mean(pts, axis=0)
+            radius = np.linalg.norm(vecs, axis=1)
+            # normalize
+            # wall_index = np.interp(radius, (radius.min(), radius.max()), (0.0,1.0))
+            # save to spk
+            bins = np.digitize( 
+                radius, np.linspace(radius.min()*0.999, radius.max()*1.0001, n_subsets+1))
+            logger.debug("Unique bins: {}.".format(np.unique(bins)))
         else:
             raise ValueError(
                 "Unknown subset criteria. Valid options are: 'z', 'z2', or 'angles'")
@@ -790,4 +834,77 @@ class LV_Speckles(LV_RegionIdentifier):
                         .format(len(buckets), len(non_empty_buckets)))
         
         return non_empty_buckets, non_empty_buckets_l
+    
+    def _set_speckles_subdivision_elements(self, node_to_cell_id_map, c_ids, n_subsets):
         
+        cell_cluster_dict = dict()
+        for c, ids in enumerate(c_ids):
+            for node_id in ids:
+                cell_id = node_to_cell_id_map[node_id]
+                if cell_id in cell_cluster_dict:
+                    cell_cluster_dict[cell_id].append(c)
+                else:
+                    cell_cluster_dict[cell_id] = deque([c])
+        
+        cell_clusters = deque([deque([]) for _ in range(n_subsets)])
+        for cell_id, cvals in cell_cluster_dict.items():
+            c_me = np.median(cvals)
+            cell_clusters[int(c_me)].append(cell_id)
+            
+        return cell_clusters
+                        
+    def split_spks_by_clusters(self, spk_args, suffix="_split", rename_subsets=None, 
+                               switch_subset_group=False):
+        
+        spk_deque = self._resolve_spk_args(spk_args)        
+        split_idx = 0
+        
+        for spk in spk_deque:
+            collection = str(spk.collection) + str(suffix)
+            
+            # if switch_name_group:
+            #     group = str(spk.name) 
+            #     name = str(spk.group)
+            # else:
+            group = str(spk.group) 
+            name = str(spk.name)
+                
+            
+            fix_group = group
+            
+            for i, (cluster_node_ids, cluster_elem_ids) in enumerate(zip(spk.c_ids, spk.c_elem_ids)):
+                
+                if rename_subsets is not None:
+                    subset = rename_subsets[i]
+                    if switch_subset_group:
+                        group = subset
+                        subset = fix_group
+                else:
+                    if switch_subset_group:
+                        subset = fix_group + str(suffix)
+                        group = str(spk.subset)
+                    else:
+                        subset = str(spk.subset) + str(suffix)
+                
+                subset += "_" + str(split_idx)
+                split_idx += 1  
+                
+                self.speckles.append(
+                        subset=subset,
+                        name=name,
+                        group=group,
+                        collection=collection,
+                        t=spk.t,
+                        k=spk.k,
+                        mask=None,
+                        elmask=None,
+                        ids=cluster_node_ids,
+                        elem_ids=np.unique(cluster_elem_ids),
+                        normal=spk.normal,
+                        la_center=spk.la_center,
+                        c_ids=None,
+                        c_local_ids=None,
+                        c_elem_ids= None
+                    )
+
+

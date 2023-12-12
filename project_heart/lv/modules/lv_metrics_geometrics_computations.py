@@ -1062,11 +1062,66 @@ class LVGeometricsComputations(LV_Speckles):
     # -----------------------------
     # Stress
     
+    def extract_principal_stress(self, stress_key=None, dtype=np.float32):
+        def to_sym_arr(data):
+            return [
+                        [data[0], data[3], data[5]],
+                        [data[3], data[1], data[4]],
+                        [data[5], data[4], data[2]]
+                    ]
+        
+        key = self.STATES.PRINCIPAL_STRESS # how to name principal stress
+        
+        if stress_key is None:
+            stress_key = self.STATES.STRESS
+        
+        stress = self.states.get(stress_key)
+        from collections import deque
+        principal_stress = deque()
+        for step in stress:
+            step_data = deque()
+            for cell in step:
+                data = to_sym_arr(cell)
+                max_stress = np.max(np.linalg.eigvals(data))
+                step_data.append(max_stress)
+            principal_stress.append(step_data)
+        principal_stress = np.asarray(principal_stress, dtype=dtype)
+        self.states.add(self.STATES.PRINCIPAL_STRESS, principal_stress)
+        
+    def extract_principal_strain(self, strain_key=None, dtype=np.float32):
+        def to_sym_arr(data):
+            return [
+                        [data[0], data[3], data[5]],
+                        [data[3], data[1], data[4]],
+                        [data[5], data[4], data[2]]
+                    ]
+        
+        key = self.STATES.PRINCIPAL_STRAIN # how to name principal strain
+        
+        if strain_key is None:
+            strain_key = self.STATES.STRAIN
+        
+        strain = self.states.get(strain_key)
+        from collections import deque
+        principal_strain = deque()
+        for step in strain:
+            step_data = deque()
+            for cell in step:
+                data = to_sym_arr(cell)
+                max_strain = np.max(np.linalg.eigvals(data))
+                step_data.append(max_strain)
+            principal_strain.append(step_data)
+        principal_strain = np.asarray(principal_strain, dtype=dtype)
+        self.states.add(self.STATES.PRINCIPAL_STRAIN, principal_strain)
+       
+    
     def compute_spk_stress(self, spk: object,
                             dtype: np.dtype = np.float64, 
                             approach="mean",
-                            cylindrical=True, 
-                            effective=True,
+                            cylindrical=False, 
+                            effective=False,
+                            principal=True,
+                            use_axis=None,
                             log_level=logging.INFO,
                             **kwargs):
         if cylindrical:
@@ -1080,6 +1135,17 @@ class LVGeometricsComputations(LV_Speckles):
                         self.states.add(self.STATES.CYLINDRICAL_STRESS, cy_stress)
                 except:
                     raise RuntimeError("Could not compute cylindrical stress. Try adding it manually. ")
+        elif principal:
+            key = self.STATES.PRINCIPAL_STRESS
+            if not self.states.check_key(key):
+                try:
+                    if not self.states.check_key(self.STATES.STRESS):
+                        raise RuntimeError("Could not compute principal stress. Did you compute/recorded stress?")
+                    else:
+                        self.extract_principal_stress(self.STATES.STRESS)
+                except:
+                    raise RuntimeError("Could not compute cylindrical stress. Try adding it manually. ")
+        
         else:
             key = self.STATES.STRESS
         
@@ -1093,8 +1159,12 @@ class LVGeometricsComputations(LV_Speckles):
         # get stress value for each timestep
         stress = self.states.get(key, mask=spk.elem_ids)
         logger.debug("-stress.shape:'{}".format(stress.shape))
+        if use_axis is not None:
+            logger.debug("-use_axis:'{}".format(use_axis))
+            stress = stress[:, use_axis]
+            logger.debug("-stress.shape:'{}".format(stress.shape))
+        
         if approach == "mean":
-            # get centers data
             spk_res = np.mean(stress, axis=1)
         elif approach == "max":
             spk_res = np.max(stress, axis=1)
@@ -1105,7 +1175,7 @@ class LVGeometricsComputations(LV_Speckles):
                              "'mean', 'max' or 'min'. Received: '{}'. "
                              "Please, check documentation for further details."
                              .format(approach))
-        if effective:
+        if effective and use_axis is not None:
             self.STATES, (_, key) = add_to_enum(self.STATES, "effective", key)
             spk_res = self._to_von_mises(spk_res)
             
@@ -1121,13 +1191,16 @@ class LVGeometricsComputations(LV_Speckles):
         return self.states.get_spk_data(spk, key)    # return pointer
 
     def compute_stress(self, spks, 
-                            cylindrical=True, 
-                            effective=True,
+                            cylindrical=False, 
+                            effective=False,
+                            principal=True,
                             reduce_by={"group"}, **kwargs):
         
         # set key for this function
         if cylindrical:
             key = self.STATES.CYLINDRICAL_STRESS
+        elif principal:
+            key = self.STATES.PRINCIPAL_STRESS
         else:
             key = self.STATES.STRESS
         if effective:
@@ -1137,7 +1210,7 @@ class LVGeometricsComputations(LV_Speckles):
         # resolve spks (make sure you have a SpeckeDeque)
         spks = self._resolve_spk_args(spks)
         # compute metric
-        res = [self.compute_spk_stress(spk, cylindrical=cylindrical, effective=effective, **kwargs) for spk in spks]
+        res = [self.compute_spk_stress(spk, cylindrical=cylindrical, effective=effective, principal=principal, **kwargs) for spk in spks]
         # reduce metric (here we compute the mean radius across entire LV)
         self._reduce_metric_and_save(res, key, **kwargs)
         # set metric relationship with spks 
@@ -1167,8 +1240,10 @@ class LVGeometricsComputations(LV_Speckles):
     def compute_spk_strain(self, spk: object,
                             dtype: np.dtype = np.float64, 
                             approach="mean",
-                            cylindrical=True, 
-                            effective=True,
+                            cylindrical=False, 
+                            effective=False,
+                            principal=True,
+                            use_axis=None,
                             log_level=logging.INFO,
                             **kwargs):
         
@@ -1191,6 +1266,16 @@ class LVGeometricsComputations(LV_Speckles):
                         self.states.add(self.STATES.CYLINDRICAL_STRAIN, cy_strain)
                 except:
                     raise RuntimeError("Could not compute cylindrical strain. Try adding it manually. ")
+        elif principal:
+            key = self.STATES.PRINCIPAL_STRAIN
+            if not self.states.check_key(key):
+                try:
+                    if not self.states.check_key(_strain_key):
+                        raise RuntimeError("Could not compute principal stress. Did you compute/recorded stress?")
+                    else:
+                        self.extract_principal_strain(_strain_key)
+                except:
+                    raise RuntimeError("Could not compute cylindrical stress. Try adding it manually. ")
         else:
             key = _strain_key
         
@@ -1204,6 +1289,10 @@ class LVGeometricsComputations(LV_Speckles):
         # get strain value for each timestep
         strain = self.states.get(key, mask=spk.elem_ids)
         logger.debug("-strain.shape:'{}".format(strain.shape))
+        if use_axis is not None:
+            logger.debug("-use_axis:'{}".format(use_axis))
+            strain = strain[:, use_axis]
+            logger.debug("-strain.shape:'{}".format(strain.shape))
         if approach == "mean":
             # get centers data
             spk_res = np.mean(strain, axis=1)
@@ -1216,7 +1305,7 @@ class LVGeometricsComputations(LV_Speckles):
                              "'mean', 'max' or 'min'. Received: '{}'. "
                              "Please, check documentation for further details."
                              .format(approach))
-        if effective:
+        if effective and use_axis is not None:
             self.STATES, (_, key) = add_to_enum(self.STATES, "effective", key)
             spk_res = self._to_von_mises(spk_res)
             
@@ -1232,13 +1321,16 @@ class LVGeometricsComputations(LV_Speckles):
         return self.states.get_spk_data(spk, key)    # return pointer
 
     def compute_strain(self, spks, 
-                            cylindrical=True, 
-                            effective=True,
+                            cylindrical=False, 
+                            effective=False,
+                            principal=True,
                             reduce_by={"group"}, **kwargs):
         
         # set key for this function
         if cylindrical:
             key = self.STATES.CYLINDRICAL_STRAIN
+        elif principal:
+            key = self.STATES.PRINCIPAL_STRAIN
         else:
             key = None
             if self.states.check_key(self.STATES.STRAIN):
@@ -1255,7 +1347,7 @@ class LVGeometricsComputations(LV_Speckles):
         # resolve spks (make sure you have a SpeckeDeque)
         spks = self._resolve_spk_args(spks)
         # compute metric
-        res = [self.compute_spk_strain(spk, cylindrical=cylindrical, effective=effective, **kwargs) for spk in spks]
+        res = [self.compute_spk_strain(spk, cylindrical=cylindrical, effective=effective, principal=principal, **kwargs) for spk in spks]
         # reduce metric (here we compute the mean radius across entire LV)
         self._reduce_metric_and_save(res, key, **kwargs)
         # set metric relationship with spks 
@@ -1355,7 +1447,10 @@ class LVGeometricsComputations(LV_Speckles):
         if sum:
             return np.sum(res, axis=axis)
         else:
-            return res.reshape(-1,)
+            if len(res) == 1:
+                return res.reshape(-1,)
+            else:
+                return res
 
     def _save_metric(self, res, key):
         self.states.add(key, res)  # save to states
@@ -1449,7 +1544,6 @@ class LVGeometricsComputations(LV_Speckles):
         self.states.add_spk_data(spk, cm_key, spk_res)  
         return self.states.get_spk_data(spk, cm_key)
 
-    
     
     def _to_von_mises(self, data):
         """Computes the 'effective stress' based on von mises stress.

@@ -22,3 +22,5 @@ class GEO_DICT(Enum):
 
     MESH_POINT_DATA = "MESH_NODE_DATA"
     MESH_CELL_DATA = "MESH_ELEM_DATA"
+    
+    STATES = "STATES"
